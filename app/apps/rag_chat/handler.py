@@ -83,6 +83,6 @@ async def handle(payload: str, msg: cl.Message) -> None:
             + (f" (p.{d['page']})" if d.get("page") is not None else "")
             for d in sources
         )
-        response.elements = [cl.Text(name="參考來源", content=src_text, display="inline")]
+        response.content = (response.content or "") + f"\n\n---\n**參考來源：**\n{src_text}"
 
     await response.send()

@@ -24,7 +24,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
     query = payload.strip()
     if not query:
         await cl.Message(
-            content="🔍 **網頁搜尋**\n\n從左下 **+** → 「網頁搜尋」，再輸入你要查的關鍵字送出。"
+            content="🔍 **網頁搜尋**\n\n輸入你要查的關鍵字再送出。"
         ).send()
         return
 
