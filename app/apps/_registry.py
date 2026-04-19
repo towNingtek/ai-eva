@@ -20,6 +20,7 @@ class App:
         self.id: str = meta["id"]
         self.label: str = meta.get("label", self.id)
         self.icon: str = meta.get("icon", "🔧")
+        self.cl_icon: str = meta.get("cl_icon", "Sparkles")  # Lucide icon for Chainlit
         self.trigger: str | None = meta.get("trigger")
         self.is_default: bool = bool(meta.get("is_default", False))
         self.show_in_menu: bool = bool(meta.get("show_in_menu", True))
@@ -58,28 +59,26 @@ def discover() -> dict[str, App]:
     return _APPS
 
 
-def manifest() -> list[dict]:
-    """For frontend /public/apps.json — menu items only."""
+def chainlit_commands() -> list[dict]:
+    """CommandDict list for cl.context.emitter.set_commands()."""
     discover()
     return [
         {
             "id": a.id,
-            "label": a.label,
-            "icon": a.icon,
-            "trigger": a.trigger,
-            "description": a.description,
-            "enabled": a.enabled,
+            "description": a.label,
+            "icon": a.cl_icon,
+            "persistent": True,
         }
         for a in _APPS.values()
-        if a.show_in_menu and a.trigger
+        if a.show_in_menu and a.enabled and not a.is_default
     ]
 
 
-def dispatch(message: str) -> tuple[App, str]:
-    """Match message against triggers; return (app, payload)."""
+def get_by_id(app_id: str) -> App | None:
     discover()
-    for a in _APPS.values():
-        if a.trigger and message.startswith(a.trigger):
-            payload = message[len(a.trigger):].strip()
-            return a, payload
-    return _DEFAULT, message
+    return _APPS.get(app_id)
+
+
+def default_app() -> App | None:
+    discover()
+    return _DEFAULT

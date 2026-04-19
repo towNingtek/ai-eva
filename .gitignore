@@ -19,6 +19,9 @@ data/docs/*
 # Generated at runtime by app registry
 public/apps.json
 
+# Runtime-persisted Chainlit element blobs
+public/elements/
+
 # IDE
 .vscode/
 .idea/

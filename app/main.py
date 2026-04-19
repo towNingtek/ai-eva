@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 from pathlib import Path
@@ -7,8 +6,9 @@ import chainlit as cl
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 
-from app.apps._registry import discover, dispatch, manifest
+from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
 from app.core.rag import ingest_to_session
+from app.core.storage import LocalStorageClient
 from app.rag.ingest import SUPPORTED_SUFFIXES
 from app.settings import ROOT
 
@@ -16,7 +16,10 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 if DATABASE_URL:
-    cl_data._data_layer = SQLAlchemyDataLayer(conninfo=DATABASE_URL)
+    cl_data._data_layer = SQLAlchemyDataLayer(
+        conninfo=DATABASE_URL,
+        storage_provider=LocalStorageClient(ROOT / "public" / "elements"),
+    )
 
 ADMIN_USER = os.getenv("ADMIN_USER", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASS", "")
@@ -30,22 +33,28 @@ if ADMIN_PASS:
 
 
 discover()
-_APPS_JSON = ROOT / "public" / "apps.json"
-_APPS_JSON.write_text(
-    json.dumps({"apps": manifest()}, ensure_ascii=False, indent=2),
-    encoding="utf-8",
-)
-logger.info("Wrote %s with %d menu app(s)", _APPS_JSON, len(manifest()))
+
+
+async def _register_commands():
+    cmds = chainlit_commands()
+    await cl.context.emitter.set_commands(cmds)
+    logger.info("Registered %d command(s): %s", len(cmds), [c["id"] for c in cmds])
+
+
+@cl.on_chat_resume
+async def on_chat_resume(thread):
+    await _register_commands()
 
 
 @cl.on_chat_start
 async def on_start():
+    await _register_commands()
     await cl.Message(
         content=(
             "嗨，我是 **Eva**。\n\n"
             "- 直接輸入問題 → 走 RAG 問答\n"
-            "- 點左下 **+** → 叫出工具（目前：🔍 網頁搜尋）\n"
-            "- 把檔案拖進來 → 加入本次對話（僅此 session，關閉就清除）"
+            "- 輸入框的工具選單可切換模式（目前：🌐 網頁搜尋）\n"
+            "- 把檔案拖進來 → 加入本次對話（僅此 session）"
         )
     ).send()
 
@@ -87,6 +96,13 @@ async def on_message(msg: cl.Message):
     if not content:
         return
 
-    app, payload = dispatch(content)
-    logger.info("dispatch → %s (payload=%r)", app.id, payload[:60])
-    await app.handle(payload, msg)
+    # Native Chainlit command takes precedence over default handler.
+    app = get_by_id(msg.command) if msg.command else None
+    if app is None:
+        app = default_app()
+    if app is None:
+        await cl.Message(content="⚠️ 沒有可用的處理器").send()
+        return
+
+    logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
+    await app.handle(content, msg)
