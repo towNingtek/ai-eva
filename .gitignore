@@ -16,6 +16,9 @@ data/chroma/
 data/docs/*
 !data/docs/.gitkeep
 
+# Generated at runtime by app registry
+public/apps.json
+
 # IDE
 .vscode/
 .idea/

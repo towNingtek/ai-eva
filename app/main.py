@@ -1,3 +1,5 @@
+import json
+import logging
 import os
 from pathlib import Path
 
@@ -5,13 +7,14 @@ import chainlit as cl
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 
-from app.graph import build_graph
-from app.rag.ingest import SUPPORTED_SUFFIXES, ingest_one_file
+from app.apps._registry import discover, dispatch, manifest
+from app.core.rag import ingest_to_session
+from app.rag.ingest import SUPPORTED_SUFFIXES
+from app.settings import ROOT
 
-_graph = build_graph()
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
-
 if DATABASE_URL:
     cl_data._data_layer = SQLAlchemyDataLayer(conninfo=DATABASE_URL)
 
@@ -26,10 +29,24 @@ if ADMIN_PASS:
         return None
 
 
+discover()
+_APPS_JSON = ROOT / "public" / "apps.json"
+_APPS_JSON.write_text(
+    json.dumps({"apps": manifest()}, ensure_ascii=False, indent=2),
+    encoding="utf-8",
+)
+logger.info("Wrote %s with %d menu app(s)", _APPS_JSON, len(manifest()))
+
+
 @cl.on_chat_start
 async def on_start():
     await cl.Message(
-        content="嗨，我是 **Eva**。輸入問題開始，或把文件放進 `data/docs/` 再跑 ingest 餵 RAG。"
+        content=(
+            "嗨，我是 **Eva**。\n\n"
+            "- 直接輸入問題 → 走 RAG 問答\n"
+            "- 點左下 **+** → 叫出工具（目前：🔍 網頁搜尋）\n"
+            "- 把檔案拖進來 → 加入本次對話（僅此 session，關閉就清除）"
+        )
     ).send()
 
 
@@ -46,14 +63,15 @@ async def _ingest_attachments(msg: cl.Message) -> None:
             ).send()
             continue
 
-        status = cl.Message(content=f"🔍 處理中：`{name}`（若為圖片型 PDF 會走 Vision OCR，較慢）")
+        status = cl.Message(content=f"📎 處理中：`{name}`（圖片型 PDF 會走 Vision OCR，較慢）")
         await status.send()
         try:
-            n = await cl.make_async(ingest_one_file)(path, name)
-            if n:
-                status.content = f"✅ `{name}` 已索引（{n} chunks）"
-            else:
-                status.content = f"⚠️ `{name}`：讀取後沒有可索引內容"
+            n = await cl.make_async(ingest_to_session)(path, name)
+            status.content = (
+                f"📎 `{name}` 已加入本次對話（{n} chunks，僅此 session 可用）"
+                if n
+                else f"⚠️ `{name}`：讀取後沒有可索引內容"
+            )
             await status.update()
         except Exception as e:
             status.content = f"❌ `{name}` 索引失敗：{e}"
@@ -65,31 +83,10 @@ async def on_message(msg: cl.Message):
     if msg.elements:
         await _ingest_attachments(msg)
 
-    if not (msg.content or "").strip():
+    content = (msg.content or "").strip()
+    if not content:
         return
 
-    response = cl.Message(content="")
-    sources: list[dict] = []
-
-    async for mode, data in _graph.astream(
-        {"question": msg.content},
-        stream_mode=["updates", "messages"],
-    ):
-        if mode == "updates":
-            retrieve_out = data.get("retrieve")
-            if retrieve_out:
-                sources = retrieve_out.get("docs", [])
-        elif mode == "messages":
-            chunk, _meta = data
-            content = getattr(chunk, "content", "") or ""
-            if content:
-                await response.stream_token(content)
-
-    if sources:
-        src_text = "\n".join(
-            f"- `{d['source']}`" + (f" (p.{d['page']})" if d.get("page") is not None else "")
-            for d in sources
-        )
-        response.elements = [cl.Text(name="參考來源", content=src_text, display="inline")]
-
-    await response.send()
+    app, payload = dispatch(content)
+    logger.info("dispatch → %s (payload=%r)", app.id, payload[:60])
+    await app.handle(payload, msg)

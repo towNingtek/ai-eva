@@ -16,3 +16,6 @@ DOCS_DIR = os.getenv("DOCS_DIR", str(ROOT / "data" / "docs"))
 RAG_TOP_K = int(os.getenv("RAG_TOP_K", "4"))
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "1000"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
+
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
+WEB_SEARCH_TOP_K = int(os.getenv("WEB_SEARCH_TOP_K", "5"))
