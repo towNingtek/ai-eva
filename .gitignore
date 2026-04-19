@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+
+# Chainlit runtime (but keep config + custom translations)
+.chainlit/*
+!.chainlit/config.toml
+!.chainlit/translations/
+.files/
+
+# RAG data
+data/chroma/
+data/docs/*
+!data/docs/.gitkeep
+
+# IDE
+.vscode/
+.idea/

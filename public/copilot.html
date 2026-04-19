@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>Eva Copilot 嵌入範例</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 720px; margin: 0 auto; }
+    pre { background: #f4f4f5; padding: 1rem; border-radius: 8px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Eva Copilot 嵌入範例</h1>
+  <p>右下角應會出現浮動 chat bubble，點一下即可與 Eva 對話。</p>
+
+  <h2>在你自己的網站嵌入</h2>
+  <pre><code>&lt;script src="https://eva.4impact.cc/copilot/index.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  window.mountChainlitWidget({
+    chainlitServer: "https://eva.4impact.cc",
+  });
+&lt;/script&gt;</code></pre>
+
+  <h2>進階：自訂主題色</h2>
+  <pre><code>window.mountChainlitWidget({
+  chainlitServer: "https://eva.4impact.cc",
+  theme: "light",
+  accessToken: "Bearer xxx"  // 開啟 CHAINLIT_AUTH_SECRET 後必填
+});</code></pre>
+
+  <!-- 實際嵌入 -->
+  <script src="https://eva.4impact.cc/copilot/index.js"></script>
+  <script>
+    window.mountChainlitWidget({
+      chainlitServer: "https://eva.4impact.cc",
+    });
+  </script>
+</body>
+</html>
