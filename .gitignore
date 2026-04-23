@@ -22,6 +22,10 @@ public/apps.json
 # Runtime-persisted Chainlit element blobs
 public/elements/
 
+# Deployment-specific compose override (each env maintains its own,
+# e.g. stable sets container_name=*-stable and port 7861:7860)
+docker-compose.override.yml
+
 # IDE
 .vscode/
 .idea/
