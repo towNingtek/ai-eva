@@ -28,7 +28,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
         ).send()
         return
 
-    status = cl.Message(content=f"🔍 搜尋中：**{query}**")
+    status = cl.Message(content=f"🔍 搜尋中：**{query}**", parent_id=msg.id)
     await status.send()
 
     outcome = await search(query)
@@ -58,7 +58,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
         f"=== 查詢 ===\n{query}"
     )
 
-    response = cl.Message(content="")
+    response = cl.Message(content="", parent_id=msg.id)
     await response.send()
     async for chunk in make_llm().astream(prompt):
         content = getattr(chunk, "content", "") or ""

@@ -59,7 +59,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
     if not payload.strip():
         return
 
-    response = cl.Message(content="")
+    response = cl.Message(content="", parent_id=msg.id)
     sources: list[dict] = []
 
     async for mode, data in _graph.astream(
