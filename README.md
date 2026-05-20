@@ -1,117 +1,256 @@
 # AI Eva
 
-工程實驗用 Chatbot：**Chainlit + LangGraph + RAG**。
-[追蹤 issue](https://github.com/town-intelligent/swarm/issues/151)
+> 工程實驗用的對話式 AI 平台 — Chainlit + LangGraph + 可插拔 apps。
+>
+> 中長期演化為個人 / 內部用的 **本地 + 雲端混合 LLM 場域**，搭配 Pi5 hub、LINE bot 推播、模擬感測器，做為日常 AI 工具的「沙盒」。
+
+[相關討論](https://github.com/town-intelligent/swarm/issues/151) ・ [線上 stable](https://eva.4impact.cc)
+
+---
+
+## 與 `LLMTwins` 的關係
+
+`towNingtek/ai-eva` 跟 `towNingtek/LLMTwins` **不合併**，定位不同：
+
+| Repo | 角色 |
+|---|---|
+| `LLMTwins` | 多 tenant prod 平台（branch-per-tenant，南投縣府 / NTIDIPC / tplanet AI 等） |
+| `ai-eva` | LangGraph 實驗 + 個人/內部 chat surface（這個 repo） |
+
+兩者並存、互不取代。
+
+---
+
+## 系統架構
+
+```mermaid
+flowchart TB
+    subgraph Surface["使用者介面層"]
+        Web["Chainlit Web<br/>(深度配置 / 文件 / 開發)"]
+        LINE["LINE Bot<br/>(日常對話 / 推播接收)<br/>(roadmap)"]
+        Discord["Discord<br/>(devops 通知)<br/>(roadmap)"]
+    end
+
+    subgraph Eva["AI-Eva 核心"]
+        Dispatch["on_message dispatch"]
+        Registry["apps/_registry<br/>自動發現"]
+        Apps["LangGraph apps<br/>rag_chat / web_search<br/>hello_world / ..."]
+    end
+
+    subgraph LLM["LLM 抽象層"]
+        Router["LLM Router<br/>(roadmap)"]
+        OpenAI["OpenAI / Gemini<br/>(雲端，互動主線)"]
+        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播)<br/>(roadmap)"]
+    end
+
+    subgraph Async["非同步 / 推播"]
+        RMQ["RabbitMQ<br/>(roadmap)"]
+        Cron["Pi5 cron worker<br/>(daily summary, anomaly)<br/>(roadmap)"]
+        Sim["模擬感測 + LightGBM<br/>(roadmap)"]
+    end
+
+    subgraph Store["資料"]
+        PG[(Postgres<br/>threads / users)]
+        Chroma[(Chroma<br/>RAG)]
+        Sess[/Session in-memory<br/>per WebSocket/]
+    end
+
+    Web --> Dispatch
+    LINE -.-> Dispatch
+    Discord -.-> RMQ
+
+    Dispatch --> Registry --> Apps
+    Apps --> Router
+    Router --> OpenAI
+    Router -.-> PiLLM
+
+    Apps --> PG
+    Apps --> Chroma
+    Apps --> Sess
+
+    Sim -.-> Cron
+    Cron -.-> PiLLM
+    Cron -.-> RMQ
+    RMQ -.-> LINE
+    RMQ -.-> Discord
+```
+
+實線 = 現況；虛線 = roadmap（見下方）。
+
+---
 
 ## 技術棧
 
-- **UI**: Chainlit（含 Copilot 嵌入模式）
-- **Orchestration**: LangGraph (`retrieve → generate`)
-- **Vector store**: Chroma（本地持久化在 `data/chroma/`）
-- **LLM**: OpenAI（預設）/ 可切換至既有 Ollama Gateway
-- **Embedding**: `text-embedding-3-small`
+| 層 | 技術 |
+|---|---|
+| UI | **Chainlit 2.x**（含 commands、chat profiles、auth、data layer、streaming） |
+| Orchestration | **LangGraph** — `app/apps/<id>/handler.py` 內各自定義 graph |
+| Vector store | **Chroma**（持久化於 `data/chroma/`） |
+| LLM | OpenAI（預設）/ Ollama Gateway / *Pi5 Qwen（roadmap）* |
+| Embedding | `text-embedding-3-small` |
+| Web search | Tavily（主） → DuckDuckGo（自動降級） |
+| Chat history | Postgres + `SQLAlchemyDataLayer` |
+| Blob storage | `LocalStorageClient`（檔案存於 `public/elements/`） |
+
+---
 
 ## 目錄結構
 
 ```
 app/
-├── main.py              # Chainlit entrypoint
-├── graph.py             # LangGraph 定義
+├── main.py                # Chainlit entrypoint + dispatch
 ├── settings.py
-└── rag/
-    ├── ingest.py        # 把 data/docs/ 餵進 Chroma
-    └── retriever.py
+├── core/
+│   ├── llm.py             # ChatOpenAI factory（之後會升為 LLM Router）
+│   ├── rag.py             # session 暫存 + 持久化 Chroma
+│   ├── search.py          # Tavily + DDG fallback
+│   └── storage.py         # LocalStorageClient（Chainlit data layer 用）
+├── rag/
+│   └── ingest.py          # CLI ingest：data/docs/ → Chroma
+└── apps/                  # 可插拔 LangGraph 子應用
+    ├── _registry.py       # 自動發現、註冊到 Chainlit commands
+    ├── rag_chat/          # 預設（is_default=True）
+    ├── web_search/        # 🌐 網頁搜尋
+    └── hello_world/       # 🫱 LangGraph 範例
 data/
-├── docs/                # 把要 RAG 的文件丟這裡
-└── chroma/              # 向量庫（自動建）
+├── docs/                  # 拖進 chat 的檔案會即時 ingest 到 session 暫存
+└── chroma/                # CLI ingest 進來的長期知識庫
 public/
-└── copilot.html         # Copilot widget 嵌入範例頁
+├── elements/              # Chainlit 上傳檔案 blob
+└── apps.json              # registry 啟動時產出（不進 git）
 ```
 
-## 快速開始
+---
+
+## 快速開始（local dev）
 
 ### 1. 設定 env
 
 ```bash
 cp .env.example .env
-# 填入 OPENAI_API_KEY
+# 填 OPENAI_API_KEY、ADMIN_PASS、TAVILY_API_KEY 等
 ```
 
-切換到 Ollama Gateway 的話改 `.env`：
+### 2. Docker compose
 
 ```bash
-OPENAI_API_KEY=dummy
-OPENAI_API_BASE=http://host.docker.internal:8002/v1
-LLM_MODEL=openai/gpt-4o
-```
-
-### 2. 本機跑（不用 Docker）
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# 把文件丟到 data/docs/ 後 ingest
-python -m app.rag.ingest
-
-# 啟動
-chainlit run app/main.py --port 7860
+docker compose up -d --build
+docker compose exec ai-eva python -m app.rag.ingest   # （可選）餵 data/docs/ 進 Chroma
 ```
 
 開 `http://localhost:7860`。
 
-### 3. Docker Compose
+### 3. 加新 LangGraph app（30 秒）
 
 ```bash
-docker compose up -d --build
-docker compose exec ai-eva python -m app.rag.ingest
+mkdir app/apps/your_app
+# meta.py
+cat > app/apps/your_app/meta.py <<'EOF'
+META = {
+    "id": "your_app",
+    "label": "你的工具",
+    "icon": "✨",
+    "cl_icon": "Sparkles",       # Lucide 名稱
+    "is_default": False,
+    "show_in_menu": True,
+    "description": "一句話描述",
+}
+EOF
+
+# handler.py — async def handle(payload: str, msg: cl.Message) -> None
+# 自己寫 LangGraph
 ```
 
-### 4. Copilot 嵌入測試
+容器重啟 → `_registry.discover()` 自動掃到 → Chainlit 工具選單多一個。**完全不用改 `main.py`**。
 
-服務跑起來後，用瀏覽器打開 `public/copilot.html`（在本機或放到其他網站都行），右下角會出現 chat bubble。
+---
 
-嵌入到任何網頁的 snippet：
+## 部署（雙工作樹）
 
-```html
-<script src="https://eva.4impact.cc/copilot/index.js"></script>
-<script>
-  window.mountChainlitWidget({ chainlitServer: "https://eva.4impact.cc" });
-</script>
-```
+| 環境 | 本機路徑 | Branch | Container | Port | URL |
+|---|---|---|---|---|---|
+| beta | `~/workspace/towningtek/beta/ai-eva` | `beta` | `ai-eva` | 7860 | （localhost-only） |
+| stable | `~/workspace/towningtek/stable/ai-eva` | `main` | `ai-eva-stable` | 7861 | [eva.4impact.cc](https://eva.4impact.cc) |
 
-## 部署
+### 開發鐵則
 
-`eva.4impact.cc` 是 **A record 直指 cms-server** + **nginx 反向代理** + **Let's Encrypt SSL**（非 Cloudflare Tunnel 路徑）：
-
-```
-User ──► eva.4impact.cc (A record) ──► cms-server
-                                         └─► nginx (443, SSL)
-                                               └─► http://localhost:7860 (Chainlit)
-```
-
-Nginx 設定：`/etc/nginx/sites-available/eva.4impact.cc`（已有 WebSocket upgrade headers）
-
-改 port 或 config 後：
+1. 永遠在 **beta** 工作樹 + `beta` 分支上開發
+2. `commit` → `push origin beta` → `gh pr create --base main --head beta`
+3. PR merge 後，stable 工作樹執行 `git pull origin main`
+4. **Rebuild stable 容器**（千萬別漏這步，否則 main 有 code 但 stable 沒跑）：
 
 ```bash
-sudo nginx -t && sudo systemctl reload nginx
+cd ~/workspace/towningtek/stable/ai-eva
+docker compose -p ai-eva-stable build ai-eva
+docker compose -p ai-eva-stable up -d --no-deps ai-eva
 ```
+
+- 必須 `-p ai-eva-stable` 專案名
+- `build` 跟 `up` 分兩步執行，避免 container_name 衝突
+- `--no-deps` 避免動到 postgres（曾踩過 stable postgres 被改名的坑）
+
+### Stable 站獨有檔案（不進 git）
+
+- `.env` — 環境變數
+- `docker-compose.override.yml` — container_name 加 `-stable` 後綴、port 7861
+
+兩者都已加進 `.gitignore`。
+
+---
+
+## Roadmap：擴張為實驗場域
+
+短中期目標是把現有 Chainlit chat surface 擴成「本地 + 雲端混合 LLM 場域」，含 LINE 推播、Pi5 hub、模擬感測，當作日常 AI 工具的沙盒。
+
+### 里程碑（順序為相依性，非時間表）
+
+| # | 里程碑 | 主要產出 |
+|---|---|---|
+| 1 | **LLM Router 抽象** | `core/llm_router.py` — provider 介面，OpenAI / Ollama 兩家先接 |
+| 2 | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4，HTTP 通 |
+| 3 | **LINE Bot Adapter** | LINE Messaging API → Chainlit 同一個 LangGraph dispatch |
+| 4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（簡單 daily summary） |
+| 5 | **模擬感測 + 異常預警** | LightGBM 預測（參考 [Pi5 IoT-LLM 文章](https://cheng-min-i-taiwan.blogspot.com/2026/05/usr-5-iot-llm.html)）→ Qwen 解讀 → LINE push |
+| 6 | **Web Admin UI**（甜點，最後做） | 使用者 / app 權限管理 |
+
+每個里程碑對應一個 GitHub milestone，下面再切細 issue。
+
+### 範圍宣告（避免 scope creep）
+
+- 🎯 **個人 / 內部工程實驗用**，**不打算產品化**
+- 🎯 **單一中央 Pi5 hub**，不做 per-device edge
+- 🎯 寵物 / 養殖那類「電子雞」情境用 **LINE chat + 模擬資料** 達成，**不做真實硬體**
+- ❌ 不做多租戶（多租戶有 `LLMTwins` 在做）
+- ❌ 不做 mobile native app
+
+### Protocol 分工
+
+| 場景 | 協定 |
+|---|---|
+| Browser ↔ Chainlit | WebSocket（Chainlit 內建） |
+| Service ↔ Service | HTTP / RabbitMQ |
+| Pi5 ↔ Ollama | HTTP REST |
+| 未來 IoT device ↔ Hub | MQTT |
+
+---
 
 ## Auth
 
-內建 Chainlit password auth（單一 admin 帳號）：
+內建 Chainlit password auth（單一 admin），由 `.env` 控制：
 
-- `.env` 設 `ADMIN_USER` / `ADMIN_PASS` / `CHAINLIT_AUTH_SECRET` → 啟用登入頁
 - `ADMIN_PASS` 留空 → 關閉 auth（僅本機 dev）
+- 有值 → 啟用登入頁
 
-未來升級可選：
-- **OAuth**（GitHub / Google）— 改 `@cl.oauth_callback`
-- **Cloudflare Access** — 在 CF Zero Trust 後台建 application，policy 指向 `eva.4impact.cc`，前端程式不用改
+升級路徑（roadmap）：
 
-## 下一步
+- **Cloudflare Access**（最省心）— 在 eva.4impact.cc 前面套 SSO，app 程式碼不動
+- **OAuth**（GitHub / Google）— `@cl.oauth_callback`
+- **DB 用戶表** — 改 `auth_callback` 查 Postgres `users` 表
 
-- 加 PDF/DOCX 上傳 → 即時 ingest（Chainlit `on_file_upload`）
-- 加 LangGraph 條件邊：查不到 → 走外部 Search
-- 加 Langfuse 觀測
-- 升級 auth 至 OAuth 或 Cloudflare Access
+---
+
+## 貢獻 / 故障排查
+
+- Issue tracker: [github.com/towNingtek/ai-eva/issues](https://github.com/towNingtek/ai-eva/issues)
+- 已知坑：見 closed issues #1 ~ #6
+- 切記：**stable rebuild 時 build 跟 up 分兩步 + `--no-deps`**（不照做 stable PG 會被改名）
