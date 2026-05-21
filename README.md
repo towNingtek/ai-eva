@@ -38,9 +38,14 @@ flowchart TB
     end
 
     subgraph LLM["LLM 抽象層"]
-        Router["LLM Router<br/>(roadmap)"]
-        OpenAI["OpenAI / Gemini<br/>(雲端，互動主線)"]
-        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播)<br/>(roadmap)"]
+        LiteLLM["LiteLLM proxy<br/>OpenAI-spec gateway<br/>(roadmap M2)"]
+        OpenAI["OpenAI / Anthropic / Gemini<br/>(雲端，互動主線)"]
+        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播 + 省錢節點)<br/>(roadmap M2)"]
+    end
+
+    subgraph Net["網路通道"]
+        Tailscale["Tailscale mesh VPN<br/>cms-server ↔ Pi5<br/>(roadmap M2)"]
+        CFTunnel["Cloudflare Zero Trust Tunnel<br/>SSH 管理用<br/>(M1 完成)"]
     end
 
     subgraph Async["非同步 / 推播"]
@@ -60,19 +65,23 @@ flowchart TB
     Discord -.-> RMQ
 
     Dispatch --> Registry --> Apps
-    Apps --> Router
-    Router --> OpenAI
-    Router -.-> PiLLM
+    Apps -.-> LiteLLM
+    LiteLLM -.-> OpenAI
+    LiteLLM -.-> PiLLM
+    LiteLLM -.- Tailscale
+    Tailscale -.-> PiLLM
 
     Apps --> PG
     Apps --> Chroma
     Apps --> Sess
 
     Sim -.-> Cron
-    Cron -.-> PiLLM
+    Cron -.-> LiteLLM
     Cron -.-> RMQ
     RMQ -.-> LINE
     RMQ -.-> Discord
+
+    CFTunnel -.- PiLLM
 ```
 
 實線 = 現況；虛線 = roadmap（見下方）。
@@ -86,7 +95,10 @@ flowchart TB
 | UI | **Chainlit 2.x**（含 commands、chat profiles、auth、data layer、streaming） |
 | Orchestration | **LangGraph** — `app/apps/<id>/handler.py` 內各自定義 graph |
 | Vector store | **Chroma**（持久化於 `data/chroma/`） |
-| LLM | OpenAI（預設）/ Ollama Gateway / *Pi5 Qwen（roadmap）* |
+| LLM provider 抽象 | 現況：`langchain_openai.ChatOpenAI` 直連 OpenAI；*roadmap M2：改走 **LiteLLM** proxy，統一 OpenAI-spec 路由到 OpenAI / Anthropic / Gemini / Pi5 Ollama* |
+| LLM 雲端 | OpenAI gpt-4o-mini（預設）；*M2 後可加 Anthropic / Gemini* |
+| LLM 本地 | *Pi5 Ollama + Qwen 2.5:3b-q4（roadmap M2）* |
+| 私網 | *Tailscale mesh VPN（roadmap M2）— cms-server ↔ Pi5 走加密私網，繞開 Cloudflare HTTP 100s 限制* |
 | Embedding | `text-embedding-3-small` |
 | Web search | Tavily（主） → DuckDuckGo（自動降級） |
 | Chat history | Postgres + `SQLAlchemyDataLayer` |
@@ -101,7 +113,7 @@ app/
 ├── main.py                # Chainlit entrypoint + dispatch
 ├── settings.py
 ├── core/
-│   ├── llm.py             # ChatOpenAI factory（之後會升為 LLM Router）
+│   ├── llm.py             # ChatOpenAI factory（M2 後 base_url 指向 LiteLLM proxy）
 │   ├── rag.py             # session 暫存 + 持久化 Chroma
 │   ├── search.py          # Tavily + DDG fallback
 │   └── storage.py         # LocalStorageClient（Chainlit data layer 用）
@@ -204,16 +216,23 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 
 ### 里程碑（順序為相依性，非時間表）
 
-| # | 里程碑 | 主要產出 |
-|---|---|---|
-| 1 | **LLM Router 抽象** | `core/llm_router.py` — provider 介面，OpenAI / Ollama 兩家先接 |
-| 2 | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4，HTTP 通 |
-| 3 | **LINE Bot Adapter** | LINE Messaging API → Chainlit 同一個 LangGraph dispatch |
-| 4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（簡單 daily summary） |
-| 5 | **模擬感測 + 異常預警** | LightGBM 預測（參考 [Pi5 IoT-LLM 文章](https://cheng-min-i-taiwan.blogspot.com/2026/05/usr-5-iot-llm.html)）→ Qwen 解讀 → LINE push |
-| 6 | **Web Admin UI**（甜點，最後做） | 使用者 / app 權限管理 |
+| # | 里程碑 | 主要產出 | 狀態 |
+|---|---|---|---|
+| **M1** | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4 + Cloudflare Zero Trust SSH | ✅ [#9](https://github.com/towNingtek/ai-eva/issues/9) |
+| **M2** | **LiteLLM 接通** | LiteLLM proxy + Tailscale 連 Pi5；ai-eva 改走 LiteLLM；rag_chat 內部分流 demo | 🔧 in plan |
+| M2.5 | *(可選)* LiteLLM 進階運維 | virtual keys / 預算 / multi-key 負載均衡 / cost dashboard | 視 M3 需求啟動 |
+| M3 | **LINE Bot Adapter** | LINE Messaging API webhook → Chainlit FastAPI app → 同一個 dispatch | |
+| M4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（daily summary） | |
+| M5 | **模擬感測 + 異常預警** | LightGBM 預測（參考 [Pi5 IoT-LLM 文章](https://cheng-min-i-taiwan.blogspot.com/2026/05/usr-5-iot-llm.html)）→ Qwen 解讀 → LINE push | |
+| M6 | **Web Admin UI**（甜點，最後做） | *可能大幅縮減* — LiteLLM 自帶 key/cost/log UI；剩下只有 ai-eva 自家「app 啟用 / 使用者權限」 | |
 
-每個里程碑對應一個 GitHub milestone，下面再切細 issue。
+每個里程碑對應一個 GitHub milestone，下面再切細 issue。詳見 [roadmap tracking issue #8](https://github.com/towNingtek/ai-eva/issues/8)。
+
+### 關鍵架構決策
+
+- **LLM 抽象用 LiteLLM**（不自寫 router）— 業界事實標準、OpenAI-spec、內建 fallback / cost / virtual keys
+- **Pi5 ↔ cms-server 走 Tailscale**（不走 Cloudflare HTTP）— Cloudflare 100s timeout 對長 LLM 生成不安全；Tailscale mesh VPN 無時限
+- **Cloudflare Zero Trust Tunnel** 限定**管理面**使用（`ssh pi5`），不做工作流量
 
 ### 範圍宣告（避免 scope creep）
 
@@ -228,8 +247,10 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 | 場景 | 協定 |
 |---|---|
 | Browser ↔ Chainlit | WebSocket（Chainlit 內建） |
-| Service ↔ Service | HTTP / RabbitMQ |
-| Pi5 ↔ Ollama | HTTP REST |
+| ai-eva ↔ LiteLLM | HTTP（OpenAI-spec `/v1/chat/completions`） |
+| LiteLLM ↔ Pi5 Ollama | HTTP / Tailscale 私網（內部 Ollama-spec 或 OpenAI-compat） |
+| cms-server ↔ Pi5 管理 | SSH over Cloudflare Zero Trust（`ssh pi5`） |
+| Service ↔ Service 非同步 | RabbitMQ |
 | 未來 IoT device ↔ Hub | MQTT |
 
 ---
