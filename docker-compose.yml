@@ -24,6 +24,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      litellm:
+        condition: service_started
     env_file:
       - .env
     ports:
@@ -34,6 +36,19 @@ services:
       - ./public:/app/public
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: ai-eva-litellm
+    restart: unless-stopped
+    # 只傳真正需要的 env，不要 inherit Chainlit 的 DATABASE_URL（否則 LiteLLM 會把
+    # 它當自己的 state DB 去做 prisma migrate）
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    command: ["--config", "/app/config.yaml", "--port", "4000"]
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    network_mode: host    # 為了能直接打 Pi5 Tailscale IP (100.74.6.41)
 
 volumes:
   ai_eva_pgdata:

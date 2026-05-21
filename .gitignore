@@ -26,6 +26,10 @@ public/elements/
 # e.g. stable sets container_name=*-stable and port 7861:7860)
 docker-compose.override.yml
 
+# LiteLLM master config — 含 Tailscale IP，每個部署環境可能不同
+# 若團隊需共用 template，提供 litellm-config.example.yaml 作為樣本
+# litellm-config.yaml
+
 # IDE
 .vscode/
 .idea/
