@@ -1,0 +1,30 @@
+# LiteLLM proxy config — ai-eva LLM gateway
+#
+# 三個 model 別名：
+#   cloud-fast  → OpenAI gpt-4o-mini（互動主線、快速、品質高）
+#   local-cheap → Pi5 Qwen 2.5:3b-q4 via Tailscale（被動推播 / 省錢節點）
+#   default     → 同 cloud-fast（給沒指定 model 的 client 用）
+#
+# Fallback：local-cheap 失敗（Pi5 掛了 / Tailscale 斷）→ 自動回 cloud-fast
+
+model_list:
+  - model_name: cloud-fast
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: local-cheap
+    litellm_params:
+      model: ollama_chat/qwen2.5:3b-instruct-q4_K_M
+      api_base: http://100.74.6.41:11434   # Pi5 Tailscale IP
+
+  - model_name: default
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+router_settings:
+  fallbacks:
+    - local-cheap: ["cloud-fast"]
+  num_retries: 1
+  timeout: 60
