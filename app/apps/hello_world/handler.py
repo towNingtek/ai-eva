@@ -1,75 +1,52 @@
-"""
-Hello World — LangGraph plug-in 範例。
+"""模型對照場域 — 同一個問題、所有模型平行回答。
 
-兩節點 pipeline：
-  greet     純 Python：把 user input 包成 state，產生短招呼語
-  elaborate LLM streaming：根據 state 產生個人化回應
-
-未來新 app 沿用此骨架：meta.py 宣告、handler.py 實作 handle()。
+每個「node」就是一條獨立 streaming 路徑（plain asyncio.gather 並行）。
+要加新 model：在 `_MODELS` list 加一行（前提是 LiteLLM config 已註冊該 alias）。
+Model selection 是 node 自己宣告的責任，不是 app 統一規定。
 """
-from typing import TypedDict
+import asyncio
+import logging
 
 import chainlit as cl
-from langgraph.graph import END, StateGraph
 
 from app.core.llm import make_llm
 
+logger = logging.getLogger(__name__)
 
-class State(TypedDict, total=False):
-    raw: str
-    greeting: str
-
-
-def _greet(state: State) -> State:
-    raw = (state.get("raw") or "").strip()
-    return {"greeting": f"👋 嗨，{raw}！" if raw else "👋 嗨！"}
-
-
-def _elaborate_prompt(greeting: str, raw: str) -> str:
-    return (
-        "你是工程實驗助手 Eva。使用者剛剛跟你打招呼或自我介紹了一句。"
-        "請以繁體中文、輕鬆友善的口吻，**接續這個招呼**展開兩到三句回應："
-        "可以重述/呼應對方的內容、提出一個與該內容相關的友善開放式問題。"
-        "不要客套冗詞、不要列點、不要超過 3 句話。\n\n"
-        f"=== 招呼 ===\n{greeting}\n\n"
-        f"=== 原始輸入 ===\n{raw}"
-    )
+# (顯示用 label, LiteLLM alias) — alias=None 走 LITELLM_DEFAULT_MODEL (cloud-fast)
+_MODELS: list[tuple[str, str | None]] = [
+    ("🟢 OpenAI gpt-4o-mini", None),
+    ("🟡 Pi5 Qwen 2.5:3b",    "local-cheap"),
+    # 未來加 Claude / Gemini：先在 litellm-config.yaml 新增 model_name，再加一行：
+    # ("🔵 Claude 3.5 Sonnet", "claude-sonnet"),
+    # ("🟣 Gemini 2.0 Flash",  "gemini-flash"),
+]
 
 
-def _build_graph():
-    g = StateGraph(State)
-    g.add_node("greet", _greet)
-    # elaborate 直接 inline 在 handle() 內 streaming（LangGraph 不擅長把 token-level
-    # stream 經由 graph 串回去 Chainlit），這邊 graph 收尾於 greet 後。
-    g.set_entry_point("greet")
-    g.add_edge("greet", END)
-    return g.compile()
-
-
-_graph = _build_graph()
+async def _stream_one(label: str, alias: str | None, prompt: str, parent_id: str) -> None:
+    """一個 model = 一個 Chainlit message bubble，平行 streaming。"""
+    bubble = cl.Message(content=f"### {label}\n\n", parent_id=parent_id)
+    await bubble.send()
+    try:
+        async for chunk in make_llm(alias=alias).astream(prompt):
+            content = getattr(chunk, "content", "") or ""
+            if content:
+                await bubble.stream_token(content)
+    except Exception as e:
+        logger.exception("model %s failed: %s", alias or "default", e)
+        await bubble.stream_token(f"\n\n❌ 此模型呼叫失敗：`{type(e).__name__}: {e}`")
+    await bubble.update()
 
 
 async def handle(payload: str, msg: cl.Message) -> None:
-    raw = (payload or "").strip()
-    if not raw:
+    query = payload.strip()
+    if not query:
         await cl.Message(
-            content="🫱 **打個招呼**\n\n輸入你想說的話（例如「我是 Yillkid」），會走 LangGraph 兩節點回應你。",
+            content="🪞 **模型對照**\n\n輸入任何問題，所有設定好的模型會同時回答給你看。",
             parent_id=msg.id,
         ).send()
         return
 
-    # Node 1: greet（純 Python）
-    state = _graph.invoke({"raw": raw})
-    greeting = state.get("greeting", "")
-
-    status = cl.Message(content=greeting, parent_id=msg.id)
-    await status.send()
-
-    # Node 2: elaborate（LLM streaming）
-    response = cl.Message(content="", parent_id=msg.id)
-    await response.send()
-    async for chunk in make_llm().astream(_elaborate_prompt(greeting, raw)):
-        content = getattr(chunk, "content", "") or ""
-        if content:
-            await response.stream_token(content)
-    await response.update()
+    await asyncio.gather(
+        *(_stream_one(label, alias, query, msg.id) for label, alias in _MODELS)
+    )

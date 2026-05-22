@@ -74,19 +74,23 @@ def make_llm(*, alias=None, temperature=0.2, streaming=True):
     )
 ```
 
-### rag_chat 內部分流
+### 多模型對照（hello_world app）
 
 ```python
-def _build_graph():
-    g.add_node("query_rewrite", _query_rewrite)   # alias=local-cheap (Pi5)
-    g.add_node("retrieve",      _retrieve)         # 純本地 Chroma
-    g.add_node("generate",      _generate)         # alias=default (OpenAI)
-    g.set_entry_point("query_rewrite")
-    g.add_edge("query_rewrite", "retrieve")
-    g.add_edge("retrieve", "generate")
+# app/apps/hello_world/handler.py
+_MODELS = [
+    ("🟢 OpenAI gpt-4o-mini", None),           # 走預設 cloud-fast
+    ("🟡 Pi5 Qwen 2.5:3b",    "local-cheap"),
+    # 未來加 Claude / Gemini：先在 litellm-config.yaml 新增 model_name，再加一行
+]
+
+# 平行 streaming 兩段 message 給使用者並排比較
+await asyncio.gather(*(_stream_one(...) for ...))
 ```
 
-使用者問問題 → Pi5 改寫 query → Chroma 檢索 → OpenAI 產生答案。**前端 UI 零變化**。
+**model selection 是 node 自己宣告的責任**（非 app 統一硬綁），加新 model 改 list 即可。
+
+> 註：曾短暫嘗試用 rag_chat 的 query_rewrite node 走 Pi5、generate 走 OpenAI 來示範跨 provider，但發現 Pi5 Qwen 對某些議題會偷塞立場（如「台灣是中國的一部分嗎？」被改寫成肯定句），不適合做隱形 query rewrite。已改成把多 provider demo 移到 hello_world app，並把 RAG 移除（2026-05-22）。
 
 ## 已踩過的坑（給未來自己）
 
