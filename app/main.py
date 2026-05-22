@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -8,6 +9,7 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
 from app.core.storage import LocalStorageClient
 from app.settings import ROOT
+from app.surfaces import line as line_surface  # 註冊 /webhook/line route
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,14 @@ if ADMIN_PASS:
 
 
 discover()
+
+# 啟動時建 line_users 表（給 LINE follow event 紀錄用）。Chainlit 沒 on_app_startup
+# decorator，這裡直接用 asyncio fire-and-forget。
+try:
+    asyncio.get_event_loop().create_task(line_surface.ensure_line_table())
+except RuntimeError:
+    # 沒 loop 就同步跑一次（import 階段）
+    asyncio.run(line_surface.ensure_line_table())
 
 
 async def _register_commands():
