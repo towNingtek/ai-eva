@@ -10,7 +10,7 @@ alias 是 litellm-config.yaml 裡的 model_name；新增 provider 改 config，�
 """
 from langchain_openai import ChatOpenAI
 
-from app.settings import LITELLM_API_BASE, LITELLM_DEFAULT_MODEL
+from app.settings import LITELLM_API_BASE, LITELLM_API_KEY, LITELLM_DEFAULT_MODEL
 
 
 def make_llm(
@@ -21,7 +21,7 @@ def make_llm(
 ) -> ChatOpenAI:
     return ChatOpenAI(
         model=alias or LITELLM_DEFAULT_MODEL,
-        api_key="litellm-no-auth",   # LiteLLM 未設 master key，dummy 即可
+        api_key=LITELLM_API_KEY or "litellm-no-auth",
         base_url=LITELLM_API_BASE,
         temperature=temperature,
         streaming=streaming,

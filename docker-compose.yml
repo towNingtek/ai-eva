@@ -37,14 +37,39 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  litellm-db:
+    image: postgres:16-alpine
+    container_name: ai-eva-litellm-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: litellm
+      POSTGRES_PASSWORD: litellm_local
+      POSTGRES_DB: litellm
+    volumes:
+      - ai_eva_litellm_pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5500:5432"   # 只開 localhost 給 LiteLLM (host network) 連
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U litellm -d litellm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
     container_name: ai-eva-litellm
     restart: unless-stopped
-    # 只傳真正需要的 env，不要 inherit Chainlit 的 DATABASE_URL（否則 LiteLLM 會把
-    # 它當自己的 state DB 去做 prisma migrate）
+    depends_on:
+      litellm-db:
+        condition: service_healthy
+    # 只傳真正需要的 env，不要 inherit Chainlit 的 DATABASE_URL
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      DATABASE_URL: postgresql://litellm:litellm_local@127.0.0.1:5500/litellm
+      STORE_MODEL_IN_DB: "True"     # 允許 Admin UI 在 DB 加 model
+      UI_USERNAME: admin
+      UI_PASSWORD: ${LITELLM_MASTER_KEY}    # 簡單起見，UI 帳號用 master key 當密碼
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     volumes:
       - ./litellm-config.yaml:/app/config.yaml:ro
@@ -52,3 +77,4 @@ services:
 
 volumes:
   ai_eva_pgdata:
+  ai_eva_litellm_pgdata:
