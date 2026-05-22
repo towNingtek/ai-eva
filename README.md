@@ -34,18 +34,18 @@ flowchart TB
     subgraph Eva["AI-Eva 核心"]
         Dispatch["on_message dispatch"]
         Registry["apps/_registry<br/>自動發現"]
-        Apps["LangGraph apps<br/>rag_chat / web_search<br/>hello_world / ..."]
+        Apps["Apps<br/>plain_chat (default)<br/>web_search / hello_world / ..."]
     end
 
     subgraph LLM["LLM 抽象層"]
-        LiteLLM["LiteLLM proxy<br/>OpenAI-spec gateway<br/>(roadmap M2)"]
+        LiteLLM["LiteLLM proxy<br/>OpenAI-spec gateway"]
         OpenAI["OpenAI / Anthropic / Gemini<br/>(雲端，互動主線)"]
-        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播 + 省錢節點)<br/>(roadmap M2)"]
+        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播 + 省錢節點)"]
     end
 
     subgraph Net["網路通道"]
-        Tailscale["Tailscale mesh VPN<br/>cms-server ↔ Pi5<br/>(roadmap M2)"]
-        CFTunnel["Cloudflare Zero Trust Tunnel<br/>SSH 管理用<br/>(M1 完成)"]
+        Tailscale["Tailscale mesh VPN<br/>cms-server ↔ Pi5"]
+        CFTunnel["Cloudflare Zero Trust Tunnel<br/>SSH 管理用"]
     end
 
     subgraph Async["非同步 / 推播"]
@@ -56,8 +56,6 @@ flowchart TB
 
     subgraph Store["資料"]
         PG[(Postgres<br/>threads / users)]
-        Chroma[(Chroma<br/>RAG)]
-        Sess[/Session in-memory<br/>per WebSocket/]
     end
 
     Web --> Dispatch
@@ -65,15 +63,13 @@ flowchart TB
     Discord -.-> RMQ
 
     Dispatch --> Registry --> Apps
-    Apps -.-> LiteLLM
-    LiteLLM -.-> OpenAI
-    LiteLLM -.-> PiLLM
-    LiteLLM -.- Tailscale
-    Tailscale -.-> PiLLM
+    Apps --> LiteLLM
+    LiteLLM --> OpenAI
+    LiteLLM --> PiLLM
+    LiteLLM --- Tailscale
+    Tailscale --- PiLLM
 
     Apps --> PG
-    Apps --> Chroma
-    Apps --> Sess
 
     Sim -.-> Cron
     Cron -.-> LiteLLM
@@ -93,13 +89,11 @@ flowchart TB
 | 層 | 技術 |
 |---|---|
 | UI | **Chainlit 2.x**（含 commands、chat profiles、auth、data layer、streaming） |
-| Orchestration | **LangGraph** — `app/apps/<id>/handler.py` 內各自定義 graph |
-| Vector store | **Chroma**（持久化於 `data/chroma/`） |
-| LLM provider 抽象 | 現況：`langchain_openai.ChatOpenAI` 直連 OpenAI；*roadmap M2：改走 **LiteLLM** proxy，統一 OpenAI-spec 路由到 OpenAI / Anthropic / Gemini / Pi5 Ollama* |
-| LLM 雲端 | OpenAI gpt-4o-mini（預設）；*M2 後可加 Anthropic / Gemini* |
-| LLM 本地 | *Pi5 Ollama + Qwen 2.5:3b-q4（roadmap M2）* |
-| 私網 | *Tailscale mesh VPN（roadmap M2）— cms-server ↔ Pi5 走加密私網，繞開 Cloudflare HTTP 100s 限制* |
-| Embedding | `text-embedding-3-small` |
+| Orchestration | **LangGraph** — 各 app 自己組（簡單應用用 `asyncio.gather` 也行） |
+| LLM provider 抽象 | **LiteLLM proxy**（M2）— 統一 OpenAI-spec、路由到 OpenAI / Pi5 Ollama / 未來 Claude / Gemini |
+| LLM 雲端 | OpenAI gpt-4o-mini（預設 alias `cloud-fast`） |
+| LLM 本地 | Pi5 Ollama + Qwen 2.5:3b-q4（alias `local-cheap`，via Tailscale） |
+| 私網 | **Tailscale mesh VPN** — cms-server ↔ Pi5 走加密私網，繞開 Cloudflare HTTP 100s 限制 |
 | Web search | Tavily（主） → DuckDuckGo（自動降級） |
 | Chat history | Postgres + `SQLAlchemyDataLayer` |
 | Blob storage | `LocalStorageClient`（檔案存於 `public/elements/`） |
@@ -113,23 +107,17 @@ app/
 ├── main.py                # Chainlit entrypoint + dispatch
 ├── settings.py
 ├── core/
-│   ├── llm.py             # ChatOpenAI factory（M2 後 base_url 指向 LiteLLM proxy）
-│   ├── rag.py             # session 暫存 + 持久化 Chroma
+│   ├── llm.py             # ChatOpenAI(base_url=litellm)，接收 alias 參數
 │   ├── search.py          # Tavily + DDG fallback
 │   └── storage.py         # LocalStorageClient（Chainlit data layer 用）
-├── rag/
-│   └── ingest.py          # CLI ingest：data/docs/ → Chroma
-└── apps/                  # 可插拔 LangGraph 子應用
+└── apps/                  # 可插拔子應用
     ├── _registry.py       # 自動發現、註冊到 Chainlit commands
-    ├── rag_chat/          # 預設（is_default=True）
-    ├── web_search/        # 🌐 網頁搜尋
-    └── hello_world/       # 🫱 LangGraph 範例
-data/
-├── docs/                  # 拖進 chat 的檔案會即時 ingest 到 session 暫存
-└── chroma/                # CLI ingest 進來的長期知識庫
+    ├── plain_chat/        # 預設 — 純對話（單一 OpenAI call）
+    ├── web_search/        # 🌐 網頁搜尋（Tavily → DDG fallback）
+    └── hello_world/       # 🪞 模型對照（同題並行打多家模型）
+litellm-config.yaml        # LiteLLM 路由設定（alias → provider/model）
 public/
-├── elements/              # Chainlit 上傳檔案 blob
-└── apps.json              # registry 啟動時產出（不進 git）
+└── elements/              # Chainlit 上傳檔案 blob
 ```
 
 ---
@@ -147,7 +135,6 @@ cp .env.example .env
 
 ```bash
 docker compose up -d --build
-docker compose exec ai-eva python -m app.rag.ingest   # （可選）餵 data/docs/ 進 Chroma
 ```
 
 開 `http://localhost:7860`。
@@ -219,7 +206,7 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 | # | 里程碑 | 主要產出 | 狀態 |
 |---|---|---|---|
 | **M1** | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4 + Cloudflare Zero Trust SSH | ✅ [#9](https://github.com/towNingtek/ai-eva/issues/9) |
-| **M2** | **LiteLLM 接通** | LiteLLM proxy + Tailscale 連 Pi5；ai-eva 改走 LiteLLM；rag_chat 內部分流 demo | 🔧 in plan |
+| **M2** | **LiteLLM 接通** | LiteLLM proxy + Tailscale 連 Pi5；ai-eva 全走 LiteLLM；hello_world 改成多模型對照 demo | ✅ [#12](https://github.com/towNingtek/ai-eva/issues/12) |
 | M2.5 | *(可選)* LiteLLM 進階運維 | virtual keys / 預算 / multi-key 負載均衡 / cost dashboard | 視 M3 需求啟動 |
 | M3 | **LINE Bot Adapter** | LINE Messaging API webhook → Chainlit FastAPI app → 同一個 dispatch | |
 | M4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（daily summary） | |

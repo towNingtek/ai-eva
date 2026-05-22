@@ -1,9 +1,9 @@
 META = {
     "id": "hello_world",
-    "label": "打個招呼",
-    "icon": "🫱",
-    "cl_icon": "Hand",
+    "label": "模型對照",
+    "icon": "🪞",
+    "cl_icon": "Scale",
     "is_default": False,
     "show_in_menu": True,
-    "description": "LangGraph 範例 app — greet → elaborate 兩節點 pipeline",
+    "description": "問同一題、同時收所有模型回應並排顯示。每個 node 各自宣告用哪家 model。",
 }
