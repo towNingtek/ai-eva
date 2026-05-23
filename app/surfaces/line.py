@@ -190,6 +190,10 @@ async def _handle_event(event: dict) -> None:
 
     logger.info("LINE message from %s: %r", user_id, text[:80])
 
+    # 順手把 message sender 也 upsert 進 line_users（如果之前 follow 沒抓到）
+    if user_id:
+        await _save_follow(user_id)
+
     try:
         answer = (await asyncio.to_thread(_llm_answer_sync, text)).strip()
     except Exception as e:

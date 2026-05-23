@@ -13,7 +13,7 @@ import chainlit as cl
 import httpx
 
 from app.core.llm import make_llm
-from app.settings import LITELLM_API_BASE
+from app.settings import LITELLM_API_BASE, LITELLM_API_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +36,10 @@ def _icon_for(alias: str) -> str:
 
 
 async def _list_aliases() -> list[str]:
+    headers = {"Authorization": f"Bearer {LITELLM_API_KEY}"} if LITELLM_API_KEY else {}
     try:
         async with httpx.AsyncClient(timeout=3) as cx:
-            r = await cx.get(f"{LITELLM_API_BASE}/models")
+            r = await cx.get(f"{LITELLM_API_BASE}/models", headers=headers)
             r.raise_for_status()
             ids = [m["id"] for m in r.json().get("data", [])]
     except Exception as e:
