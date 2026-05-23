@@ -65,6 +65,7 @@ services:
     # 只傳真正需要的 env，不要 inherit Chainlit 的 DATABASE_URL
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
       DATABASE_URL: postgresql://litellm:litellm_local@127.0.0.1:5500/litellm
       STORE_MODEL_IN_DB: "True"     # 允許 Admin UI 在 DB 加 model

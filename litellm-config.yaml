@@ -23,6 +23,32 @@ model_list:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
 
+  # ===== NVIDIA NIM 免費 endpoint（多模型對照用）=====
+  - model_name: nvidia-llama
+    litellm_params:
+      model: nvidia_nim/meta/llama-3.1-70b-instruct
+      api_key: os.environ/NVIDIA_API_KEY
+
+  - model_name: nvidia-deepseek
+    litellm_params:
+      model: nvidia_nim/deepseek-ai/deepseek-v4-flash
+      api_key: os.environ/NVIDIA_API_KEY
+
+  - model_name: nvidia-qwen
+    litellm_params:
+      model: nvidia_nim/qwen/qwen3-next-80b-a3b-instruct
+      api_key: os.environ/NVIDIA_API_KEY
+
+  - model_name: nvidia-minimax
+    litellm_params:
+      model: nvidia_nim/minimaxai/minimax-m2.7
+      api_key: os.environ/NVIDIA_API_KEY
+
+  - model_name: nvidia-glm
+    litellm_params:
+      model: nvidia_nim/z-ai/glm-5.1
+      api_key: os.environ/NVIDIA_API_KEY
+
 router_settings:
   fallbacks:
     - local-cheap: ["cloud-fast"]
