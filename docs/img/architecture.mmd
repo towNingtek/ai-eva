@@ -1,0 +1,19 @@
+flowchart LR
+    Web(["👤 Web<br/>(eva.4impact.cc)"]):::src --> Eva
+    LINE(["📱 LINE Bot"]):::src <--> Eva
+
+    Eva["AI-Eva 核心<br/>Chainlit + plugin apps<br/>+ LINE session memory"]:::core
+    Eva <--> PG[("Postgres<br/>chat + sessions")]:::data
+    Eva --> LiteLLM["LiteLLM gateway"]:::gw
+
+    LiteLLM --> Cloud["☁️ OpenAI / NVIDIA NIM"]:::ext
+    LiteLLM -. Tailscale .-> Pi5["🍓 Pi5 Ollama<br/>Qwen 2.5:3b-q4"]:::ext
+
+    Pi5 -. cron 09:00 .-> RMQ[("RabbitMQ<br/>line-push")]:::data
+    RMQ --> Eva
+
+    classDef src  fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef core fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,font-weight:bold
+    classDef gw   fill:#fef3c7,stroke:#d97706,color:#78350f
+    classDef ext  fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    classDef data fill:#f1f5f9,stroke:#475569,color:#0f172a

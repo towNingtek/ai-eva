@@ -10,29 +10,17 @@
 
 ## 系統架構
 
-```mermaid
-flowchart LR
-    Web(["👤 Web<br/>(eva.4impact.cc)"]):::src --> Eva
-    LINE(["📱 LINE Bot"]):::src <--> Eva
-
-    Eva["AI-Eva 核心<br/>Chainlit + plugin apps<br/>+ LINE session memory"]:::core
-    Eva <--> PG[("Postgres<br/>chat + sessions")]:::data
-    Eva --> LiteLLM["LiteLLM gateway"]:::gw
-
-    LiteLLM --> Cloud["☁️ OpenAI / NVIDIA NIM"]:::ext
-    LiteLLM -. Tailscale .-> Pi5["🍓 Pi5 Ollama<br/>Qwen 2.5:3b-q4"]:::ext
-
-    Pi5 -. cron 09:00 .-> RMQ[("RabbitMQ<br/>line-push")]:::data
-    RMQ --> Eva
-
-    classDef src  fill:#dcfce7,stroke:#16a34a,color:#14532d
-    classDef core fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,font-weight:bold
-    classDef gw   fill:#fef3c7,stroke:#d97706,color:#78350f
-    classDef ext  fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
-    classDef data fill:#f1f5f9,stroke:#475569,color:#0f172a
-```
+<p align="center">
+  <img src="docs/img/architecture.png" alt="AI-Eva 系統架構" width="900">
+</p>
 
 實線 = HTTP 主線；虛線 = 私網（Tailscale）或定時觸發（cron）。Admin 後台另見 [`docs/admin-hub.md`](docs/admin-hub.md)。
+
+> 源檔 [`docs/img/architecture.mmd`](docs/img/architecture.mmd)（mermaid）；修改後重新渲染：
+> ```bash
+> mmdc -i docs/img/architecture.mmd -o docs/img/architecture.png \
+>      --backgroundColor white --scale 2 --width 1400
+> ```
 
 ---
 
