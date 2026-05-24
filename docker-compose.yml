@@ -78,6 +78,26 @@ services:
       - ./litellm-config.yaml:/app/config.yaml:ro
     network_mode: host    # 為了能直接打 Pi5 Tailscale IP (100.74.6.41)
 
+  session-scanner:
+    # 每 60s 戳 ai-eva 的 /tasks/scan-timeouts，掃 idle 過久的 LINE session，
+    # mark ended + push 告別訊息。container 內部走 ai-eva:7860（同 compose network）。
+    image: curlimages/curl:8.10.1
+    container_name: ai-eva-session-scanner
+    restart: unless-stopped
+    depends_on:
+      - ai-eva
+    environment:
+      SESSION_SCAN_TOKEN: ${SESSION_SCAN_TOKEN}
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        while true; do
+          curl -fsS -X POST http://ai-eva:7860/tasks/scan-timeouts \
+            -H "X-Scan-Token: $$SESSION_SCAN_TOKEN" \
+            >/dev/null 2>&1 || true
+          sleep 60
+        done
+
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: ai-eva-rabbitmq

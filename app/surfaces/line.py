@@ -1,13 +1,15 @@
-"""LINE Messaging API adapter — M3。
+"""LINE Messaging API adapter。
 
-掛在 Chainlit 的 FastAPI app 上的 `/webhook/line`：
-- 收 LINE 事件 → 簽章驗證 → 處理 message / follow / unfollow
-- message → LiteLLM (走 LITELLM_LINE_KEY 獨立 virtual key) → reply
-- follow → 把 userId 存進 PG `line_users`（給 M4 push 用）
+掛在 Chainlit 的 FastAPI app 上：
+- `/webhook/line`        收 LINE 事件 → 簽章驗證 → message / follow / unfollow
+  - message text → session.chat() (with memory) → reply
+  - 結束關鍵字 → end_session + reply 告別
+- `/tasks/scan-timeouts` 給 sidecar curl 每 60s 戳，掃 idle 過久 session、push 告別
+- follow → 把 userId 存進 PG `line_users`（給 push 用）
 
-push helper `push_to_user()` 預先寫好，等 M4 cron worker 來呼叫。
+session 記憶實作在 line_session.py（兩張表 line_sessions / line_session_messages）。
+push helper `push_to_user()` 給 M4 cron worker / scan_timeouts 用。
 """
-import asyncio
 import base64
 import hashlib
 import hmac
@@ -21,17 +23,17 @@ import httpx
 from chainlit.server import app as fastapi_app
 from fastapi import HTTPException, Request
 
-from app.core.llm import make_llm
+from app.surfaces import line_session
 from app.settings import (
     LINE_CHANNEL_ACCESS_TOKEN,
     LINE_CHANNEL_SECRET,
-    LITELLM_LINE_KEY,
 )
 
 logger = logging.getLogger(__name__)
 
 _LINE_API = "https://api.line.me/v2/bot"
 _DATABASE_URL = os.getenv("DATABASE_URL", "")
+_SESSION_SCAN_TOKEN = os.getenv("SESSION_SCAN_TOKEN", "").strip()
 
 
 def _pg_url() -> str:
@@ -132,11 +134,23 @@ def _verify_signature(body: bytes, signature: str) -> bool:
     return hmac.compare_digest(signature, expected)
 
 
-def _llm_answer_sync(text: str) -> str:
-    return make_llm(
-        api_key=LITELLM_LINE_KEY or None,  # 帳單算進 line-bot virtual key
-        streaming=False,
-    ).invoke(text).content
+@fastapi_app.post("/tasks/scan-timeouts")
+async def scan_timeouts_endpoint(req: Request):
+    """Sidecar 每 60s 來戳，掃 idle 過久的 session、push 告別訊息。
+
+    `X-Scan-Token` 要符合 SESSION_SCAN_TOKEN（沒設就完全擋掉、避免裸跑）。
+    """
+    if not _SESSION_SCAN_TOKEN:
+        raise HTTPException(503, "Session scanner not configured (SESSION_SCAN_TOKEN missing)")
+    if req.headers.get("x-scan-token", "") != _SESSION_SCAN_TOKEN:
+        raise HTTPException(403, "Invalid token")
+
+    timed_out = await line_session.scan_timeouts()
+    pushed = 0
+    for row in timed_out:
+        if await push_to_user(row["user_id"], line_session.GOODBYE_TIMEOUT):
+            pushed += 1
+    return {"ended": len(timed_out), "pushed": pushed}
 
 
 @fastapi_app.post("/webhook/line")
@@ -185,19 +199,21 @@ async def _handle_event(event: dict) -> None:
 
     text = (msg.get("text") or "").strip()
     reply_token = event.get("replyToken")
-    if not text or not reply_token:
+    if not text or not reply_token or not user_id:
         return
 
     logger.info("LINE message from %s: %r", user_id, text[:80])
 
     # 順手把 message sender 也 upsert 進 line_users（如果之前 follow 沒抓到）
-    if user_id:
-        await _save_follow(user_id)
+    await _save_follow(user_id)
 
-    try:
-        answer = (await asyncio.to_thread(_llm_answer_sync, text)).strip()
-    except Exception as e:
-        logger.exception("LLM call failed for LINE message")
-        answer = f"⚠️ 處理失敗，請稍後再試（{type(e).__name__}）"
+    # 結束關鍵字 → 收掉 active session、回告別訊息
+    if line_session.is_end_keyword(text):
+        sess = await line_session.get_active_session(user_id)
+        if sess is not None:
+            await line_session.end_session(sess["id"], "user")
+        await _line_reply(reply_token, line_session.GOODBYE_USER_INITIATED)
+        return
 
+    answer = await line_session.chat(user_id, text)
     await _line_reply(reply_token, answer)

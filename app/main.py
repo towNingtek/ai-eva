@@ -34,13 +34,20 @@ if ADMIN_PASS:
 
 discover()
 
-# 啟動時建 line_users 表（給 LINE follow event 紀錄用）。Chainlit 沒 on_app_startup
-# decorator，這裡直接用 asyncio fire-and-forget。
+# 啟動時建 line_users + line_sessions/line_session_messages 表（給 LINE 用）。
+# Chainlit 沒 on_app_startup decorator，這裡直接用 asyncio fire-and-forget。
+from app.surfaces import line_session  # noqa: E402
+
+
+async def _init_line_tables():
+    await line_surface.ensure_line_table()
+    await line_session.ensure_session_tables()
+
+
 try:
-    asyncio.get_event_loop().create_task(line_surface.ensure_line_table())
+    asyncio.get_event_loop().create_task(_init_line_tables())
 except RuntimeError:
-    # 沒 loop 就同步跑一次（import 階段）
-    asyncio.run(line_surface.ensure_line_table())
+    asyncio.run(_init_line_tables())
 
 # 啟 RabbitMQ consumer（如果 .env 有設 RABBITMQ_URL）
 queue_consumer.start_in_background()
