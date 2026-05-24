@@ -10,65 +10,17 @@
 
 ## 系統架構
 
-```mermaid
-%%{init: {'theme': 'default', 'themeVariables': {'background': '#ffffff'}}}%%
-flowchart TB
-    subgraph Surface["使用者介面層"]
-        Web["Chainlit Web<br/>(深度配置 / 文件 / 開發)"]
-        LINE["LINE Bot<br/>(日常對話 + session memory / 推播接收)"]
-        Discord["Discord<br/>(devops 通知)<br/>(未做)"]
-    end
+<p align="center">
+  <img src="docs/img/architecture.png" alt="AI-Eva 系統架構" width="900">
+</p>
 
-    subgraph Eva["AI-Eva 核心"]
-        Dispatch["on_message dispatch"]
-        Registry["apps/_registry<br/>自動發現"]
-        Apps["Apps<br/>plain_chat (default)<br/>web_search / hello_world / ..."]
-    end
+實線 = HTTP 主線；虛線 = 私網（Tailscale）或定時觸發（cron）。Admin 後台另見 [`docs/admin-hub.md`](docs/admin-hub.md)。
 
-    subgraph LLM["LLM 抽象層"]
-        LiteLLM["LiteLLM proxy<br/>OpenAI-spec gateway"]
-        OpenAI["OpenAI / Anthropic / Gemini<br/>(雲端，互動主線)"]
-        PiLLM["Pi5 Ollama<br/>Qwen 2.5:3b-q4<br/>(本地，被動推播 + 省錢節點)"]
-    end
-
-    subgraph Net["網路通道"]
-        Tailscale["Tailscale mesh VPN<br/>cms-server ↔ Pi5"]
-        CFTunnel["Cloudflare Zero Trust Tunnel<br/>SSH 管理用"]
-    end
-
-    subgraph Async["非同步 / 推播"]
-        RMQ["RabbitMQ<br/>(line-push queue)"]
-        Cron["Pi5 cron worker<br/>(daily summary 09:00)"]
-        Sim["模擬感測 + LightGBM<br/>(未做、改成應用題)"]
-    end
-
-    subgraph Store["資料"]
-        PG[(Postgres<br/>threads / users)]
-    end
-
-    Web --> Dispatch
-    LINE -.-> Dispatch
-    Discord -.-> RMQ
-
-    Dispatch --> Registry --> Apps
-    Apps --> LiteLLM
-    LiteLLM --> OpenAI
-    LiteLLM --> PiLLM
-    LiteLLM --- Tailscale
-    Tailscale --- PiLLM
-
-    Apps --> PG
-
-    Sim -.-> Cron
-    Cron -.-> LiteLLM
-    Cron -.-> RMQ
-    RMQ -.-> LINE
-    RMQ -.-> Discord
-
-    CFTunnel -.- PiLLM
-```
-
-實線 = 已上線；虛線 = 預備介面 / 未啟用流量。
+> 源檔 [`docs/img/architecture.mmd`](docs/img/architecture.mmd)（mermaid）；修改後重新渲染：
+> ```bash
+> mmdc -i docs/img/architecture.mmd -o docs/img/architecture.png \
+>      --backgroundColor white --scale 2 --width 1400
+> ```
 
 ---
 
