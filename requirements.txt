@@ -7,3 +7,4 @@ asyncpg>=0.29,<1.0
 greenlet>=3,<4
 httpx>=0.27,<1.0
 ddgs>=6,<10
+aio-pika>=9,<10

@@ -10,6 +10,7 @@ from app.apps._registry import chainlit_commands, default_app, discover, get_by_
 from app.core.storage import LocalStorageClient
 from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
+from app.surfaces import queue_consumer  # RabbitMQ consumer 給 M4 cron push 用
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,9 @@ try:
 except RuntimeError:
     # 沒 loop 就同步跑一次（import 階段）
     asyncio.run(line_surface.ensure_line_table())
+
+# 啟 RabbitMQ consumer（如果 .env 有設 RABBITMQ_URL）
+queue_consumer.start_in_background()
 
 
 async def _register_commands():
