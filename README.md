@@ -8,27 +8,15 @@
 
 ---
 
-## 與 `LLMTwins` 的關係
-
-`towNingtek/ai-eva` 跟 `towNingtek/LLMTwins` **不合併**，定位不同：
-
-| Repo | 角色 |
-|---|---|
-| `LLMTwins` | 多 tenant prod 平台（branch-per-tenant，南投縣府 / NTIDIPC / tplanet AI 等） |
-| `ai-eva` | LangGraph 實驗 + 個人/內部 chat surface（這個 repo） |
-
-兩者並存、互不取代。
-
----
-
 ## 系統架構
 
 ```mermaid
+%%{init: {'theme': 'default', 'themeVariables': {'background': '#ffffff'}}}%%
 flowchart TB
     subgraph Surface["使用者介面層"]
         Web["Chainlit Web<br/>(深度配置 / 文件 / 開發)"]
-        LINE["LINE Bot<br/>(日常對話 / 推播接收)<br/>(roadmap)"]
-        Discord["Discord<br/>(devops 通知)<br/>(roadmap)"]
+        LINE["LINE Bot<br/>(日常對話 + session memory / 推播接收)"]
+        Discord["Discord<br/>(devops 通知)<br/>(未做)"]
     end
 
     subgraph Eva["AI-Eva 核心"]
@@ -49,9 +37,9 @@ flowchart TB
     end
 
     subgraph Async["非同步 / 推播"]
-        RMQ["RabbitMQ<br/>(roadmap)"]
-        Cron["Pi5 cron worker<br/>(daily summary, anomaly)<br/>(roadmap)"]
-        Sim["模擬感測 + LightGBM<br/>(roadmap)"]
+        RMQ["RabbitMQ<br/>(line-push queue)"]
+        Cron["Pi5 cron worker<br/>(daily summary 09:00)"]
+        Sim["模擬感測 + LightGBM<br/>(未做、改成應用題)"]
     end
 
     subgraph Store["資料"]
@@ -80,7 +68,7 @@ flowchart TB
     CFTunnel -.- PiLLM
 ```
 
-實線 = 現況；虛線 = roadmap（見下方）。
+實線 = 已上線；虛線 = 預備介面 / 未啟用流量。
 
 ---
 
@@ -197,24 +185,10 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 
 ---
 
-## Roadmap：擴張為實驗場域
+## 架構決策
 
-短中期目標是把現有 Chainlit chat surface 擴成「本地 + 雲端混合 LLM 場域」，含 LINE 推播、Pi5 hub、模擬感測，當作日常 AI 工具的沙盒。
-
-### 里程碑（順序為相依性，非時間表）
-
-| # | 里程碑 | 主要產出 | 狀態 |
-|---|---|---|---|
-| **M1** | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4 + Cloudflare Zero Trust SSH | ✅ [#9](https://github.com/towNingtek/ai-eva/issues/9) |
-| **M2** | **LiteLLM 接通** | LiteLLM proxy + Tailscale 連 Pi5；ai-eva 全走 LiteLLM；hello_world 改成多模型對照 demo | ✅ [#12](https://github.com/towNingtek/ai-eva/issues/12) |
-| **M2.5** | **LiteLLM 進階運維** | virtual keys / 預算 / NVIDIA NIM 多模型 / Admin UI 對外（`eva-litellm.4impact.cc`） | ✅ |
-| M3 | **LINE Bot Adapter** | LINE Messaging API webhook → Chainlit FastAPI app → 同一個 dispatch | ✅ |
-| M4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（daily summary，9 點 Qwen 寫早安） | ✅ |
-| **Phase 1** | **Admin Hub** | Cloudflare Tunnel + Access SSO 集中：landing / RabbitMQ Mgmt / LiteLLM Admin / ai-eva（[docs](docs/admin-hub.md)） | ✅ |
-| M5 | **模擬感測 + 異常預警** | LightGBM 預測（參考 [Pi5 IoT-LLM 文章](https://cheng-min-i-taiwan.blogspot.com/2026/05/usr-5-iot-llm.html)）→ Qwen 解讀 → LINE push | |
-| Phase 2 | **自家管理 UI** | 等真有多 user 才動；ai-eva 自家「app 啟用 / 使用者權限」 | |
-
-每個里程碑對應一個 GitHub milestone，下面再切細 issue。詳見 [roadmap tracking issue #8](https://github.com/towNingtek/ai-eva/issues/8)。
+> 基礎建設已收斂（Pi5 hub / LiteLLM / LINE bot + session memory / RabbitMQ / Admin Hub），目前焦點轉向應用層。
+> Roadmap 歷史見 [closed issue #8](https://github.com/towNingtek/ai-eva/issues/8)。
 
 ### 關鍵架構決策
 
@@ -227,7 +201,7 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 - 🎯 **個人 / 內部工程實驗用**，**不打算產品化**
 - 🎯 **單一中央 Pi5 hub**，不做 per-device edge
 - 🎯 寵物 / 養殖那類「電子雞」情境用 **LINE chat + 模擬資料** 達成，**不做真實硬體**
-- ❌ 不做多租戶（多租戶有 `LLMTwins` 在做）
+- ❌ 不做多租戶
 - ❌ 不做 mobile native app
 
 ### Protocol 分工
