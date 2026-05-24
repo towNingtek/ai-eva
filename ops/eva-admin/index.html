@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Eva Admin Hub</title>
+  <style>
+    :root{
+      --bg:#0f1419;--card:#1c2230;--card-hover:#252e42;--fg:#e8eef7;
+      --muted:#8b96a8;--accent:#6366f1;--border:#2a3142;--warn:#facc15;
+    }
+    *{box-sizing:border-box}
+    body{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",Roboto,sans-serif;
+         margin:0;background:var(--bg);color:var(--fg);min-height:100vh}
+    .wrap{max-width:1100px;margin:0 auto;padding:48px 24px}
+    header{margin-bottom:32px}
+    h1{margin:0 0 8px;font-size:28px}
+    .sub{color:var(--muted);font-size:14px}
+    .sec-title{font-size:13px;color:var(--muted);text-transform:uppercase;
+               letter-spacing:.08em;margin:32px 0 12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+    a.card{display:flex;flex-direction:column;gap:6px;
+           padding:18px 20px;border-radius:12px;background:var(--card);
+           border:1px solid var(--border);color:var(--fg);text-decoration:none;
+           transition:background .15s,border-color .15s,transform .15s}
+    a.card:hover{background:var(--card-hover);border-color:var(--accent);transform:translateY(-1px)}
+    .card .title{display:flex;align-items:center;gap:10px;font-weight:600;font-size:16px}
+    .card .icon{font-size:22px}
+    .card .desc{color:var(--muted);font-size:13px;margin-top:2px}
+    .card .badge{display:inline-block;padding:2px 8px;border-radius:999px;
+                 font-size:11px;font-weight:600;align-self:flex-start;margin-top:8px}
+    .badge.stable{background:rgba(34,197,94,.15);color:#22c55e}
+    .badge.beta{background:rgba(250,204,21,.15);color:var(--warn)}
+    .badge.tool{background:rgba(99,102,241,.15);color:var(--accent)}
+    pre{background:#0a0e14;border:1px solid var(--border);border-radius:8px;
+        padding:14px;overflow-x:auto;font-size:13px;color:#a5b1c5}
+    code{font-family:"SF Mono",Menlo,Consolas,monospace}
+    footer{margin-top:48px;color:var(--muted);font-size:12px;text-align:center}
+    footer a{color:var(--muted)}
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>🎛 Eva Admin Hub</h1>
+  <div class="sub">運維工具集中入口 — 走 Cloudflare Tunnel + Access SSO 保護</div>
+</header>
+
+<div class="sec-title">使用者站台</div>
+<div class="grid">
+  <a class="card" href="https://eva.4impact.cc">
+    <div class="title"><span class="icon">💬</span>ai-eva</div>
+    <div class="desc">Chainlit web chat，使用者用</div>
+    <span class="badge stable">STABLE :7861</span>
+  </a>
+  <a class="card" href="https://beta-eva.4impact.cc">
+    <div class="title"><span class="icon">💬</span>ai-eva</div>
+    <div class="desc">開發環境，僅內部測試用</div>
+    <span class="badge beta">BETA :7860</span>
+  </a>
+</div>
+
+<div class="sec-title">LLM 閘道 (LiteLLM)</div>
+<div class="grid">
+  <a class="card" href="https://eva-litellm.4impact.cc/ui">
+    <div class="title"><span class="icon">🤖</span>LiteLLM Admin UI</div>
+    <div class="desc">virtual keys / spend tracking / models / logs</div>
+    <span class="badge stable">STABLE :4001</span>
+  </a>
+</div>
+
+<div class="sec-title">訊息佇列 (RabbitMQ)</div>
+<div class="grid">
+  <a class="card" href="https://eva-rabbitmq.4impact.cc">
+    <div class="title"><span class="icon">🐰</span>RabbitMQ Mgmt UI</div>
+    <div class="desc">看 line-push queue、訊息積壓、消費者連線</div>
+    <span class="badge stable">STABLE :15673</span>
+  </a>
+</div>
+
+<div class="sec-title">Beta 環境（SSH tunnel 進）</div>
+<div class="grid">
+  <a class="card" href="#beta-tunnel">
+    <div class="title"><span class="icon">🔌</span>看 beta admin UIs</div>
+    <div class="desc">beta 沒對外、需要 SSH tunnel 從 mac 進</div>
+    <span class="badge tool">Mac only</span>
+  </a>
+</div>
+<pre id="beta-tunnel"># Mac 終端機跑這個（保持開著）：
+ssh -L 4000:localhost:4000 -L 15672:localhost:15672 gcp
+
+# 然後本機開：
+#   http://localhost:4000/ui    ← Beta LiteLLM
+#   http://localhost:15672      ← Beta RabbitMQ</pre>
+
+<div class="sec-title">Docs / 程式碼</div>
+<div class="grid">
+  <a class="card" href="https://github.com/towNingtek/ai-eva">
+    <div class="title"><span class="icon">📂</span>GitHub Repo</div>
+    <div class="desc">towNingtek/ai-eva</div>
+  </a>
+  <a class="card" href="https://github.com/towNingtek/ai-eva/tree/main/docs">
+    <div class="title"><span class="icon">📘</span>Docs 目錄</div>
+    <div class="desc">litellm-setup / pi5-setup / line-bot / m4-cron / litellm-admin</div>
+  </a>
+  <a class="card" href="https://github.com/towNingtek/ai-eva/issues/8">
+    <div class="title"><span class="icon">🗺</span>Roadmap (#8)</div>
+    <div class="desc">里程碑 + 架構決策</div>
+  </a>
+</div>
+
+<footer>
+  Eva Admin Hub · Phase 1 ·
+  <a href="https://github.com/towNingtek/ai-eva">github.com/towNingtek/ai-eva</a>
+</footer>
+
+</div>
+</body>
+</html>

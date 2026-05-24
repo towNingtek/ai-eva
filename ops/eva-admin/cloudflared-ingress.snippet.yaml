@@ -1,0 +1,13 @@
+    service: http://localhost:8001
+  # AI Eva Admin Hub (Phase 1)
+  - hostname: eva-admin.4impact.cc
+    service: http://localhost:80
+  - hostname: eva-rabbitmq.4impact.cc
+    service: http://localhost:15673
+  - hostname: eva-litellm.4impact.cc
+    service: http://localhost:4001
+
+  # AI Eva BETA (Chainlit + LangGraph + RAG)
+  - hostname: beta-eva.4impact.cc
+    service: http://localhost:7860
+  - hostname: aa-test.4impact.cc

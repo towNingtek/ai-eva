@@ -4,7 +4,7 @@
 >
 > 中長期演化為個人 / 內部用的 **本地 + 雲端混合 LLM 場域**，搭配 Pi5 hub、LINE bot 推播、模擬感測器，做為日常 AI 工具的「沙盒」。
 
-[相關討論](https://github.com/town-intelligent/swarm/issues/151) ・ [線上 stable](https://eva.4impact.cc)
+[相關討論](https://github.com/town-intelligent/swarm/issues/151) ・ [線上 stable](https://eva.4impact.cc) ・ [Admin Hub](https://eva-admin.4impact.cc)（SSO 後台）
 
 ---
 
@@ -207,11 +207,12 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 |---|---|---|---|
 | **M1** | **Pi5 Hub 設置** | Pi5 + Ollama + Qwen 2.5:3b-q4 + Cloudflare Zero Trust SSH | ✅ [#9](https://github.com/towNingtek/ai-eva/issues/9) |
 | **M2** | **LiteLLM 接通** | LiteLLM proxy + Tailscale 連 Pi5；ai-eva 全走 LiteLLM；hello_world 改成多模型對照 demo | ✅ [#12](https://github.com/towNingtek/ai-eva/issues/12) |
-| M2.5 | *(可選)* LiteLLM 進階運維 | virtual keys / 預算 / multi-key 負載均衡 / cost dashboard | 視 M3 需求啟動 |
-| M3 | **LINE Bot Adapter** | LINE Messaging API webhook → Chainlit FastAPI app → 同一個 dispatch | |
-| M4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（daily summary） | |
+| **M2.5** | **LiteLLM 進階運維** | virtual keys / 預算 / NVIDIA NIM 多模型 / Admin UI 對外（`eva-litellm.4impact.cc`） | ✅ |
+| M3 | **LINE Bot Adapter** | LINE Messaging API webhook → Chainlit FastAPI app → 同一個 dispatch | ✅ |
+| M4 | **第一條被動推播 graph** | Pi5 cron + RabbitMQ → LINE push（daily summary，9 點 Qwen 寫早安） | ✅ |
+| **Phase 1** | **Admin Hub** | Cloudflare Tunnel + Access SSO 集中：landing / RabbitMQ Mgmt / LiteLLM Admin / ai-eva（[docs](docs/admin-hub.md)） | ✅ |
 | M5 | **模擬感測 + 異常預警** | LightGBM 預測（參考 [Pi5 IoT-LLM 文章](https://cheng-min-i-taiwan.blogspot.com/2026/05/usr-5-iot-llm.html)）→ Qwen 解讀 → LINE push | |
-| M6 | **Web Admin UI**（甜點，最後做） | *可能大幅縮減* — LiteLLM 自帶 key/cost/log UI；剩下只有 ai-eva 自家「app 啟用 / 使用者權限」 | |
+| Phase 2 | **自家管理 UI** | 等真有多 user 才動；ai-eva 自家「app 啟用 / 使用者權限」 | |
 
 每個里程碑對應一個 GitHub milestone，下面再切細 issue。詳見 [roadmap tracking issue #8](https://github.com/towNingtek/ai-eva/issues/8)。
 
