@@ -26,6 +26,8 @@ services:
         condition: service_healthy
       litellm:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env
     ports:
@@ -76,6 +78,27 @@ services:
       - ./litellm-config.yaml:/app/config.yaml:ro
     network_mode: host    # 為了能直接打 Pi5 Tailscale IP (100.74.6.41)
 
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: ai-eva-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    volumes:
+      - ai_eva_rabbitmq:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"     # AMQP
+      - "15672:15672"   # Management UI
+    # 不用 host network — 預設 bridge + ports 即可（Tailscale 從 Pi5 連 cms-server
+    # 的 Tailscale IP 100.66.105.30:5672 就會走 host port forwarding 進來）
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
 volumes:
   ai_eva_pgdata:
   ai_eva_litellm_pgdata:
+  ai_eva_rabbitmq:
