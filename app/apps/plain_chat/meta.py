@@ -1,5 +1,6 @@
 META = {
     "id": "plain_chat",
+    "project": "core",
     "label": "對話",
     "icon": "💬",
     "cl_icon": "MessageCircle",

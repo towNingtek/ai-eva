@@ -1,5 +1,6 @@
 META = {
     "id": "hello_world",
+    "project": "core",
     "label": "模型對照",
     "icon": "🪞",
     "cl_icon": "Scale",

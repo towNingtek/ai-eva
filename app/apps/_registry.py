@@ -2,13 +2,14 @@
 App registry: auto-discover apps/*/, expose manifest + dispatcher.
 
 Each app package must define:
-  - meta.py with META dict: {id, label, icon, owner?, trigger?, is_default?, show_in_menu?, enabled?}
+  - meta.py with META dict: {id, label, icon, project?, trigger?, is_default?, show_in_menu?, enabled?}
   - handler.py with async handle(payload: str, msg) coroutine
 
-Owner namespace:
-  meta["owner"] 預設 "yillkid"。未來其他 owner（虎科 / 縣府 / …）的 apps 進來時必須
-  自己宣告 owner。完整命名 = f"{owner}.{id}"；目前只有 yillkid、id 撞名直接 raise，
-  避免 silent override。
+Project namespace:
+  meta["project"] 預設 "yillkid"。project = 擁有 {apps + nodes + profile} 的範圍
+  （虎科 / 縣府 / 機器人部門 / 俊毓個人 …），不是登入帳號。完整命名 = f"{project}.{id}"；
+  目前只有 yillkid、id 撞名直接 raise，避免 silent override。
+  project 的 profile（LINE 收件人 / 聯絡人）存在 PG projects 表，見 app/projects/registry.py。
 """
 import logging
 from importlib import import_module
@@ -19,13 +20,14 @@ logger = logging.getLogger(__name__)
 
 Handler = Callable[[str, object], Awaitable[None]]
 
-DEFAULT_OWNER = "yillkid"
+DEFAULT_PROJECT = "yillkid"
 
 
 class App:
     def __init__(self, meta: dict, handle: Handler):
         self.id: str = meta["id"]
-        self.owner: str = meta.get("owner", DEFAULT_OWNER)
+        # 向後相容：舊欄位名 owner 仍接受，逐步遷到 project
+        self.project: str = meta.get("project", meta.get("owner", DEFAULT_PROJECT))
         self.label: str = meta.get("label", self.id)
         self.icon: str = meta.get("icon", "🔧")
         self.cl_icon: str = meta.get("cl_icon", "Sparkles")  # Lucide icon for Chainlit
@@ -38,7 +40,7 @@ class App:
 
     @property
     def full_id(self) -> str:
-        return f"{self.owner}.{self.id}"
+        return f"{self.project}.{self.id}"
 
 
 _APPS: dict[str, App] = {}
@@ -61,16 +63,16 @@ def discover() -> dict[str, App]:
             if app.id in _APPS:
                 existing = _APPS[app.id]
                 raise RuntimeError(
-                    f"App id collision: '{app.id}' from owner='{app.owner}' conflicts with "
-                    f"existing owner='{existing.owner}'. Rename one, or switch dispatch to "
-                    f"full_id (<owner>.<id>) form."
+                    f"App id collision: '{app.id}' from project='{app.project}' conflicts with "
+                    f"existing project='{existing.project}'. Rename one, or switch dispatch to "
+                    f"full_id (<project>.<id>) form."
                 )
             _APPS[app.id] = app
             if app.is_default:
                 _DEFAULT = app
             logger.info(
-                "Loaded app: %s (owner=%s, trigger=%s, default=%s)",
-                app.id, app.owner, app.trigger, app.is_default,
+                "Loaded app: %s (project=%s, trigger=%s, default=%s)",
+                app.id, app.project, app.trigger, app.is_default,
             )
         except Exception as e:
             logger.exception("Failed to load app '%s': %s", sub.name, e)
@@ -104,3 +106,20 @@ def get_by_id(app_id: str) -> App | None:
 def default_app() -> App | None:
     discover()
     return _DEFAULT
+
+
+# 平台內建 project — 通用 app（chat / search …）放這，全 project 可見
+CORE_PROJECT = "core"
+
+
+def apps_for_project(project: str) -> list[App]:
+    """某個 project 看得到的 app = 自己的 + core 的。
+
+    給未來 project-aware 的 surface 用（機器人 / 多租戶 web）。
+    目前 webchat 仍走 chainlit_commands() 顯示全部，不依賴這個。
+    """
+    discover()
+    return [
+        a for a in _APPS.values()
+        if a.project == project or a.project == CORE_PROJECT
+    ]
