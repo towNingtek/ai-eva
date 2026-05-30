@@ -1,5 +1,6 @@
 META = {
     "id": "web_search",
+    "project": "core",
     "label": "網頁搜尋",
     "icon": "🔍",
     "cl_icon": "Globe",  # Lucide icon name for Chainlit's composer
