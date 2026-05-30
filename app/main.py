@@ -10,6 +10,7 @@ from app.apps._registry import chainlit_commands, default_app, discover, get_by_
 from app.core.storage import LocalStorageClient
 from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
+from app.surfaces import device as device_surface  # noqa: F401  # 註冊 /device/* route
 from app.surfaces import queue_consumer  # RabbitMQ consumer 給 M4 cron push 用
 
 logger = logging.getLogger(__name__)
@@ -38,10 +39,14 @@ discover()
 # Chainlit 沒 on_app_startup decorator，這裡直接用 asyncio fire-and-forget。
 from app.surfaces import line_session  # noqa: E402
 from app.projects import registry as project_registry  # noqa: E402
+from app.nodes import registry as node_registry  # noqa: E402
+from app.nodes import commands as node_commands  # noqa: E402
 
 
 async def _init_tables():
     await project_registry.ensure_projects_table()
+    await node_registry.ensure_nodes_table()
+    await node_commands.ensure_commands_table()
     await line_surface.ensure_line_table()
     await line_session.ensure_session_tables()
 
