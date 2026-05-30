@@ -24,6 +24,8 @@ from chainlit.server import app as fastapi_app
 from fastapi import HTTPException, Request
 
 from app.surfaces import line_session
+from app.dispatch import Envelope, handle_device_intent
+from app.nodes import commands as node_commands
 from app.settings import (
     LINE_CHANNEL_ACCESS_TOKEN,
     LINE_CHANNEL_SECRET,
@@ -34,6 +36,9 @@ logger = logging.getLogger(__name__)
 _LINE_API = "https://api.line.me/v2/bot"
 _DATABASE_URL = os.getenv("DATABASE_URL", "")
 _SESSION_SCAN_TOKEN = os.getenv("SESSION_SCAN_TOKEN", "").strip()
+# 用例 C：LINE 來的裝置指令派給哪個 project 的 node。
+# 暫以單一 project（家裡的 ai-cat）；之後做 identity(LINE userId)→project 映射再取代。
+_LINE_DEVICE_PROJECT = os.getenv("LINE_DEVICE_PROJECT", "home").strip()
 
 
 def _pg_url() -> str:
@@ -239,5 +244,40 @@ async def _handle_event(event: dict) -> None:
         await _line_reply(reply_token, line_session.GOODBYE_USER_INITIATED)
         return
 
+    # 用例 C：先看這句是不是要指揮裝置（function-calling）。
+    # 有派工 → 把指令排進 node command queue（node 靠 /device/poll 拉走）+ 回 ack；
+    # 沒派工 → 走原本的 session 對話（加能力、不拆既有）。
+    cmd_reply = await _try_device_dispatch(text)
+    if cmd_reply is not None:
+        await _line_reply(reply_token, cmd_reply)
+        return
+
     answer = await line_session.chat(user_id, text)
     await _line_reply(reply_token, answer)
+
+
+async def _try_device_dispatch(text: str) -> Optional[str]:
+    """LINE 文字 → device 派工。有指令就 enqueue 給對應 node 並回 ack 字串；沒有則回 None。"""
+    env = Envelope(surface="line", project=_LINE_DEVICE_PROJECT, text=text)
+    try:
+        result = await handle_device_intent(env)
+    except Exception as e:
+        logger.exception("LINE device dispatch 失敗，退回一般對話：%s", e)
+        return None
+
+    commands = result.get("commands") or []
+    if not commands:
+        return None
+
+    nodes = set()
+    for cmd in commands:
+        node_id = cmd.get("node")
+        if not node_id:
+            continue
+        nodes.add(node_id)
+        await node_commands.enqueue_command(
+            node_id, result.get("project", _LINE_DEVICE_PROJECT), cmd, source="line"
+        )
+    if not nodes:
+        return None
+    return f"好，已經請 {('、'.join(sorted(nodes)))} 處理（{len(commands)} 個動作），完成後傳給你 👌"

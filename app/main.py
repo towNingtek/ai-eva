@@ -40,11 +40,13 @@ discover()
 from app.surfaces import line_session  # noqa: E402
 from app.projects import registry as project_registry  # noqa: E402
 from app.nodes import registry as node_registry  # noqa: E402
+from app.nodes import commands as node_commands  # noqa: E402
 
 
 async def _init_tables():
     await project_registry.ensure_projects_table()
     await node_registry.ensure_nodes_table()
+    await node_commands.ensure_commands_table()
     await line_surface.ensure_line_table()
     await line_session.ensure_session_tables()
 

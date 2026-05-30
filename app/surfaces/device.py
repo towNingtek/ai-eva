@@ -28,6 +28,7 @@ from fastapi.responses import Response
 
 from app.dispatch import Envelope, handle_device_intent
 from app.nodes import registry as node_registry
+from app.nodes import commands as node_commands
 from app.projects import registry as project_registry
 from app.surfaces import line as line_surface
 from app.settings import ROOT
@@ -87,6 +88,24 @@ async def device_intent(req: Request):
     env = Envelope(surface="device", project=project, text=text, node_id=node_id or None)
     result = await handle_device_intent(env)
     return result
+
+
+@fastapi_app.post("/device/poll")
+async def device_poll(req: Request):
+    """Node 主動拉走別的 surface（LINE/web）丟給它的指令（NAT-friendly）。
+
+    {node} → {commands:[...]}。pending 指令拉走即標記 delivered。
+    node 自己 POST /device/intent 換來的指令是同步回的，不走這裡；
+    這裡專收「不是 node 當下發起」的指令。
+    """
+    _check_token(req)
+    data = await req.json()
+    node_id = (data.get("node") or "").strip()
+    if not node_id:
+        raise HTTPException(400, "node required")
+    await node_registry.touch_node(node_id)
+    commands = await node_commands.pull_pending(node_id)
+    return {"commands": commands}
 
 
 @fastapi_app.post("/device/result")
