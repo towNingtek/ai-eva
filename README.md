@@ -87,6 +87,7 @@ mkdir app/apps/your_app
 cat > app/apps/your_app/meta.py <<'EOF'
 META = {
     "id": "your_app",
+    "project": "yillkid",        # 屬於哪個 project（見下方）；省略 → 落 yillkid（私有）
     "label": "你的工具",
     "icon": "✨",
     "cl_icon": "Sparkles",       # Lucide 名稱
@@ -101,6 +102,21 @@ EOF
 ```
 
 容器重啟 → `_registry.discover()` 自動掃到 → Chainlit 工具選單多一個。**完全不用改 `main.py`**。
+
+### project 歸屬（多專案 / 機器人整合用）
+
+`project` = 擁有 {apps + nodes + profile} 的**範圍**（虎科 / 縣府 / 機器人部門 / 俊毓個人…），**不是登入帳號**。identity（Chainlit password / Cloudflare Access email / LINE userId）另外映射到 project。
+
+| project | 用途 |
+|---|---|
+| `core` | 平台內建通用 app（`plain_chat` / `web_search` / `hello_world`），**全 project 可見** |
+| `yillkid` | 俊毓個人業務租戶；也是**安全 default**（meta 沒寫 `project` → 落這、不洩到 core）|
+| `<你的>` | 新專案自己宣告，例：`"project": "huwei"` |
+
+- **可見性** = 自己 project 的 app + `core` 的 app（`apps_for_project()` helper；尚未接進 webchat dispatch，webchat 仍顯示全部）
+- **project profile** 存 PG `projects` 表（`id / label / line_recipient / contacts / metadata`），見 `app/projects/registry.py`；啟動 `ensure_projects_table()` 建表 + seed
+- app id 撞名（跨 project）→ 啟動直接 raise，避免 silent override
+- ⏳ **node registry + capability**（裝置提供能力）待跟機器人部門合寫 — 見 [issue #25](https://github.com/towNingtek/ai-eva/issues/25)
 
 ---
 
@@ -151,9 +167,8 @@ docker compose -p ai-eva-stable up -d --no-deps ai-eva
 ### 範圍宣告（避免 scope creep）
 
 - 🎯 **個人 / 內部工程實驗用**，**不打算產品化**
-- 🎯 **單一中央 Pi5 hub**，不做 per-device edge
-- 🎯 寵物 / 養殖那類「電子雞」情境用 **LINE chat + 模擬資料** 達成，**不做真實硬體**
-- ❌ 不做多租戶
+- 🎯 **多 project 共用一套部署**（`core` + 各專案），輕量租戶用 `project` 範圍切；**不做 per-tenant 分開部署**（那是重模型）
+- 🎯 寵物 / 養殖那類「電子雞」情境用 **LINE chat + 模擬資料** 達成
 - ❌ 不做 mobile native app
 
 ### Protocol 分工
