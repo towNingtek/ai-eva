@@ -24,7 +24,6 @@ from chainlit.server import app as fastapi_app
 from fastapi import HTTPException, Request
 
 from app.surfaces import line_session
-from app.dispatch import Envelope, handle_device_intent
 from app.nodes import commands as node_commands
 from app.settings import (
     LINE_CHANNEL_ACCESS_TOKEN,
@@ -244,40 +243,11 @@ async def _handle_event(event: dict) -> None:
         await _line_reply(reply_token, line_session.GOODBYE_USER_INITIATED)
         return
 
-    # 用例 C：先看這句是不是要指揮裝置（function-calling）。
-    # 有派工 → 把指令排進 node command queue（node 靠 /device/poll 拉走）+ 回 ack；
-    # 沒派工 → 走原本的 session 對話（加能力、不拆既有）。
-    cmd_reply = await _try_device_dispatch(text)
-    if cmd_reply is not None:
-        await _line_reply(reply_token, cmd_reply)
-        return
-
-    answer = await line_session.chat(user_id, text)
-    await _line_reply(reply_token, answer)
-
-
-async def _try_device_dispatch(text: str) -> Optional[str]:
-    """LINE 文字 → device 派工。有指令就 enqueue 給對應 node 並回 ack 字串；沒有則回 None。"""
-    env = Envelope(surface="line", project=_LINE_DEVICE_PROJECT, text=text)
-    try:
-        result = await handle_device_intent(env)
-    except Exception as e:
-        logger.exception("LINE device dispatch 失敗，退回一般對話：%s", e)
-        return None
-
-    commands = result.get("commands") or []
-    if not commands:
-        return None
-
-    nodes = set()
-    for cmd in commands:
+    # 一次 agentic 呼叫：device tools 綁在對話那次 LLM 上，要嘛派工、要嘛純聊天（不再雙呼叫）。
+    result = await line_session.chat(user_id, text, project=_LINE_DEVICE_PROJECT)
+    for cmd in result["commands"]:
         node_id = cmd.get("node")
-        if not node_id:
-            continue
-        nodes.add(node_id)
-        await node_commands.enqueue_command(
-            node_id, result.get("project", _LINE_DEVICE_PROJECT), cmd, source="line"
-        )
-    if not nodes:
-        return None
-    return f"好，已經請 {('、'.join(sorted(nodes)))} 處理（{len(commands)} 個動作），完成後傳給你 👌"
+        if node_id:
+            await node_commands.enqueue_command(
+                node_id, _LINE_DEVICE_PROJECT, cmd, source="line")
+    await _line_reply(reply_token, result["reply"])

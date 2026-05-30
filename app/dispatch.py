@@ -104,19 +104,65 @@ async def handle_device_intent(env: Envelope) -> dict:
     picked = await _select_capabilities(env.text, available)
 
     # 3. 每個選中的 capability 配 node + 展開 params → command
-    commands: list[dict] = []
-    for cap, args in picked:
-        cap_nodes = await nodes_with_capability(cap, project=env.project)
-        if not cap_nodes:
-            continue
-        node = cap_nodes[0]   # 先挑第一個；之後可加偏好 / 負載策略
-        commands.extend(_expand(cap, args, node))
+    commands = await _picked_to_commands(env.project, picked)
 
     logger.info(
         "dispatch device intent: node=%s project=%s text=%r → %d command(s)",
         env.node_id, env.project, env.text[:40], len(commands),
     )
     return {"project": env.project, "commands": commands}
+
+
+async def _picked_to_commands(project: str, picked: list[tuple[str, dict]]) -> list[dict]:
+    """[(capability, args)] → command 信封清單（查 node registry 配 node + 展開 params）。"""
+    commands: list[dict] = []
+    for cap, args in picked:
+        cap_nodes = await nodes_with_capability(cap, project=project)
+        if not cap_nodes:
+            continue
+        node = cap_nodes[0]   # 先挑第一個；之後可加偏好 / 負載策略
+        commands.extend(_expand(cap, args, node))
+    return commands
+
+
+# 對話 surface（LINE / web）要拍照時的 ack 樣板（tool 被呼叫時 LLM content 多半空的）
+_DEVICE_ACK = "好，已經請 {nodes} 處理（{n} 個動作），完成後傳給你 👌"
+
+
+async def converse(project: str, messages: list, *, api_key=None, alias=None) -> dict:
+    """對話 surface 的 agentic 單次呼叫：把該 project 的 device tools 綁進這一次 LLM。
+
+    一次呼叫決定「派工」或「純聊天」，消掉「先 function-calling 再聊天」的雙呼叫。
+    回 {"commands": [...], "reply": str}：
+      - 有 tool_calls → commands + ack reply（node 靠 poll 拉走執行）
+      - 沒有          → commands=[] + 對話 reply
+
+    project 沒有任何 device 能力時，等同一般對話（不綁 tool、行為不變）。
+    """
+    nodes = await list_nodes(project)
+    available = sorted({c for n in nodes for c in _json_list(n.get("capabilities"))})
+    tools = tools_for_capabilities(available)
+
+    llm = make_llm(api_key=api_key, alias=alias, streaming=False)
+    if tools:
+        llm = llm.bind_tools(tools)
+    resp = await llm.ainvoke(messages)
+
+    picked: list[tuple[str, dict]] = []
+    for tc in getattr(resp, "tool_calls", None) or []:
+        cap = capability_for_tool(tc.get("name", ""))
+        if cap and cap in available:
+            picked.append((cap, tc.get("args") or {}))
+
+    if not picked:
+        return {"commands": [], "reply": (resp.content or "").strip()}
+
+    commands = await _picked_to_commands(project, picked)
+    nodes_hit = sorted({c["node"] for c in commands})
+    reply = (resp.content or "").strip() or _DEVICE_ACK.format(
+        nodes="、".join(nodes_hit) or "裝置", n=len(commands)
+    )
+    return {"commands": commands, "reply": reply}
 
 
 def _expand(capability: str, args: dict, node: dict) -> list[dict]:

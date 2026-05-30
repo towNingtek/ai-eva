@@ -2,7 +2,7 @@
 
 從 4-learn/rag-kit/apps/huwei_landmarks (虎科大 ch5) 移植過來、改寫成：
 - 純 asyncpg（跟 line.py 的 line_users 表同風格）
-- LiteLLM via make_llm()（用 LITELLM_LINE_KEY 算帳）
+- LLM 走 dispatch.converse()（device tools 綁同一次呼叫；用 LITELLM_LINE_KEY 算帳）
 
 兩張表：
   line_sessions          一筆 = 一段對話。ended_at IS NULL → active
@@ -23,7 +23,7 @@ from typing import Optional
 
 import asyncpg
 
-from app.core.llm import make_llm
+from app import dispatch
 from app.settings import LITELLM_LINE_KEY
 
 logger = logging.getLogger(__name__)
@@ -159,10 +159,12 @@ async def _recent_messages(session_id: int, limit: int) -> list[dict]:
         await conn.close()
 
 
-async def chat(user_id: str, user_text: str) -> str:
-    """收 user 一則文字 → 拿 active session（沒有就建）→ append → LLM → 回 reply。
+async def chat(user_id: str, user_text: str, project: Optional[str] = None) -> dict:
+    """收 user 一則文字 → 拿 active session（沒有就建）→ append → agentic LLM → 回 {reply, commands}。
 
-    結束關鍵字判斷在 caller (line.py)，這層只處理「一般對話」。
+    結束關鍵字判斷在 caller (line.py)，這層只處理「一般對話 / 順手指揮裝置」。
+    走 dispatch.converse：device tools 綁進同一次呼叫，要嘛派工要嘛聊天（不再雙呼叫）。
+    commands 由 caller 負責 enqueue（這層不碰 node queue）。
     """
     sess = await get_active_session(user_id) or await start_session(user_id)
     sid = sess["id"]
@@ -174,16 +176,19 @@ async def chat(user_id: str, user_text: str) -> str:
         {"role": m["role"], "content": m["content"]} for m in history
     ]
 
-    llm = make_llm(api_key=LITELLM_LINE_KEY or None, streaming=False)
+    commands: list = []
     try:
-        result = await llm.ainvoke(messages)
-        reply = (result.content or "").strip() or "（這次沒拿到回應，再試一次）"
+        result = await dispatch.converse(
+            project or "", messages, api_key=LITELLM_LINE_KEY or None
+        )
+        reply = result["reply"] or "（這次沒拿到回應，再試一次）"
+        commands = result["commands"]
     except Exception as e:  # noqa: BLE001
-        logger.exception("LLM call failed for LINE user %s", user_id)
+        logger.exception("converse failed for LINE user %s", user_id)
         reply = f"⚠️ 我這邊暫時遇到問題，再試一次（{type(e).__name__}）"
 
     await _add_message(sid, "assistant", reply)
-    return reply
+    return {"reply": reply, "commands": commands}
 
 
 async def scan_timeouts(idle_minutes: Optional[int] = None) -> list[dict]:
