@@ -125,6 +125,30 @@ async def push_to_user(user_id: str, text: str) -> bool:
     return True
 
 
+async def push_images_to_user(user_id: str, image_urls: list[str]) -> bool:
+    """推一批圖片給 user。device surface 收 node 回報的影像時用。
+
+    LINE image message 需要 HTTPS 公開 URL（originalContentUrl / previewImageUrl）。
+    一次最多 5 則（LINE multicast 上限），多的截掉。
+    """
+    if not LINE_CHANNEL_ACCESS_TOKEN or not image_urls:
+        return False
+    messages = [
+        {"type": "image", "originalContentUrl": u, "previewImageUrl": u}
+        for u in image_urls[:5]
+    ]
+    async with httpx.AsyncClient(timeout=15) as cx:
+        r = await cx.post(
+            f"{_LINE_API}/message/push",
+            headers={"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"},
+            json={"to": user_id, "messages": messages},
+        )
+        if r.status_code >= 400:
+            logger.error("LINE image push failed: %s %s", r.status_code, r.text[:200])
+            return False
+    return True
+
+
 def _verify_signature(body: bytes, signature: str) -> bool:
     if not LINE_CHANNEL_SECRET or not signature:
         return False
