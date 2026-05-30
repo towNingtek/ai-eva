@@ -158,3 +158,13 @@ async def device_img(filename: str):
     if not fp.is_file():
         raise HTTPException(404, "not found")
     return Response(content=fp.read_bytes(), media_type="image/jpeg")
+
+
+# Chainlit 掛了 SPA 萬用 GET 路由（/{path:path}），會搶先吃掉 GET /device/img/*
+# 並回傳 SPA 的 index.html（LINE 抓圖就拿到 HTML → 顯示「系統發生問題」）。
+# Starlette 依「註冊順序」配對，所以把本路由提到 router 最前面，搶在 catch-all 前。
+for _r in list(fastapi_app.router.routes):
+    if getattr(_r, "path", None) == "/device/img/{filename}":
+        fastapi_app.router.routes.remove(_r)
+        fastapi_app.router.routes.insert(0, _r)
+        break
