@@ -29,11 +29,12 @@
   if (document.body) mount();
   else document.addEventListener("DOMContentLoaded", mount);
 
-  // chatroom 出現（訊息輸入框 = textarea / contenteditable，登入頁沒有）→ 立刻移除
+  // chatroom 出現（訊息輸入框 = textarea / contenteditable，登入頁沒有）→ 再等版面 settle
+  // 才淡出。直接移除會瞥見側邊欄（過去7天/歷史）還在 hydrate 的那一閃。
   var obs = new MutationObserver(function () {
     if (document.querySelector('textarea, [contenteditable="true"]')) {
       obs.disconnect();
-      remove();
+      setTimeout(remove, 500);  // 留時間給 sidebar/layout 畫完
     }
   });
   document.addEventListener("DOMContentLoaded", function () {
