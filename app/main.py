@@ -224,4 +224,11 @@ async def cms_confirm(action: cl.Action):
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS confirm execute failed")
         reply = f"⚠️ 執行失敗（{type(e).__name__}）"
+    # 把執行結果寫回對話 history，讓後續輪次（如建好後主動問 SROI）知道已執行 + uuid
+    history = cl.user_session.get("cms_history") or []
+    history += [
+        HumanMessage(content=f"（已確認執行 {pending['name']}）"),
+        AIMessage(content=reply),
+    ]
+    cl.user_session.set("cms_history", history[-12:])
     await cl.Message(content=reply).send()
