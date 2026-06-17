@@ -9,7 +9,7 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
-from app.core.copilot import run_copilot
+from app.core.copilot import run_copilot, execute_confirmed
 from app.core.storage import LocalStorageClient
 from app.dispatch import Envelope, handle_device_intent
 from app.nodes import commands as node_commands
@@ -151,14 +151,25 @@ async def on_message(msg: cl.Message):
     runtime = cl.user_session.get("cms_runtime")
     if runtime is not None:
         history = cl.user_session.get("cms_history") or []
+        pending = None
         try:
-            ans = await run_copilot(runtime, content, history)
+            result = await run_copilot(runtime, content, history)
+            ans, pending = result["reply"], result.get("pending")
         except Exception as e:  # noqa: BLE001
             logger.exception("CMS copilot failed")
             ans = f"⚠️ 查詢失敗，請再試一次（{type(e).__name__}）"
         history += [HumanMessage(content=content), AIMessage(content=ans)]
         cl.user_session.set("cms_history", history[-12:])
-        await cl.Message(content=ans).send()
+        if pending:
+            # 寫類待確認：存 pending + 出確認鈕（confirm 控制訊號，避免 NLP 猜「好」）
+            cl.user_session.set("pending_tool", pending)
+            await cl.Message(content=ans, actions=[
+                cl.Action(name="cms_confirm", payload={"decision": "yes"}, label="✅ 確認"),
+                cl.Action(name="cms_confirm", payload={"decision": "no"}, label="✖ 取消"),
+            ]).send()
+        else:
+            cl.user_session.set("pending_tool", None)
+            await cl.Message(content=ans).send()
         return
 
     # 沒選特定工具時，先看是不是要指揮裝置（function-calling）。
@@ -194,3 +205,23 @@ async def on_message(msg: cl.Message):
 
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
     await app.handle(content, msg)
+
+
+@cl.action_callback("cms_confirm")
+async def cms_confirm(action: cl.Action):
+    """使用者按確認鈕 → 對 pending 寫類工具以 confirmed=True 重打（#51）。"""
+    pending = cl.user_session.get("pending_tool")
+    runtime = cl.user_session.get("cms_runtime")
+    cl.user_session.set("pending_tool", None)
+    if not (pending and runtime):
+        await cl.Message(content="這個確認已失效，請重新說一次需求。").send()
+        return
+    if (action.payload or {}).get("decision") != "yes":
+        await cl.Message(content="好，已取消，沒有送出。").send()
+        return
+    try:
+        reply = await execute_confirmed(runtime, pending["name"], pending["args"])
+    except Exception as e:  # noqa: BLE001
+        logger.exception("CMS confirm execute failed")
+        reply = f"⚠️ 執行失敗（{type(e).__name__}）"
+    await cl.Message(content=reply).send()
