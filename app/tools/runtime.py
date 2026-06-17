@@ -65,6 +65,33 @@ class ToolRuntime:
         kind = (tool.get("kind") or "").lower()
         return kind != "read"   # 只有明確 read 才免確認；其餘（含缺漏）都要
 
+    @staticmethod
+    def _to_json_schema(params) -> dict:
+        """把 manifest 的 parameters 正規化成合法 JSON Schema（給 LLM）。
+
+        接受兩種：
+        - 已是 JSON Schema（含 type:object / properties）→ 原樣
+        - CMS 簡化格式 {name: {type, required, description}} → 轉成 object schema
+        - 空 / 非 dict → 空 object
+        """
+        if not isinstance(params, dict) or not params:
+            return {"type": "object", "properties": {}}
+        if params.get("type") == "object" or "properties" in params:
+            return params
+        props, required = {}, []
+        for name, spec in params.items():
+            spec = spec if isinstance(spec, dict) else {}
+            prop = {"type": spec.get("type", "string")}
+            if spec.get("description"):
+                prop["description"] = spec["description"]
+            props[name] = prop
+            if spec.get("required"):
+                required.append(name)
+        schema = {"type": "object", "properties": props}
+        if required:
+            schema["required"] = required
+        return schema
+
     # ── 給 LLM 的白名單 ───────────────────────────────────
     def visible_tools(self) -> list[dict]:
         """回 OpenAI function schema 清單（只有 manifest 內的；白名單外不存在）。"""
@@ -75,7 +102,7 @@ class ToolRuntime:
                 "function": {
                     "name": name,
                     "description": t.get("description", ""),
-                    "parameters": t.get("parameters") or {"type": "object", "properties": {}},
+                    "parameters": self._to_json_schema(t.get("parameters")),
                 },
             })
         return out
@@ -114,12 +141,17 @@ class ToolRuntime:
         if self._credential:
             headers["Authorization"] = f"Bearer {self._credential}"
 
+        # 送法：GET→query；POST→預設 form-encoded（CMS 端點吃 form，不吃 JSON），
+        # 工具可標 "encoding":"json" 改送 JSON body（給 JSON-based issuer）。
+        encoding = (tool.get("encoding") or "form").lower()
         try:
             async with httpx.AsyncClient(timeout=self._timeout) as cx:
                 if method == "GET":
                     r = await cx.get(url, params=args, headers=headers)
-                else:
+                elif encoding == "json":
                     r = await cx.request(method, url, json=args, headers=headers)
+                else:
+                    r = await cx.request(method, url, data=args, headers=headers)
         except Exception as e:  # noqa: BLE001
             logger.exception("ToolRuntime execute '%s' transport error", name)
             return {"status": "error", "reason": f"{type(e).__name__}: {e}", "tool": name}

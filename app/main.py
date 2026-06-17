@@ -1,19 +1,22 @@
 import asyncio
 import logging
 import os
+from typing import Optional
 
 import chainlit as cl
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
+from app.core.copilot import run_copilot
 from app.core.storage import LocalStorageClient
 from app.dispatch import Envelope, handle_device_intent
 from app.nodes import commands as node_commands
 from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
 from app.surfaces import device as device_surface  # noqa: F401  # 註冊 /device/* route
-from app.surfaces import sso as sso_surface  # noqa: F401  # 註冊 /sso/handoff route
+from app.surfaces import sso as sso_surface  # noqa: F401  # 註冊 /sso/handoff route + SSO session
 from app.surfaces import queue_consumer  # RabbitMQ consumer 給 M4 cron push 用
 
 logger = logging.getLogger(__name__)
@@ -36,6 +39,33 @@ if ADMIN_PASS:
         if username == ADMIN_USER and password == ADMIN_PASS:
             return cl.User(identifier=username, metadata={"role": "admin"})
         return None
+
+
+# SSO（CMS 等 issuer）：/sso/handoff 種的 eva_sso cookie → 認證成 CMS 使用者。
+# 與上面的 password auth 共存（Chainlit headerAuth / passwordAuth 是獨立 flag）：
+# 有 cookie → header auth 認證；無 cookie → 退回 admin 密碼登入。
+@cl.header_auth_callback
+async def sso_header_auth(headers) -> Optional[cl.User]:
+    cookie = headers.get("cookie") or ""
+    sid = None
+    for part in cookie.split(";"):
+        k, _, v = part.strip().partition("=")
+        if k == "eva_sso":
+            sid = v
+            break
+    sess = sso_surface.get_sso_session(sid)
+    if not sess:
+        return None  # 無有效 SSO → 退回 password 登入
+    idn = sess["identity"]
+    return cl.User(
+        identifier=idn.get("email") or f'{idn["project"]}:{idn.get("user_id")}',
+        metadata={
+            "sso_session_id": sid,
+            "project": idn["project"],
+            "tenant_id": idn.get("tenant_id"),
+            "role": "cms-user",
+        },
+    )
 
 
 discover()
@@ -75,8 +105,31 @@ async def on_chat_resume(thread):
     await _register_commands()
 
 
+def _sso_session_for_current_user():
+    """目前 Chainlit user 若是 SSO 認證的，回它的 SSO session（含 ToolRuntime）；否則 None。"""
+    user = cl.user_session.get("user")
+    sid = (getattr(user, "metadata", None) or {}).get("sso_session_id") if user else None
+    return sso_surface.get_sso_session(sid) if sid else None
+
+
 @cl.on_chat_start
 async def on_start():
+    sess = _sso_session_for_current_user()
+    if sess:
+        # CMS 副駕模式：載入該帳號的 ToolRuntime，走 copilot
+        cl.user_session.set("cms_runtime", sess["runtime"])
+        cl.user_session.set("cms_history", [])
+        idn = sess["identity"]
+        tools = [t["function"]["name"] for t in sess["runtime"].visible_tools()]
+        await cl.Message(
+            content=(
+                f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
+                f"我可以幫你查：{', '.join(tools) or '（目前無可用工具）'}。\n"
+                "試試問「**列出我的專案**」或「**我的 SROI**」。"
+            )
+        ).send()
+        return
+
     await _register_commands()
     await cl.Message(
         content=(
@@ -91,6 +144,20 @@ async def on_start():
 async def on_message(msg: cl.Message):
     content = (msg.content or "").strip()
     if not content:
+        return
+
+    # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
+    runtime = cl.user_session.get("cms_runtime")
+    if runtime is not None:
+        history = cl.user_session.get("cms_history") or []
+        try:
+            ans = await run_copilot(runtime, content, history)
+        except Exception as e:  # noqa: BLE001
+            logger.exception("CMS copilot failed")
+            ans = f"⚠️ 查詢失敗，請再試一次（{type(e).__name__}）"
+        history += [HumanMessage(content=content), AIMessage(content=ans)]
+        cl.user_session.set("cms_history", history[-12:])
+        await cl.Message(content=ans).send()
         return
 
     # 沒選特定工具時，先看是不是要指揮裝置（function-calling）。
