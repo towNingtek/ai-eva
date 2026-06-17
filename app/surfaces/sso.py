@@ -88,3 +88,13 @@ async def sso_handoff(token: str, request: Request):
         httponly=True, secure=True, samesite="lax", max_age=_SESSION_TTL,
     )
     return resp
+
+
+# Chainlit 掛了 SPA 萬用 GET 路由（/{path:path}），會搶先吃掉 GET /sso/handoff
+# 並回 SPA index.html。跟 device.py /device/img 同雷 —— 把本路由提到 router 最前面，
+# 搶在 catch-all 前（Starlette 依註冊順序配對）。
+for _r in list(fastapi_app.router.routes):
+    if getattr(_r, "path", None) == "/sso/handoff":
+        fastapi_app.router.routes.remove(_r)
+        fastapi_app.router.routes.insert(0, _r)
+        break
