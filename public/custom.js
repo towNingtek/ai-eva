@@ -2,7 +2,8 @@
 // 避免 Chainlit SPA 先 render 登入表單再切 chatroom 的那一閃。
 // 只在有 eva_sso cookie 時動作 → 沒 session 的 standalone 訪客完全不受影響（照常看登入頁）。
 (function () {
-  if (!/(^|;\s*)eva_sso=/.test(document.cookie)) return;  // 非 SSO 來源 → 不蓋，standalone 照舊
+  // 用非 HttpOnly 的 eva_sso_hint 偵測（真正的 eva_sso 是 HttpOnly，JS 讀不到）。
+  if (!/(^|;\s*)eva_sso_hint=/.test(document.cookie)) return;  // 非 SSO 來源 → 不蓋，standalone 照舊
 
   var splash = document.createElement("div");
   splash.id = "eva-sso-splash";
