@@ -123,4 +123,7 @@ def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict
         raise ValueError(f"issuer {issuer_id!r} has no manifest_url")
     r = httpx.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=timeout)
     r.raise_for_status()
-    return r.json()
+    body = r.json()
+    # CMS 回 {"success":true,"data":{callback_base,credential,tools}}；拆 data 信封交給 ToolRuntime。
+    # 若無信封（其他 issuer 直接回 manifest）則原樣回。
+    return body.get("data", body) if isinstance(body, dict) else body
