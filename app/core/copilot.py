@@ -48,10 +48,20 @@ def _confirm_question(name: str, args: dict) -> str:
 def _fmt_result(name: str, data) -> str:
     """confirmed 執行成功後的回報。"""
     if isinstance(data, dict):
-        inner = data.get("data", data)
-        uuid = (inner or {}).get("uuid") or (inner or {}).get("uuid_project")
-        if name == "create_project" and uuid:
-            return f"✅ 專案已建立，uuid：`{uuid}`。"
+        inner = data.get("data") if isinstance(data.get("data"), dict) else data
+        inner = inner or {}
+        if name == "create_project":
+            pname = inner.get("name") or "（未命名）"
+            url = inner.get("url")
+            uuid = inner.get("uuid") or inner.get("uuid_project")
+            # ① 名稱+超連結（不要裸 uuid）
+            link = f"[{pname}]({url})" if url else f"「{pname}」（uuid {uuid}）"
+            # ② 告知 SDG 自動 + 主動問一次 SROI
+            return (
+                f"✅ 專案已建立：{link}\n\n"
+                "我會自動幫你產生 **SDG 描述**。\n"
+                "要不要順便產一版 **SROI 草稿**？會花一點時間，產完你可以進試算表自己修。"
+            )
     return f"✅ 完成。\n```\n{json.dumps(data, ensure_ascii=False)[:500]}\n```"
 
 
