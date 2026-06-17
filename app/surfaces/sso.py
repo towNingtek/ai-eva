@@ -130,6 +130,12 @@ async def sso_handoff(token: str, request: Request):
         "eva_sso", sess["session_id"],
         httponly=True, secure=True, samesite="lax", max_age=_SESSION_TTL,
     )
+    # 非 HttpOnly 提示旗標：純給前端 custom.js 偵測「這是 SSO 來源」以蓋 splash（#43）。
+    # 不含 secret（只是 "1"），所以可被 JS 讀；真正的 session 仍在 HttpOnly 的 eva_sso。
+    resp.set_cookie(
+        "eva_sso_hint", "1",
+        httponly=False, secure=True, samesite="lax", max_age=_SESSION_TTL,
+    )
     return resp
 
 

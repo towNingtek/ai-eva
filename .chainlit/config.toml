@@ -56,6 +56,9 @@ edit_message = true
 # Name of the assistant.
 name = "AI Eva"
 
+# 預設主題（Chainlit 讀這個 key，不是 [UI.theme].default）。只影響沒手動切過的新訪客。
+default_theme = "light"
+
 # Description of the assistant. This is used for HTML tags.
 # description = ""
 
