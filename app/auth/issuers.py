@@ -108,3 +108,19 @@ def verify_handoff(token: str) -> dict:
         "issuer": iss,
         "claims": claims,
     }
+
+
+def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict:
+    """抓某 issuer 的 tool manifest，帶 token（握手選 (a)：直接帶 handoff token）。
+
+    回該帳號可用的 manifest（{callback_base, credential, tools}），交給 ToolRuntime.load。
+    """
+    issuer = ISSUERS.get(issuer_id)
+    if issuer is None:
+        raise ValueError(f"unknown issuer: {issuer_id!r}")
+    url = issuer.get("manifest_url")
+    if not url:
+        raise ValueError(f"issuer {issuer_id!r} has no manifest_url")
+    r = httpx.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=timeout)
+    r.raise_for_status()
+    return r.json()
