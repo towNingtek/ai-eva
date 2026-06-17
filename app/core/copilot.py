@@ -22,8 +22,28 @@ COPILOT_SYSTEM = (
     "不要臆測沒有的資訊。查到什麼就如實回答，查不到就說查不到。"
     "用繁體中文、簡潔。涉及需要確認的寫入操作時，先說明再請使用者確認。\n"
     "重要：當某工具需要專案 uuid 但使用者沒提供時，**先呼叫 list_my_projects 取得**，"
-    "再用拿到的 uuid 去查（例如查 SROI）。不要反過來要使用者提供 uuid。"
+    "再用拿到的 uuid 去查（例如查 SROI）。不要反過來要使用者提供 uuid。\n"
+    "建立專案（create_project）只需要『名稱』；使用者只給名稱時就**直接用名稱呼叫工具**，"
+    "不要追問主辦組織/預算等選填欄位（那些之後可再補）。"
 )
+
+
+def _confirm_question(name: str, args: dict) -> str:
+    """寫類工具待確認時，給使用者看的確認問句。"""
+    if name == "create_project":
+        return f"要建立專案「{args.get('name') or '（未命名）'}」嗎？確認後我就送出。"
+    summary = "、".join(f"{k}={v}" for k, v in list(args.items())[:5])
+    return f"要執行「{name}」嗎？（{summary}）確認後執行。"
+
+
+def _fmt_result(name: str, data) -> str:
+    """confirmed 執行成功後的回報。"""
+    if isinstance(data, dict):
+        inner = data.get("data", data)
+        uuid = (inner or {}).get("uuid") or (inner or {}).get("uuid_project")
+        if name == "create_project" and uuid:
+            return f"✅ 專案已建立，uuid：`{uuid}`。"
+    return f"✅ 完成。\n```\n{json.dumps(data, ensure_ascii=False)[:500]}\n```"
 
 
 async def run_copilot(
@@ -33,11 +53,12 @@ async def run_copilot(
     *,
     api_key: str | None = None,
     max_rounds: int = 4,
-) -> str:
-    """跑一輪副駕對話，回最終文字。
+) -> dict:
+    """跑一輪副駕對話。回 {"reply": str, "pending": {name,args}|None}。
 
-    runtime: 已 load(manifest) 的 ToolRuntime
-    history: 之前的 langchain messages（可選）
+    讀類工具直接執行；寫類工具（needs_confirm）→ **停下、回 pending**，
+    由 caller 出確認 UI，使用者同意後再以 confirmed=True 重打（execute_confirmed）。
+    runtime: 已 load(manifest) 的 ToolRuntime；history: 之前的 langchain messages。
     """
     tools = runtime.visible_tools()
     llm = make_llm(api_key=api_key, streaming=False)
@@ -54,17 +75,28 @@ async def run_copilot(
 
         tool_calls = getattr(resp, "tool_calls", None) or []
         if not tool_calls:
-            return (resp.content or "").strip() or "（這次沒拿到回應）"
+            return {"reply": (resp.content or "").strip() or "（這次沒拿到回應）", "pending": None}
 
         for tc in tool_calls:
             name, args, tc_id = tc.get("name", ""), tc.get("args") or {}, tc.get("id", "")
-            result = await runtime.execute(name, args, confirmed=False)  # 寫類不自動 confirm
+            result = await runtime.execute(name, args, confirmed=False)  # 先不 confirm
             logger.info("copilot tool %s(%s) → %s", name, args, result.get("status"))
+            if result.get("status") == "need_confirm":
+                # 寫類待確認：停下、把 pending 交給 caller（出確認鈕），不繼續這輪迴圈
+                return {"reply": _confirm_question(name, args), "pending": {"name": name, "args": args}}
             msgs.append(ToolMessage(
                 content=json.dumps(result, ensure_ascii=False),
                 tool_call_id=tc_id,
             ))
 
-    # 用完 max_rounds 還在叫工具 → 收尾要它直接回答
     final = await llm.ainvoke(msgs + [HumanMessage(content="請根據以上工具結果直接回答，不要再呼叫工具。")])
-    return (final.content or "").strip() or "（查了多輪仍未完成）"
+    return {"reply": (final.content or "").strip() or "（查了多輪仍未完成）", "pending": None}
+
+
+async def execute_confirmed(runtime, name: str, args: dict) -> str:
+    """使用者確認後，以 confirmed=True 真的執行 pending 寫類工具，回報結果。"""
+    result = await runtime.execute(name, args, confirmed=True)
+    logger.info("copilot confirmed %s(%s) → %s", name, args, result.get("status"))
+    if result.get("status") == "ok":
+        return _fmt_result(name, result.get("result"))
+    return f"⚠️ 執行失敗：{result.get('reason', result.get('status'))}"
