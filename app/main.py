@@ -13,6 +13,7 @@ from app.nodes import commands as node_commands
 from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
 from app.surfaces import device as device_surface  # noqa: F401  # 註冊 /device/* route
+from app.surfaces import sso as sso_surface  # noqa: F401  # 註冊 /sso/handoff route
 from app.surfaces import queue_consumer  # RabbitMQ consumer 給 M4 cron push 用
 
 logger = logging.getLogger(__name__)
