@@ -17,8 +17,10 @@ CMS 使用者點「進 AI-Eva」→ CMS 簽 RS256 handoff token（aud=ai-eva，�
 """
 import logging
 import secrets
-import time
+import json
+import os
 
+import asyncpg
 from chainlit.server import app as fastapi_app
 from fastapi import HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -28,49 +30,90 @@ from app.tools.runtime import ToolRuntime
 
 logger = logging.getLogger(__name__)
 
-# session_id → {identity, runtime, exp}。骨架用 in-memory；durable 版之後挪 PG。
-_SESSIONS: dict[str, dict] = {}
+# SSO session 存 PG（durable）—— ai-eva 重啟/部署後 session 仍在，使用者不會掉回散客（#44）。
+# 存 identity + manifest（不存 ToolRuntime 物件）；取回時用 manifest 重建 ToolRuntime（便宜）。
+_DATABASE_URL = os.getenv("DATABASE_URL", "")
 _SESSION_TTL = 3600   # 1h
 
 
-def _sweep() -> None:
-    now = time.time()
-    for sid in [k for k, v in _SESSIONS.items() if v["exp"] < now]:
-        _SESSIONS.pop(sid, None)
+def _pg_url() -> str:
+    return _DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+
+
+async def _connect() -> asyncpg.Connection:
+    return await asyncpg.connect(_pg_url())
+
+
+async def ensure_sso_sessions_table() -> None:
+    if not _DATABASE_URL:
+        logger.warning("DATABASE_URL not set; SSO session 不持久化（重啟即掉）")
+        return
+    conn = await _connect()
+    try:
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS sso_sessions (
+                id          TEXT PRIMARY KEY,
+                identity    JSONB NOT NULL,
+                manifest    JSONB NOT NULL,
+                created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                expires_at  TIMESTAMPTZ NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ix_sso_sessions_exp ON sso_sessions (expires_at);
+            """
+        )
+        logger.info("sso_sessions table ready")
+    finally:
+        await conn.close()
 
 
 async def establish_sso_session(token: str) -> dict:
-    """驗章 → manifest → ToolRuntime → 建 session。回 {session_id, identity, tools}。
+    """驗章 → manifest → 存 durable session（PG）。回 {session_id, identity, tools}。
 
     任一步失敗就 raise（caller 轉 403）。這是整條 SSO 鏈的可測核心。
     """
-    identity = issuers.verify_handoff(token)                 # 1. RS256 驗章 → identity
+    identity = issuers.verify_handoff(token)                      # 1. RS256 驗章 → identity
     manifest = issuers.fetch_manifest(identity["issuer"], token)  # 2. 帶 token 抓 manifest（選 a）
-    runtime = ToolRuntime(manifest)                          # 3. 載白名單
+    tools = [t["function"]["name"] for t in ToolRuntime(manifest).visible_tools()]  # 驗 manifest 可用 + 列 tools
 
-    _sweep()
     sid = secrets.token_urlsafe(24)
-    _SESSIONS[sid] = {
-        "identity": identity,
-        "runtime": runtime,
-        "exp": time.time() + _SESSION_TTL,
-    }
-    tools = [t["function"]["name"] for t in runtime.visible_tools()]
+    if _DATABASE_URL:
+        conn = await _connect()
+        try:
+            await conn.execute(
+                "INSERT INTO sso_sessions (id, identity, manifest, expires_at) "
+                "VALUES ($1, $2::jsonb, $3::jsonb, NOW() + ($4 || ' seconds')::interval)",
+                sid, json.dumps(identity), json.dumps(manifest), str(_SESSION_TTL),
+            )
+        finally:
+            await conn.close()
     logger.info(
-        "SSO session for project=%s tenant=%s user=%s → %d tool(s)",
-        identity["project"], identity.get("tenant_id"), identity.get("user_id"), len(tools),
+        "SSO session %s… project=%s user=%s → %d tool(s)",
+        sid[:8], identity["project"], identity.get("user_id"), len(tools),
     )
     return {"session_id": sid, "identity": identity, "tools": tools}
 
 
-def get_sso_session(session_id: str | None) -> dict | None:
-    """供 Chainlit 端（#35）用 cookie 取回 identity + runtime。"""
-    if not session_id:
+async def get_sso_session(session_id: str | None) -> dict | None:
+    """用 cookie 的 session_id 取回 {identity, runtime}。durable（PG）→ 重啟/部署後仍在。
+
+    重建 ToolRuntime（用存的 manifest），所以不依賴記憶體物件存活。
+    """
+    if not session_id or not _DATABASE_URL:
         return None
-    s = _SESSIONS.get(session_id)
-    if not s or s["exp"] < time.time():
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow(
+            "SELECT identity, manifest FROM sso_sessions WHERE id = $1 AND expires_at > NOW()",
+            session_id,
+        )
+    finally:
+        await conn.close()
+    if not row:
         return None
-    return s
+    identity = row["identity"] if isinstance(row["identity"], dict) else json.loads(row["identity"])
+    manifest = row["manifest"] if isinstance(row["manifest"], dict) else json.loads(row["manifest"])
+    return {"identity": identity, "runtime": ToolRuntime(manifest)}
 
 
 @fastapi_app.get("/sso/handoff")

@@ -53,7 +53,7 @@ async def sso_header_auth(headers) -> Optional[cl.User]:
         if k == "eva_sso":
             sid = v
             break
-    sess = sso_surface.get_sso_session(sid)
+    sess = await sso_surface.get_sso_session(sid)
     if not sess:
         return None  # 無有效 SSO → 退回 password 登入
     idn = sess["identity"]
@@ -83,6 +83,7 @@ async def _init_tables():
     await node_commands.ensure_commands_table()
     await line_surface.ensure_line_table()
     await line_session.ensure_session_tables()
+    await sso_surface.ensure_sso_sessions_table()
 
 
 try:
@@ -105,16 +106,16 @@ async def on_chat_resume(thread):
     await _register_commands()
 
 
-def _sso_session_for_current_user():
+async def _sso_session_for_current_user():
     """目前 Chainlit user 若是 SSO 認證的，回它的 SSO session（含 ToolRuntime）；否則 None。"""
     user = cl.user_session.get("user")
     sid = (getattr(user, "metadata", None) or {}).get("sso_session_id") if user else None
-    return sso_surface.get_sso_session(sid) if sid else None
+    return await sso_surface.get_sso_session(sid) if sid else None
 
 
 @cl.on_chat_start
 async def on_start():
-    sess = _sso_session_for_current_user()
+    sess = await _sso_session_for_current_user()
     if sess:
         # CMS 副駕模式：載入該帳號的 ToolRuntime，走 copilot
         cl.user_session.set("cms_runtime", sess["runtime"])
