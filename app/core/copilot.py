@@ -246,7 +246,9 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
             n += len(block)
     if n == 0:
         return "（這個專案的描述還不足以估出 SROI 指標，補一點社會/經濟/環境影響的細節再試。）"
-    result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0)
+    # save_sroi 必須走 JSON body：CMS handler 不會把 form 欄位的 JSON 字串 json.loads 回來，
+    # 用 form 會「收下卻 written=[]」（success:true 假象 → 全 0）。manifest 未標 encoding，這裡強制。
+    result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0, encoding="json")
     if result.get("status") == "ok":
         return (
             f"已產生 SROI 草稿（估了 {n} 個指標）。\n"

@@ -113,10 +113,12 @@ class ToolRuntime:
 
     # ── 執行 ──────────────────────────────────────────────
     async def execute(self, name: str, args: dict, *, confirmed: bool = False,
-                      timeout: float | None = None) -> dict:
+                      timeout: float | None = None, encoding: str | None = None) -> dict:
         """執行工具。
 
         timeout: 這次呼叫的 HTTP timeout（覆寫預設 self._timeout）；慢操作（SROI Google Sheet）用得上。
+        encoding: 覆寫送法（"form"/"json"）；manifest 未標 encoding 但端點只吃 JSON body 時用
+          （例：save_sroi 的 handler 不會把 form 欄位的 JSON 字串 json.loads 回來 → 必須 JSON body）。
 
         回傳：
           {"status":"denied", ...}        不在白名單
@@ -147,7 +149,7 @@ class ToolRuntime:
 
         # 送法：GET→query；POST→預設 form-encoded（CMS 端點吃 form，不吃 JSON），
         # 工具可標 "encoding":"json" 改送 JSON body（給 JSON-based issuer）。
-        encoding = (tool.get("encoding") or "form").lower()
+        encoding = (encoding or tool.get("encoding") or "form").lower()
         try:
             async with httpx.AsyncClient(timeout=timeout or self._timeout) as cx:
                 if method == "GET":
