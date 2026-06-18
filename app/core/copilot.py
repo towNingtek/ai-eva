@@ -176,6 +176,22 @@ _SROI_PROMPT = (
 )
 
 
+def _indicators_from_template(tmpl_result: dict) -> dict:
+    """get_sroi_template 的乾淨格式 {face:[{id,title,inputs}]} → {face:[{id,title,inputs}]}。
+
+    CMS 新端點（POST /projects/sroi_template，秒回、不碰 Drive）直接給 id/title/inputs，
+    比 get_sroi 的 head/key 結構好剖太多。
+    """
+    data = _inner(tmpl_result.get("result") if "result" in tmpl_result else tmpl_result)
+    out = {}
+    for face in ("social", "economy", "environment"):
+        out[face] = [
+            {"id": it.get("id"), "title": it.get("title"), "inputs": it.get("inputs") or []}
+            for it in (data.get(face) or []) if it.get("id")
+        ]
+    return out
+
+
 def _sroi_indicators(get_sroi_result: dict) -> dict:
     """從 get_sroi 結果抽出 {social:[{id,inputs}], economy:[...], environment:[...]}。"""
     data = _inner(get_sroi_result.get("result") if "result" in get_sroi_result else get_sroi_result)
@@ -200,12 +216,21 @@ def _sroi_indicators(get_sroi_result: dict) -> dict:
 
 
 async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
-    """get_sroi 拿指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。"""
-    # SROI 走 Google Sheet：新專案第一次取表要初始化試算表，比一般 API 慢很多 → 給足 timeout。
-    tmpl = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False, timeout=120.0)
-    if tmpl.get("status") != "ok":
-        return f"（拿不到 SROI 指標表：{tmpl.get('reason')}）"
-    indicators = _sroi_indicators(tmpl)
+    """拿 SROI 指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。
+
+    取指標表：優先 get_sroi_template（CMS 新端點，秒回、不碰 Drive）；
+    舊 SSO session 的 manifest 還沒這支 → deny/error，退回 get_sroi(uuid)
+    （CMS 已修不再 500，但要複製 Google Sheet ~11s 冷啟動 → 給足 120s）。
+    """
+    tmpl = await runtime.execute("get_sroi_template", {"uuid_project": uuid}, confirmed=False, timeout=30.0)
+    if tmpl.get("status") == "ok":
+        indicators = _indicators_from_template(tmpl)
+    else:
+        logger.info("get_sroi_template unavailable (%s) → fallback get_sroi", tmpl.get("status"))
+        legacy = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False, timeout=120.0)
+        if legacy.get("status") != "ok":
+            return f"（拿不到 SROI 指標表：{tmpl.get('reason') or legacy.get('reason')}）"
+        indicators = _sroi_indicators(legacy)
     llm = make_llm(api_key=api_key, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SROI_PROMPT),
