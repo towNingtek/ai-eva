@@ -9,7 +9,12 @@ from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
-from app.core.copilot import run_copilot, execute_confirmed
+from app.core.copilot import (
+    run_copilot,
+    execute_confirmed,
+    generate_and_save_sdg,
+    estimate_and_save_sroi,
+)
 from app.core.storage import LocalStorageClient
 from app.dispatch import Envelope, handle_device_intent
 from app.nodes import commands as node_commands
@@ -220,15 +225,56 @@ async def cms_confirm(action: cl.Action):
         await cl.Message(content="好，已取消，沒有送出。").send()
         return
     try:
-        reply = await execute_confirmed(runtime, pending["name"], pending["args"])
+        res = await execute_confirmed(runtime, pending["name"], pending["args"])
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS confirm execute failed")
-        reply = f"⚠️ 執行失敗（{type(e).__name__}）"
-    # 把執行結果寫回對話 history，讓後續輪次（如建好後主動問 SROI）知道已執行 + uuid
+        res = {"reply": f"⚠️ 執行失敗（{type(e).__name__}）", "ok": False, "data": {}}
+    reply = res["reply"]
     history = cl.user_session.get("cms_history") or []
-    history += [
-        HumanMessage(content=f"（已確認執行 {pending['name']}）"),
-        AIMessage(content=reply),
-    ]
+
+    # 建專案成功 → 自動產 SDG（#57 Phase1）+ 出 SROI 按鈕（Phase2，慢→問）
+    if res["ok"] and pending["name"] == "create_project":
+        uuid = res["data"].get("uuid") or res["data"].get("uuid_project")
+        info = pending["args"]
+        try:
+            sdg_msg = await generate_and_save_sdg(runtime, info, uuid)
+        except Exception:  # noqa: BLE001
+            logger.exception("auto SDG failed")
+            sdg_msg = "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」）"
+        cl.user_session.set("sroi_target", {"uuid": uuid, "info": info})
+        full = (
+            f"{reply}\n\n{sdg_msg}\n\n"
+            "要不要順便產一版 **SROI 草稿**？會花一點時間，產完你可進試算表自己修。"
+        )
+        history += [HumanMessage(content=f"（已建立專案 {info.get('name')}）"), AIMessage(content=full)]
+        cl.user_session.set("cms_history", history[-12:])
+        await cl.Message(content=full, actions=[
+            cl.Action(name="cms_sroi", payload={"decision": "yes"}, label="✅ 產 SROI 草稿"),
+            cl.Action(name="cms_sroi", payload={"decision": "no"}, label="✖ 不用"),
+        ]).send()
+        return
+
+    history += [HumanMessage(content=f"（已確認執行 {pending['name']}）"), AIMessage(content=reply)]
     cl.user_session.set("cms_history", history[-12:])
+    await cl.Message(content=reply).send()
+
+
+@cl.action_callback("cms_sroi")
+async def cms_sroi(action: cl.Action):
+    """建專案後使用者按「產 SROI 草稿」→ estimate_and_save_sroi（慢，#57 Phase2）。"""
+    tgt = cl.user_session.get("sroi_target")
+    runtime = cl.user_session.get("cms_runtime")
+    cl.user_session.set("sroi_target", None)
+    if (action.payload or {}).get("decision") != "yes":
+        await cl.Message(content="好，這次先不做 SROI；需要時再跟我說。").send()
+        return
+    if not (tgt and runtime):
+        await cl.Message(content="找不到要做 SROI 的專案，請重新說一次。").send()
+        return
+    await cl.Message(content="好，開始估算 SROI 草稿…（會花一點時間，請稍候）").send()
+    try:
+        reply = await estimate_and_save_sroi(runtime, tgt["info"], tgt["uuid"])
+    except Exception as e:  # noqa: BLE001
+        logger.exception("SROI estimate failed")
+        reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
     await cl.Message(content=reply).send()
