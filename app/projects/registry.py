@@ -49,6 +49,9 @@ _SEED = [
         "line_recipient": os.getenv("DEFAULT_LINE_RECIPIENT") or None,
         "contacts": {},
     },
+    # CMS「AI 秘書」遷移專案（#50）。CMS issuer tplanet-cms 映到這個 project。
+    # copilot 是互動式（web），不走 LINE push，line_recipient 留空。
+    {"id": "sechome", "label": "Sechome（CMS AI 秘書）", "line_recipient": None, "contacts": {}},
 ]
 
 
