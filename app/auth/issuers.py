@@ -30,7 +30,7 @@ ISSUERS: dict[str, dict] = {
         "jwks_url": "https://dev.4impact.cc/api/tools/jwks",
         "manifest_url": "https://dev.4impact.cc/api/tools/manifest",
         "audience": "ai-eva",
-        "project": "tplanet",   # tenant 取自 token 的 tenant_id
+        "project": "sechome",   # CMS AI 秘書遷移專案（#50）；tenant 取自 token 的 tenant_id
     },
 }
 
