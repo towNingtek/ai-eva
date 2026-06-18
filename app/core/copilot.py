@@ -45,24 +45,35 @@ def _confirm_question(name: str, args: dict) -> str:
     return f"要執行「{name}」嗎？（{summary}）確認後執行。"
 
 
+def _inner(raw):
+    """剝 CMS 的 {success,data} 信封，回 data dict。"""
+    if isinstance(raw, dict):
+        return raw.get("data") if isinstance(raw.get("data"), dict) else raw
+    return {}
+
+
 def _fmt_result(name: str, data) -> str:
-    """confirmed 執行成功後的回報。"""
-    if isinstance(data, dict):
-        inner = data.get("data") if isinstance(data.get("data"), dict) else data
-        inner = inner or {}
-        if name == "create_project":
-            pname = inner.get("name") or "（未命名）"
-            url = inner.get("url")
-            uuid = inner.get("uuid") or inner.get("uuid_project")
-            # ① 名稱+超連結（不要裸 uuid）
-            link = f"[{pname}]({url})" if url else f"「{pname}」（uuid {uuid}）"
-            # ② 告知 SDG 自動 + 主動問一次 SROI
-            return (
-                f"✅ 專案已建立：{link}\n\n"
-                "我會自動幫你產生 **SDG 描述**。\n"
-                "要不要順便產一版 **SROI 草稿**？會花一點時間，產完你可以進試算表自己修。"
-            )
+    """confirmed 執行成功後的回報（建專案 = 名稱+超連結；SDG/SROI 由各自 generator 回報）。"""
+    inner = _inner(data) or {}
+    if name == "create_project":
+        pname = inner.get("name") or "（未命名）"
+        url = inner.get("url")
+        uuid = inner.get("uuid") or inner.get("uuid_project")
+        return f"✅ 專案已建立：[{pname}]({url})" if url else f"✅ 專案已建立：「{pname}」（uuid {uuid}）"
     return f"✅ 完成。\n```\n{json.dumps(data, ensure_ascii=False)[:500]}\n```"
+
+
+def _parse_json_obj(text: str) -> dict:
+    """從 LLM 回應挖出 JSON 物件（可能包 markdown code fence）。"""
+    if not text:
+        return {}
+    s, e = text.find("{"), text.rfind("}")
+    if s == -1 or e == -1:
+        return {}
+    try:
+        return json.loads(text[s:e + 1])
+    except json.JSONDecodeError:
+        return {}
 
 
 async def run_copilot(
@@ -112,10 +123,101 @@ async def run_copilot(
     return {"reply": (final.content or "").strip() or "（查了多輪仍未完成）", "pending": None}
 
 
-async def execute_confirmed(runtime, name: str, args: dict) -> str:
-    """使用者確認後，以 confirmed=True 真的執行 pending 寫類工具，回報結果。"""
+async def execute_confirmed(runtime, name: str, args: dict) -> dict:
+    """使用者確認後，以 confirmed=True 真執行 pending 寫類工具。
+
+    回 {"reply": str, "ok": bool, "data": dict}（data = 剝信封後的結果，給 caller 取 uuid 等）。
+    """
     result = await runtime.execute(name, args, confirmed=True)
     logger.info("copilot confirmed %s(%s) → %s", name, args, result.get("status"))
     if result.get("status") == "ok":
-        return _fmt_result(name, result.get("result"))
-    return f"⚠️ 執行失敗：{result.get('reason', result.get('status'))}"
+        raw = result.get("result")
+        return {"reply": _fmt_result(name, raw), "ok": True, "data": _inner(raw) or {}}
+    return {"reply": f"⚠️ 執行失敗：{result.get('reason', result.get('status'))}", "ok": False, "data": {}}
+
+
+# ── Phase 1：SDG 產生器（#57）──────────────────────────────────
+_SDG_PROMPT = (
+    "你是 SDG 顧問。根據專案資訊，從聯合國 17 個 SDG 中挑出 **3~6 個最相關的**，"
+    "為每個寫一句『這專案如何推進該 SDG』的繁體中文描述（約 30~60 字）。"
+    "只放真的命中的，別硬湊。**只回 JSON 物件** {\"SDG編號(字串1~17)\":\"描述\"}，不要其他文字。"
+)
+
+
+async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
+    """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
+    llm = make_llm(api_key=api_key, streaming=False)
+    resp = await llm.ainvoke([
+        SystemMessage(content=_SDG_PROMPT),
+        HumanMessage(content=json.dumps(project_info, ensure_ascii=False)),
+    ])
+    sdgs = _parse_json_obj(resp.content or "")
+    sdgs = {str(k): v for k, v in sdgs.items() if str(k).isdigit() and v}  # 清成 {編號:描述}
+    if not sdgs:
+        return "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」重試）"
+    result = await runtime.execute("save_sdg", {"uuid": uuid, "project_sdgs": sdgs}, confirmed=True)
+    if result.get("status") == "ok":
+        return "已自動產生並存好 SDG：" + "、".join(f"SDG {k}" for k in sorted(sdgs, key=int))
+    return f"（SDG 儲存失敗：{result.get('reason')}）"
+
+
+# ── Phase 2：SROI 估算器（#57）──────────────────────────────────
+_SROI_PROMPT = (
+    "你是 SROI 估算顧問。下面有專案資訊與 SROI 指標表（每個指標含『輸入欄標籤』）。"
+    "請根據專案資訊，為**能合理對應**的指標估出輸入欄的草稿數字（依標籤由左到右、跳過公式欄）。"
+    "只填有把握的指標、其餘留空，數字是粗估草稿。**只回 JSON** "
+    "{\"social\":{\"S-1\":[數字,...]},\"economy\":{\"E-1\":[...]},\"environment\":{\"E-1-1\":[...]}}。"
+)
+
+
+def _sroi_indicators(get_sroi_result: dict) -> dict:
+    """從 get_sroi 結果抽出 {social:[{id,inputs}], economy:[...], environment:[...]}。"""
+    data = _inner(get_sroi_result.get("result") if "result" in get_sroi_result else get_sroi_result)
+    out = {}
+    for face, key in (("social", "sroi_social"), ("economy", "sroi_economy"), ("environment", "sroi_environment")):
+        items = []
+        for it in (data.get(key) or []):
+            head = (it.get("head") or [""])[0]
+            iid = head.split(".")[0].strip() if head else ""
+            keys = it.get("key") or []
+            # 輸入欄 = 「價值計算」之前的標籤
+            inputs = []
+            for k in keys:
+                if k in ("價值計算", "評估標準"):
+                    break
+                if k:
+                    inputs.append(k)
+            if iid:
+                items.append({"id": iid, "inputs": inputs})
+        out[face] = items
+    return out
+
+
+async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
+    """get_sroi 拿指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。"""
+    tmpl = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False)
+    if tmpl.get("status") != "ok":
+        return f"（拿不到 SROI 指標表：{tmpl.get('reason')}）"
+    indicators = _sroi_indicators(tmpl)
+    llm = make_llm(api_key=api_key, streaming=False)
+    resp = await llm.ainvoke([
+        SystemMessage(content=_SROI_PROMPT),
+        HumanMessage(content=json.dumps({"project": project_info, "indicators": indicators}, ensure_ascii=False)),
+    ])
+    vals = _parse_json_obj(resp.content or "")
+    payload = {"uuid_project": uuid}
+    n = 0
+    for face in ("social", "economy", "environment"):
+        block = vals.get(face) or {}
+        if isinstance(block, dict) and block:
+            payload[face] = block
+            n += len(block)
+    if n == 0:
+        return "（這個專案的描述還不足以估出 SROI 指標，補一點社會/經濟/環境影響的細節再試。）"
+    result = await runtime.execute("save_sroi", payload, confirmed=True)
+    if result.get("status") == "ok":
+        return (
+            f"已產生 SROI 草稿（估了 {n} 個指標）。\n"
+            "⚠️ 這是 **AI 初估值**，請進試算表自行核對、修正數字（公式會自動重算）。"
+        )
+    return f"（SROI 儲存失敗：{result.get('reason')}）"

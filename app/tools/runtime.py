@@ -26,6 +26,7 @@ manifest schema（與 multi-tenant `GET /api/tools/manifest`、tplanet #88 共�
 """
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any, Optional
 
@@ -151,7 +152,13 @@ class ToolRuntime:
                 elif encoding == "json":
                     r = await cx.request(method, url, json=args, headers=headers)
                 else:
-                    r = await cx.request(method, url, data=args, headers=headers)
+                    # form-encoded：巢狀值（dict/list，如 project_sdgs / SROI 各面向）
+                    # 無法直接 form 編 → json.dumps 成字串塞進欄位（CMS 接受 JSON 字串）。
+                    form = {
+                        k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
+                        for k, v in args.items()
+                    }
+                    r = await cx.request(method, url, data=form, headers=headers)
         except Exception as e:  # noqa: BLE001
             logger.exception("ToolRuntime execute '%s' transport error", name)
             return {"status": "error", "reason": f"{type(e).__name__}: {e}", "tool": name}
