@@ -195,7 +195,8 @@ def _sroi_indicators(get_sroi_result: dict) -> dict:
 
 async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
     """get_sroi 拿指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。"""
-    tmpl = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False)
+    # SROI 走 Google Sheet：新專案第一次取表要初始化試算表，比一般 API 慢很多 → 給足 timeout。
+    tmpl = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False, timeout=120.0)
     if tmpl.get("status") != "ok":
         return f"（拿不到 SROI 指標表：{tmpl.get('reason')}）"
     indicators = _sroi_indicators(tmpl)
@@ -214,7 +215,7 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
             n += len(block)
     if n == 0:
         return "（這個專案的描述還不足以估出 SROI 指標，補一點社會/經濟/環境影響的細節再試。）"
-    result = await runtime.execute("save_sroi", payload, confirmed=True)
+    result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0)
     if result.get("status") == "ok":
         return (
             f"已產生 SROI 草稿（估了 {n} 個指標）。\n"
