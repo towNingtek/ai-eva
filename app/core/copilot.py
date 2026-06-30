@@ -88,6 +88,7 @@ async def run_copilot(
     history: list | None = None,
     *,
     api_key: str | None = None,
+    user: str | None = None,
     max_rounds: int = 4,
 ) -> dict:
     """跑一輪副駕對話。回 {"reply": str, "pending": {name,args}|None}。
@@ -97,7 +98,7 @@ async def run_copilot(
     runtime: 已 load(manifest) 的 ToolRuntime；history: 之前的 langchain messages。
     """
     tools = runtime.visible_tools()
-    llm = make_llm(api_key=api_key, streaming=False)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     if tools:
         llm = llm.bind_tools(tools)
 
@@ -150,9 +151,9 @@ _SDG_PROMPT = (
 )
 
 
-async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
+async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
     """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
-    llm = make_llm(api_key=api_key, streaming=False)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SDG_PROMPT),
         HumanMessage(content=json.dumps(project_info, ensure_ascii=False)),
@@ -215,7 +216,7 @@ def _sroi_indicators(get_sroi_result: dict) -> dict:
     return out
 
 
-async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
+async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
     """拿 SROI 指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。
 
     取指標表：優先 get_sroi_template（CMS 新端點，秒回、不碰 Drive）；
@@ -231,7 +232,7 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
         if legacy.get("status") != "ok":
             return f"（拿不到 SROI 指標表：{tmpl.get('reason') or legacy.get('reason')}）"
         indicators = _sroi_indicators(legacy)
-    llm = make_llm(api_key=api_key, streaming=False)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SROI_PROMPT),
         HumanMessage(content=json.dumps({"project": project_info, "indicators": indicators}, ensure_ascii=False)),
