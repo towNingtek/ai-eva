@@ -34,6 +34,13 @@ ISSUERS: dict[str, dict] = {
     },
 }
 
+# tenant → project 覆寫（#94 雲林雙軌）：特定租戶獨立成自己的 project，
+# 讓用量/LiteLLM key 分流（見 projects.metadata.litellm_key）。
+# 沒列到的 tenant 沿用 issuer 的預設 project（如一般 CMS 租戶 → sechome）。
+TENANT_PROJECT_MAP: dict[str, str] = {
+    "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
+}
+
 _AUDIENCE_DEFAULT = "ai-eva"
 
 # ── JWKS 快取（kid→公鑰物件；含 TTL，支援輪替）─────────────────────
@@ -100,9 +107,10 @@ def verify_handoff(token: str) -> dict:
         audience=issuer.get("audience", _AUDIENCE_DEFAULT),
         issuer=iss,
     )
+    tenant_id = claims.get("tenant_id")
     return {
-        "project": issuer["project"],
-        "tenant_id": claims.get("tenant_id"),
+        "project": TENANT_PROJECT_MAP.get(tenant_id) or issuer["project"],
+        "tenant_id": tenant_id,
         "user_id": claims.get("user_id"),
         "email": claims.get("email"),
         "issuer": iss,

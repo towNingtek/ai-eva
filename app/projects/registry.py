@@ -52,6 +52,9 @@ _SEED = [
     # CMS「AI 秘書」遷移專案（#50）。CMS issuer tplanet-cms 映到這個 project。
     # copilot 是互動式（web），不走 LINE push，line_recipient 留空。
     {"id": "sechome", "label": "Sechome（CMS AI 秘書）", "line_recipient": None, "contacts": {}},
+    # 雲林案（法規檢核沙盒）。暫定獨立 project；引擎日後畢業成 sechome infra、語料 scoped。
+    # issuer 解析 tenant=yunlin→project=yunlin 之後再加（先不切，避免影響現有 copilot）。
+    {"id": "yunlin", "label": "雲林（法規檢核沙盒）", "line_recipient": None, "contacts": {}},
 ]
 
 
@@ -98,6 +101,25 @@ async def get_project(project_id: str) -> Optional[dict]:
             project_id,
         )
         return dict(row) if row else None
+    finally:
+        await conn.close()
+
+
+async def get_litellm_key(project_id: Optional[str]) -> Optional[str]:
+    """回該 project 設定的 LiteLLM virtual key（metadata.litellm_key）。
+
+    無設定或非 SSO（project_id 為 None）→ 回 None，呼叫端 fallback 到預設 LITELLM_API_KEY。
+    用途：讓 ai-eva 依使用者所屬 project 帶對應 virtual key，用量分流到各 LiteLLM team（階段2）。
+    """
+    if not _DATABASE_URL or not project_id:
+        return None
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow(
+            "SELECT metadata->>'litellm_key' AS k FROM projects WHERE id = $1",
+            project_id,
+        )
+        return row["k"] if row else None
     finally:
         await conn.close()
 

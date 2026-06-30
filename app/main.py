@@ -126,6 +126,8 @@ async def on_start():
         cl.user_session.set("cms_runtime", sess["runtime"])
         cl.user_session.set("cms_history", [])
         idn = sess["identity"]
+        # 階段2：依 project 帶對應 LiteLLM virtual key（用量分流到各 team）；無設定則 fallback 預設 key
+        cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
         tools = [t["function"]["name"] for t in sess["runtime"].visible_tools()]
         await cl.Message(
             content=(
@@ -158,7 +160,7 @@ async def on_message(msg: cl.Message):
         history = cl.user_session.get("cms_history") or []
         pending = None
         try:
-            result = await run_copilot(runtime, content, history)
+            result = await run_copilot(runtime, content, history, api_key=cl.user_session.get("llm_key"))
             ans, pending = result["reply"], result.get("pending")
         except Exception as e:  # noqa: BLE001
             logger.exception("CMS copilot failed")
@@ -237,7 +239,7 @@ async def cms_confirm(action: cl.Action):
         uuid = res["data"].get("uuid") or res["data"].get("uuid_project")
         info = pending["args"]
         try:
-            sdg_msg = await generate_and_save_sdg(runtime, info, uuid)
+            sdg_msg = await generate_and_save_sdg(runtime, info, uuid, api_key=cl.user_session.get("llm_key"))
         except Exception:  # noqa: BLE001
             logger.exception("auto SDG failed")
             sdg_msg = "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」）"
@@ -273,7 +275,7 @@ async def cms_sroi(action: cl.Action):
         return
     await cl.Message(content="好，開始估算 SROI 草稿…（會花一點時間，請稍候）").send()
     try:
-        reply = await estimate_and_save_sroi(runtime, tgt["info"], tgt["uuid"])
+        reply = await estimate_and_save_sroi(runtime, tgt["info"], tgt["uuid"], api_key=cl.user_session.get("llm_key"))
     except Exception as e:  # noqa: BLE001
         logger.exception("SROI estimate failed")
         reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
