@@ -63,9 +63,14 @@ def _fmt_result(name: str, data) -> str:
     inner = _inner(data) or {}
     if name == "create_project":
         pname = inner.get("name") or "（未命名）"
-        url = inner.get("url")
         uuid = inner.get("uuid") or inner.get("uuid_project")
-        return f"✅ 專案已建立：[{pname}]({url})" if url else f"✅ 專案已建立：「{pname}」（uuid {uuid}）"
+        url = inner.get("url") or ""
+        # CMS 回的是後台編輯頁 /backend/cms_plan_info/（需後台角色權限、草稿常渲染空白）→
+        # 改指公開檢視頁 /content/{uuid}（SSO 使用者不必再過後台權限就看得到）。
+        view = url.replace("/backend/cms_plan_info/", "/content/") if url else ""
+        if view:
+            return f"✅ 專案已建立：[{pname}]({view})"
+        return f"✅ 專案已建立：「{pname}」（uuid {uuid}）"
     return f"✅ 完成。\n```\n{json.dumps(data, ensure_ascii=False)[:500]}\n```"
 
 
