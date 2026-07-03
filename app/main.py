@@ -108,6 +108,9 @@ async def _register_commands():
 
 @cl.on_chat_resume
 async def on_chat_resume(thread):
+    # 關鍵：resumed thread 走的是這裡（不是 on_chat_start）→ 也要載入 SSO runtime，
+    # 否則 cms_runtime=None，附件與副駕對話全失效（#66 實測踩到）。
+    await _load_sso_runtime()
     await _register_commands()
 
 
@@ -118,19 +121,30 @@ async def _sso_session_for_current_user():
     return await sso_surface.get_sso_session(sid) if sid else None
 
 
+async def _load_sso_runtime():
+    """SSO 使用者 → 把 ToolRuntime + LiteLLM key/user 載入 session；回 identity 或 None。
+    on_chat_start 與 on_chat_resume 共用（兩條進入 thread 的路都要載）。"""
+    sess = await _sso_session_for_current_user()
+    if not sess:
+        return None
+    cl.user_session.set("cms_runtime", sess["runtime"])
+    if cl.user_session.get("cms_history") is None:
+        cl.user_session.set("cms_history", [])
+    idn = sess["identity"]
+    # 階段2：依 project 帶對應 LiteLLM virtual key（用量分流到各 team）；無設定則 fallback 預設 key
+    cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
+    # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
+    cl.user_session.set("llm_user", idn.get("user_id") or idn.get("email"))
+    return idn
+
+
 @cl.on_chat_start
 async def on_start():
-    sess = await _sso_session_for_current_user()
-    if sess:
-        # CMS 副駕模式：載入該帳號的 ToolRuntime，走 copilot
-        cl.user_session.set("cms_runtime", sess["runtime"])
-        cl.user_session.set("cms_history", [])
-        idn = sess["identity"]
-        # 階段2：依 project 帶對應 LiteLLM virtual key（用量分流到各 team）；無設定則 fallback 預設 key
-        cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
-        # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
-        cl.user_session.set("llm_user", idn.get("user_id") or idn.get("email"))
-        tools = [t["function"]["name"] for t in sess["runtime"].visible_tools()]
+    idn = await _load_sso_runtime()
+    if idn:
+        # CMS 副駕模式
+        runtime = cl.user_session.get("cms_runtime")
+        tools = [t["function"]["name"] for t in runtime.visible_tools()]
         await cl.Message(
             content=(
                 f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
@@ -252,6 +266,8 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
             readable.append({"name": name, "path": e.path, "mime": mime})
         else:
             rejected.append(name)
+    logger.info("attachments: readable=%s rejected=%s content=%r",
+                [a["name"] for a in readable], rejected, bool(content))
     note = ""
     if rejected:
         note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— MVP 先支援 .txt / .md，PDF 解析在後續 #93）"
@@ -284,11 +300,17 @@ async def on_message(msg: cl.Message):
 
     # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
     runtime = cl.user_session.get("cms_runtime")
+    logger.info("on_message: cms_runtime=%s content=%r elements=%d",
+                runtime is not None, content[:30], len(msg.elements or []))
     if runtime is not None:
         history = cl.user_session.get("cms_history") or []
         # 附件（#66）：優先處理；上傳只收不猜，別被 content 空值早退擋掉
         if msg.elements:
-            await _handle_cms_attachments(msg, content, runtime, history)
+            try:
+                await _handle_cms_attachments(msg, content, runtime, history)
+            except Exception as e:  # noqa: BLE001
+                logger.exception("attachment handling failed")
+                await cl.Message(content=f"⚠️ 處理附件時出錯（{type(e).__name__}），請再試一次。").send()
             return
         if not content:
             return
