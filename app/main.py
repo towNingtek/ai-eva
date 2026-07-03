@@ -327,6 +327,13 @@ async def on_message(msg: cl.Message):
         await _run_copilot_emit(runtime, content, content, history)
         return
 
+    # runtime 仍為 None：若使用者上傳了附件（期待副駕），多半是 SSO session 過期 → 明講、別靜默丟
+    if msg.elements:
+        await cl.Message(
+            content="⚠️ 你的登入可能過期了，附件沒被處理。請重新從 CMS 點一次「進 AI 秘書」再上傳。"
+        ).send()
+        return
+
     if not content:
         return
 

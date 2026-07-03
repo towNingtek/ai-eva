@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 # SSO session 存 PG（durable）—— ai-eva 重啟/部署後 session 仍在，使用者不會掉回散客（#44）。
 # 存 identity + manifest（不存 ToolRuntime 物件）；取回時用 manifest 重建 ToolRuntime（便宜）。
 _DATABASE_URL = os.getenv("DATABASE_URL", "")
-_SESSION_TTL = 3600   # 1h
+_SESSION_TTL = 28800   # 8h（beta：1h 對一整天測試太短，會做到一半過期；prod 可再縮短或改 refresh）
 
 
 def _pg_url() -> str:
