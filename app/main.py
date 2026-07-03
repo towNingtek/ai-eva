@@ -300,6 +300,11 @@ async def on_message(msg: cl.Message):
 
     # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
     runtime = cl.user_session.get("cms_runtime")
+    if runtime is None:
+        # 自癒：websocket 自動重連（容器重啟/斷線）不會觸發 on_chat_resume → session 被清空、
+        # runtime 沒補回。SSO 使用者就地重載（session 存 PG，get_sso_session 撈得回）。
+        if await _load_sso_runtime():
+            runtime = cl.user_session.get("cms_runtime")
     logger.info("on_message: cms_runtime=%s content=%r elements=%d",
                 runtime is not None, content[:30], len(msg.elements or []))
     if runtime is not None:
