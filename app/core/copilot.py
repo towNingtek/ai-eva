@@ -255,8 +255,11 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
     # 用 form 會「收下卻 written=[]」（success:true 假象 → 全 0）。manifest 未標 encoding，這裡強制。
     result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0, encoding="json")
     if result.get("status") == "ok":
+        total = sum(len(indicators.get(f) or []) for f in ("social", "economy", "environment"))
         return (
-            f"已產生 SROI 草稿（估了 {n} 個指標）。\n"
-            "⚠️ 這是 **AI 初估值**，請進試算表自行核對、修正數字（公式會自動重算）。"
+            f"我依你的計畫內容，幫這個專案的 SROI 表**先填了 {n} 個指標的估計數字**"
+            f"（整份共 {total} 個指標，其餘我沒把握、先留白給你）。\n\n"
+            "⚠️ 這些是 **AI 依描述猜的草稿、不是真實數據** —— 請到專案頁面的"
+            "「**成果展現 → SROI**」區，核對並把數字改成真的（改完 SROI 比率會自動重算）。"
         )
     return f"（SROI 儲存失敗：{result.get('reason')}）"
