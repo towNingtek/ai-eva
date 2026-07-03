@@ -246,7 +246,7 @@ async def _run_with_attachments(runtime, intent: str, atts: list, history: list)
             continue
         ok.append(a["name"])
         blocks.append(_frame_file(a["name"], text))
-    cl.user_session.set("pending_attachments", None)  # 消費掉
+    # 不在這裡消費：附件留著讓使用者多輪追問；建成專案成功（cms_confirm）或換新上傳時才清
     if not blocks:
         await cl.Message(content="檔案讀不到內容（可能是空檔或編碼問題），請確認後再試。").send()
         return
@@ -274,9 +274,8 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
     if not readable:
         await cl.Message(content=("我收到檔案了，但這種格式目前還不能處理。" + note)).send()
         return
-    # lazy：只存 name+path，先不讀內容；新上傳重置靜音
+    # lazy：只存 name+path，先不讀內容（新上傳取代舊的）
     cl.user_session.set("pending_attachments", readable)
-    cl.user_session.set("attach_muted", False)
     if content:
         # 上傳時就講了要幹嘛 → 直接讀 + 跑
         await _run_with_attachments(runtime, content, readable, history)
@@ -315,9 +314,9 @@ async def on_message(msg: cl.Message):
             return
         if not content:
             return
-        # 有剛上傳、未消費、未靜音的附件 → 這句話視為對它的意圖，把內容 fold 進去（並消費）
+        # 有可用附件 → 這句話視為對它的意圖，把內容 fold 進去（附件留著、可多輪追問，直到建成專案或換上傳）
         atts = cl.user_session.get("pending_attachments")
-        if atts and not cl.user_session.get("attach_muted"):
+        if atts:
             await _run_with_attachments(runtime, content, atts, history)
             return
         await _run_copilot_emit(runtime, content, content, history)
@@ -383,6 +382,7 @@ async def cms_confirm(action: cl.Action):
 
     # 建專案成功 → 自動產 SDG（#57 Phase1）+ 出 SROI 按鈕（Phase2，慢→問）
     if res["ok"] and pending["name"] == "create_project":
+        cl.user_session.set("pending_attachments", None)  # 已建成專案 → 附件消費完畢
         uuid = res["data"].get("uuid") or res["data"].get("uuid_project")
         info = pending["args"]
         try:
@@ -437,9 +437,8 @@ async def cms_attach(action: cl.Action):
     history = cl.user_session.get("cms_history") or []
     act = (action.payload or {}).get("action")
     if act == "dismiss":
-        # 靜音而非清掉：檔案留著，之後點按鈕仍可用；打字則不再自動 fold（避免拖累不相關對話）
-        cl.user_session.set("attach_muted", True)
-        await cl.Message(content="好，先放著。之後想用，點上面的按鈕、或直接跟我說就行。").send()
+        # 不清掉：檔案留著，之後點按鈕、或直接打字問都還能用（A 版行為）
+        await cl.Message(content="好，先放著。檔案我留著，之後點上面的按鈕、或直接打字問我都行。").send()
         return
     if not (atts and runtime):
         await cl.Message(content="找不到剛剛的檔案了，請再上傳一次。").send()
