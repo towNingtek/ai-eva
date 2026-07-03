@@ -103,7 +103,11 @@ async def run_copilot(
         llm = llm.bind_tools(tools)
 
     msgs: list = [SystemMessage(content=COPILOT_SYSTEM)]
-    msgs += history or []
+    # 防禦：history 若混進 None（或非訊息物件）會讓 langchain 轉換炸 NotImplementedError → 濾掉
+    hist = [m for m in (history or []) if m is not None]
+    if history and len(hist) != len(history or []):
+        logger.warning("run_copilot: dropped %d None/invalid history entries", len(history) - len(hist))
+    msgs += hist
     msgs.append(HumanMessage(content=user_text))
 
     for _ in range(max_rounds):

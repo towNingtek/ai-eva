@@ -274,8 +274,9 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
     if not readable:
         await cl.Message(content=("我收到檔案了，但這種格式目前還不能處理。" + note)).send()
         return
-    # lazy：只存 name+path，先不讀內容
+    # lazy：只存 name+path，先不讀內容；新上傳重置靜音
     cl.user_session.set("pending_attachments", readable)
+    cl.user_session.set("attach_muted", False)
     if content:
         # 上傳時就講了要幹嘛 → 直接讀 + 跑
         await _run_with_attachments(runtime, content, readable, history)
@@ -313,6 +314,11 @@ async def on_message(msg: cl.Message):
                 await cl.Message(content=f"⚠️ 處理附件時出錯（{type(e).__name__}），請再試一次。").send()
             return
         if not content:
+            return
+        # 有剛上傳、未消費、未靜音的附件 → 這句話視為對它的意圖，把內容 fold 進去（並消費）
+        atts = cl.user_session.get("pending_attachments")
+        if atts and not cl.user_session.get("attach_muted"):
+            await _run_with_attachments(runtime, content, atts, history)
             return
         await _run_copilot_emit(runtime, content, content, history)
         return
@@ -431,8 +437,9 @@ async def cms_attach(action: cl.Action):
     history = cl.user_session.get("cms_history") or []
     act = (action.payload or {}).get("action")
     if act == "dismiss":
-        cl.user_session.set("pending_attachments", None)
-        await cl.Message(content="好，先放著，需要時再跟我說。").send()
+        # 靜音而非清掉：檔案留著，之後點按鈕仍可用；打字則不再自動 fold（避免拖累不相關對話）
+        cl.user_session.set("attach_muted", True)
+        await cl.Message(content="好，先放著。之後想用，點上面的按鈕、或直接跟我說就行。").send()
         return
     if not (atts and runtime):
         await cl.Message(content="找不到剛剛的檔案了，請再上傳一次。").send()
