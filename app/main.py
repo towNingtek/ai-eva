@@ -397,8 +397,9 @@ async def cms_confirm(action: cl.Action):
         )
         history += [HumanMessage(content=f"（已建立專案 {info.get('name')}）"), AIMessage(content=full)]
         cl.user_session.set("cms_history", history[-12:])
+        # uuid/info 放進 payload（跟訊息一起存）→ reload/reconnect 後點按鈕仍有效，不靠暫存 session
         await cl.Message(content=full, actions=[
-            cl.Action(name="cms_sroi", payload={"decision": "yes"}, label="✅ 產 SROI 草稿"),
+            cl.Action(name="cms_sroi", payload={"decision": "yes", "uuid": uuid, "info": info}, label="✅ 產 SROI 草稿"),
             cl.Action(name="cms_sroi", payload={"decision": "no"}, label="✖ 不用"),
         ]).send()
         return
@@ -411,18 +412,22 @@ async def cms_confirm(action: cl.Action):
 @cl.action_callback("cms_sroi")
 async def cms_sroi(action: cl.Action):
     """建專案後使用者按「產 SROI 草稿」→ estimate_and_save_sroi（慢，#57 Phase2）。"""
-    tgt = cl.user_session.get("sroi_target")
+    payload = action.payload or {}
     runtime = cl.user_session.get("cms_runtime")
-    cl.user_session.set("sroi_target", None)
-    if (action.payload or {}).get("decision") != "yes":
+    if payload.get("decision") != "yes":
         await cl.Message(content="好，這次先不做 SROI；需要時再跟我說。").send()
         return
-    if not (tgt and runtime):
+    # 優先讀 payload（reload 也在）；退回暫存 session
+    tgt = cl.user_session.get("sroi_target") or {}
+    uuid = payload.get("uuid") or tgt.get("uuid")
+    info = payload.get("info") or tgt.get("info") or {}
+    cl.user_session.set("sroi_target", None)
+    if not (runtime and uuid):
         await cl.Message(content="找不到要做 SROI 的專案，請重新說一次。").send()
         return
     await cl.Message(content="好，開始估算 SROI 草稿…（會花一點時間，請稍候）").send()
     try:
-        reply = await estimate_and_save_sroi(runtime, tgt["info"], tgt["uuid"], api_key=cl.user_session.get("llm_key"), user=cl.user_session.get("llm_user"))
+        reply = await estimate_and_save_sroi(runtime, info, uuid, api_key=cl.user_session.get("llm_key"), user=cl.user_session.get("llm_user"))
     except Exception as e:  # noqa: BLE001
         logger.exception("SROI estimate failed")
         reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
