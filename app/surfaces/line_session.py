@@ -10,10 +10,13 @@
 
 對外 5 個 function：
 - ensure_session_tables()        啟動建表
-- start_session(user_id)         開新 session（若有 active 先收掉）
+- start_session(session_key)     開新 session（若有 active 先收掉）
 - end_session(session_id, reason)
-- chat(user_id, text)            收訊 → 拿/建 active session → LLM → 回覆字串
+- chat(session_key, text)        收訊 → 拿/建 active session → LLM → 回覆字串
 - scan_timeouts(idle_minutes)    回傳逾時的 active session（給 /tasks 用）
+
+session_key：1:1 = userId；群組 = `group:<groupId>`；聊天室 = `room:<roomId>`。
+（line_sessions.user_id 欄位實際存的是 session_key。）
 """
 from __future__ import annotations
 
@@ -85,7 +88,7 @@ async def ensure_session_tables() -> None:
         await conn.close()
 
 
-async def get_active_session(user_id: str) -> Optional[dict]:
+async def get_active_session(session_key: str) -> Optional[dict]:
     if not _DATABASE_URL:
         return None
     conn = await _connect()
@@ -94,25 +97,25 @@ async def get_active_session(user_id: str) -> Optional[dict]:
             "SELECT id, user_id, started_at FROM line_sessions "
             "WHERE user_id = $1 AND ended_at IS NULL "
             "ORDER BY id DESC LIMIT 1",
-            user_id,
+            session_key,
         )
         return dict(row) if row else None
     finally:
         await conn.close()
 
 
-async def start_session(user_id: str) -> dict:
+async def start_session(session_key: str) -> dict:
     conn = await _connect()
     try:
         await conn.execute(
             "UPDATE line_sessions SET ended_at = NOW(), end_reason = 'replaced' "
             "WHERE user_id = $1 AND ended_at IS NULL",
-            user_id,
+            session_key,
         )
         row = await conn.fetchrow(
             "INSERT INTO line_sessions (user_id) VALUES ($1) "
             "RETURNING id, user_id, started_at",
-            user_id,
+            session_key,
         )
         return dict(row)
     finally:
@@ -159,17 +162,26 @@ async def _recent_messages(session_id: int, limit: int) -> list[dict]:
         await conn.close()
 
 
-async def chat(user_id: str, user_text: str, project: Optional[str] = None) -> dict:
-    """收 user 一則文字 → 拿 active session（沒有就建）→ append → agentic LLM → 回 {reply, commands}。
+async def chat(
+    session_key: str,
+    user_text: str,
+    project: Optional[str] = None,
+    image_path: Optional[str] = None,
+    image_mime: Optional[str] = None,
+) -> dict:
+    """收 user 一則訊息 → 拿 active session（沒有就建）→ append → agentic LLM → 回 {reply, commands}。
 
+    session_key：1:1 = userId，群組 = `group:<groupId>`，聊天室 = `room:<roomId>`（每個群獨立記憶）。
     結束關鍵字判斷在 caller (line.py)，這層只處理「一般對話 / 順手指揮裝置」。
     走 dispatch.converse：device tools 綁進同一次呼叫，要嘛派工要嘛聊天（不再雙呼叫）。
     commands 由 caller 負責 enqueue（這層不碰 node queue）。
+    image_path/image_mime：LINE 圖片訊息用（opencode 路由限定；LiteLLM 路徑不吃圖）。
     """
-    sess = await get_active_session(user_id) or await start_session(user_id)
+    sess = await get_active_session(session_key) or await start_session(session_key)
     sid = sess["id"]
 
-    await _add_message(sid, "user", user_text)
+    await _add_message(sid, "user", user_text or "（圖片）")
+
     history = await _recent_messages(sid, _CONTEXT_TURNS)
 
     messages = [{"role": "system", "content": EVA_SYSTEM_PROMPT}] + [
@@ -184,7 +196,7 @@ async def chat(user_id: str, user_text: str, project: Optional[str] = None) -> d
         reply = result["reply"] or "（這次沒拿到回應，再試一次）"
         commands = result["commands"]
     except Exception as e:  # noqa: BLE001
-        logger.exception("converse failed for LINE user %s", user_id)
+        logger.exception("converse failed for LINE user %s", session_key)
         reply = f"⚠️ 我這邊暫時遇到問題，再試一次（{type(e).__name__}）"
 
     await _add_message(sid, "assistant", reply)
