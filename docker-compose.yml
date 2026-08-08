@@ -72,7 +72,7 @@ services:
       DATABASE_URL: postgresql://litellm:litellm_local@127.0.0.1:5500/litellm
       STORE_MODEL_IN_DB: "True"     # 允許 Admin UI 在 DB 加 model
       UI_USERNAME: admin
-      UI_PASSWORD: ${LITELLM_MASTER_KEY}    # 簡單起見，UI 帳號用 master key 當密碼
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-${LITELLM_MASTER_KEY}}    # UI 登入密碼；沒設 → 退回 master key
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     volumes:
       - ./litellm-config.yaml:/app/config.yaml:ro
