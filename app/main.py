@@ -78,6 +78,7 @@ discover()
 # 啟動時建表：line_users / line_sessions / line_session_messages（LINE 用）+ projects。
 # Chainlit 沒 on_app_startup decorator，這裡直接用 asyncio fire-and-forget。
 from app.surfaces import line_session  # noqa: E402
+from app.surfaces import line_opencode  # noqa: E402
 from app.projects import registry as project_registry  # noqa: E402
 from app.nodes import registry as node_registry  # noqa: E402
 
@@ -89,6 +90,7 @@ async def _init_tables():
     await line_surface.ensure_line_table()
     await line_session.ensure_session_tables()
     await sso_surface.ensure_sso_sessions_table()
+    await line_opencode.ensure_line_opencode_table()
 
 
 try:

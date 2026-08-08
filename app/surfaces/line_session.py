@@ -17,6 +17,11 @@
 
 session_key：1:1 = userId；群組 = `group:<groupId>`；聊天室 = `room:<roomId>`。
 （line_sessions.user_id 欄位實際存的是 session_key。）
+
+opencode 路由：若 .env 設了 `OPENCODE_SERVE_BASE`，chat() 改走
+`app.surfaces.line_opencode.chat()` —— 記憶移到 opencode session（1:1），
+不再用 line_session_messages 組 context。此模式下 commands 一律空
+（device tools 暫不路由）。
 """
 from __future__ import annotations
 
@@ -28,6 +33,7 @@ import asyncpg
 
 from app import dispatch
 from app.settings import LITELLM_LINE_KEY
+from app.surfaces import line_opencode
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +187,20 @@ async def chat(
     sid = sess["id"]
 
     await _add_message(sid, "user", user_text or "（圖片）")
+
+    # opencode 路由：記憶在 opencode session，不組 history、不回 device commands
+    if line_opencode.is_enabled():
+        try:
+            reply = await line_opencode.chat(
+                session_key, user_text, sid,
+                persona=EVA_SYSTEM_PROMPT,
+                image_path=image_path, image_mime=image_mime,
+            )
+        except Exception as e:  # noqa: BLE001
+            logger.exception("opencode chat failed for LINE user %s", session_key)
+            reply = f"⚠️ 我這邊暫時遇到問題，再試一次（{type(e).__name__}）"
+        await _add_message(sid, "assistant", reply)
+        return {"reply": reply, "commands": []}
 
     history = await _recent_messages(sid, _CONTEXT_TURNS)
 
