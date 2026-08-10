@@ -17,6 +17,7 @@ def make_llm(
     *,
     alias: str | None = None,
     api_key: str | None = None,
+    user: str | None = None,
     temperature: float = 0.2,
     streaming: bool = True,
 ) -> ChatOpenAI:
@@ -24,11 +25,14 @@ def make_llm(
 
     `api_key` 可以傳指定 virtual key（例如 LINE bot 用獨立 key 帳單分離），
     不傳就走預設的 LITELLM_API_KEY（通常是 master key 或 ai-eva-web 的 virtual key）。
+    `user` 傳 SSO user_id → 帶進請求的 `user` 欄，LiteLLM 按 end-user/customer 計量（帳號層，#62 B）。
     """
+    extra = {"model_kwargs": {"user": user}} if user else {}
     return ChatOpenAI(
         model=alias or LITELLM_DEFAULT_MODEL,
         api_key=api_key or LITELLM_API_KEY or "litellm-no-auth",
         base_url=LITELLM_API_BASE,
         temperature=temperature,
         streaming=streaming,
+        **extra,
     )

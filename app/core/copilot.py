@@ -28,7 +28,13 @@ COPILOT_SYSTEM = (
     "推得出來就直接用、別空問『名稱是什麼』；真的推不出來才問。\n"
     "2. 拿到名稱後，**一次問一兩項**選填欄位，每項都明講『可跳過、直接說不用』：\n"
     "   主辦單位(org)、期程(project_start_date/project_due_date)、預算(budget)、動機(motivation)。\n"
+    "   ⚠️ org 只放『主辦的單位/組織名稱』。使用者講主題、內容、語言、形式等敘述"
+    "（例：『主題想要中韓對照』『想做雙語』）**不是主辦單位**，別塞進 org —— "
+    "這類就當成補充說明或放進理念/規劃，org 沒講就留空、別硬填。\n"
     "   長文欄位（理念 philosophy / 規劃 project_planning）：問『要不要我幫你代擬一版、你再改？』願意就代擬。\n"
+    "   ⭐ 問到 **動機(motivation)、理念、規劃** 這幾項時，順帶點一句它們的價值："
+    "『這幾項會讓我之後幫你產的 SDG / SROI 更準，建議至少給我一兩句』—— 點到為止、不強迫，"
+    "使用者仍可跳過。（這些是語意主力，數字/日期類欄位對 SDG/SROI 幫助不大，不必特別強調。）\n"
     "3. 使用者說『跳過/不用/沒有』→ 略過該項續問下一項；說『都不用了/直接建』→ 停止收集。\n"
     "4. 禮貌、簡短，尊重跳過，**別一口氣丟一長串表單**。\n"
     "5. 收集告一段落 → 彙整已填欄位摘要給使用者看 → 才呼叫 create_project（帶上收集到的所有欄位）。\n"
@@ -82,6 +88,7 @@ async def run_copilot(
     history: list | None = None,
     *,
     api_key: str | None = None,
+    user: str | None = None,
     max_rounds: int = 4,
 ) -> dict:
     """跑一輪副駕對話。回 {"reply": str, "pending": {name,args}|None}。
@@ -91,7 +98,7 @@ async def run_copilot(
     runtime: 已 load(manifest) 的 ToolRuntime；history: 之前的 langchain messages。
     """
     tools = runtime.visible_tools()
-    llm = make_llm(api_key=api_key, streaming=False)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     if tools:
         llm = llm.bind_tools(tools)
 
@@ -144,9 +151,9 @@ _SDG_PROMPT = (
 )
 
 
-async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
+async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
     """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
-    llm = make_llm(api_key=api_key, streaming=False)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SDG_PROMPT),
         HumanMessage(content=json.dumps(project_info, ensure_ascii=False)),
@@ -168,6 +175,22 @@ _SROI_PROMPT = (
     "只填有把握的指標、其餘留空，數字是粗估草稿。**只回 JSON** "
     "{\"social\":{\"S-1\":[數字,...]},\"economy\":{\"E-1\":[...]},\"environment\":{\"E-1-1\":[...]}}。"
 )
+
+
+def _indicators_from_template(tmpl_result: dict) -> dict:
+    """get_sroi_template 的乾淨格式 {face:[{id,title,inputs}]} → {face:[{id,title,inputs}]}。
+
+    CMS 新端點（POST /projects/sroi_template，秒回、不碰 Drive）直接給 id/title/inputs，
+    比 get_sroi 的 head/key 結構好剖太多。
+    """
+    data = _inner(tmpl_result.get("result") if "result" in tmpl_result else tmpl_result)
+    out = {}
+    for face in ("social", "economy", "environment"):
+        out[face] = [
+            {"id": it.get("id"), "title": it.get("title"), "inputs": it.get("inputs") or []}
+            for it in (data.get(face) or []) if it.get("id")
+        ]
+    return out
 
 
 def _sroi_indicators(get_sroi_result: dict) -> dict:
@@ -193,13 +216,23 @@ def _sroi_indicators(get_sroi_result: dict) -> dict:
     return out
 
 
-async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None) -> str:
-    """get_sroi 拿指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。"""
-    tmpl = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False)
-    if tmpl.get("status") != "ok":
-        return f"（拿不到 SROI 指標表：{tmpl.get('reason')}）"
-    indicators = _sroi_indicators(tmpl)
-    llm = make_llm(api_key=api_key, streaming=False)
+async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
+    """拿 SROI 指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。
+
+    取指標表：優先 get_sroi_template（CMS 新端點，秒回、不碰 Drive）；
+    舊 SSO session 的 manifest 還沒這支 → deny/error，退回 get_sroi(uuid)
+    （CMS 已修不再 500，但要複製 Google Sheet ~11s 冷啟動 → 給足 120s）。
+    """
+    tmpl = await runtime.execute("get_sroi_template", {"uuid_project": uuid}, confirmed=False, timeout=30.0)
+    if tmpl.get("status") == "ok":
+        indicators = _indicators_from_template(tmpl)
+    else:
+        logger.info("get_sroi_template unavailable (%s) → fallback get_sroi", tmpl.get("status"))
+        legacy = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False, timeout=120.0)
+        if legacy.get("status") != "ok":
+            return f"（拿不到 SROI 指標表：{tmpl.get('reason') or legacy.get('reason')}）"
+        indicators = _sroi_indicators(legacy)
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SROI_PROMPT),
         HumanMessage(content=json.dumps({"project": project_info, "indicators": indicators}, ensure_ascii=False)),
@@ -214,7 +247,9 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
             n += len(block)
     if n == 0:
         return "（這個專案的描述還不足以估出 SROI 指標，補一點社會/經濟/環境影響的細節再試。）"
-    result = await runtime.execute("save_sroi", payload, confirmed=True)
+    # save_sroi 必須走 JSON body：CMS handler 不會把 form 欄位的 JSON 字串 json.loads 回來，
+    # 用 form 會「收下卻 written=[]」（success:true 假象 → 全 0）。manifest 未標 encoding，這裡強制。
+    result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0, encoding="json")
     if result.get("status") == "ok":
         return (
             f"已產生 SROI 草稿（估了 {n} 個指標）。\n"

@@ -28,6 +28,8 @@ from app.nodes import commands as node_commands
 from app.settings import (
     LINE_CHANNEL_ACCESS_TOKEN,
     LINE_CHANNEL_SECRET,
+    OPENAI_API_BASE,
+    OPENAI_API_KEY,
 )
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,8 @@ _SESSION_SCAN_TOKEN = os.getenv("SESSION_SCAN_TOKEN", "").strip()
 # 用例 C：LINE 來的裝置指令派給哪個 project 的 node。
 # 暫以單一 project（家裡的 ai-cat）；之後做 identity(LINE userId)→project 映射再取代。
 _LINE_DEVICE_PROJECT = os.getenv("LINE_DEVICE_PROJECT", "home").strip()
+# LINE 圖片下載暫存目錄（container 內路徑，跟 host 的 data/ 共享）
+_LINE_IMAGE_DIR = os.getenv("LINE_IMAGE_DIR", "/app/data/line-images")
 
 
 def _pg_url() -> str:
@@ -153,6 +157,70 @@ async def push_images_to_user(user_id: str, image_urls: list[str]) -> bool:
     return True
 
 
+async def _download_line_image(message_id: str) -> Optional[dict]:
+    """下載 LINE 圖片到本地暫存，回傳 {path, mime}；失敗回 None。"""
+    if not LINE_CHANNEL_ACCESS_TOKEN:
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=30) as cx:
+            r = await cx.get(
+                f"https://api-data.line.me/v2/bot/message/{message_id}/content",
+                headers={"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"},
+            )
+            if r.status_code >= 400:
+                logger.error("LINE image download failed: %s", r.status_code)
+                return None
+            mime = r.headers.get("content-type", "image/jpeg").split(";")[0].strip()
+            ext = {"image/jpeg": "jpg", "image/png": "png", "image/gif": "gif"}.get(mime, "img")
+    except Exception:  # noqa: BLE001
+        logger.exception("LINE image download error for %s", message_id)
+        return None
+
+    os.makedirs(_LINE_IMAGE_DIR, exist_ok=True)
+    path = os.path.join(_LINE_IMAGE_DIR, f"{message_id}.{ext}")
+    with open(path, "wb") as f:
+        f.write(r.content)
+    logger.info("saved LINE image %s -> %s (%s)", message_id, path, mime)
+    return {"path": path, "mime": mime}
+
+
+async def _transcribe_line_audio(message_id: str) -> Optional[str]:
+    """LINE 語音訊息 → OpenAI whisper-1 → 文字；失敗回 None。"""
+    if not LINE_CHANNEL_ACCESS_TOKEN or not OPENAI_API_KEY:
+        logger.warning("audio requires LINE + OPENAI keys")
+        return None
+    try:
+        async with httpx.AsyncClient(timeout=30) as cx:
+            r = await cx.get(
+                f"https://api-data.line.me/v2/bot/message/{message_id}/content",
+                headers={"Authorization": f"Bearer {LINE_CHANNEL_ACCESS_TOKEN}"},
+            )
+            if r.status_code >= 400:
+                logger.error("LINE audio download failed: %s", r.status_code)
+                return None
+            audio_bytes = r.content
+            ctype = r.headers.get("content-type", "audio/mp4").split(";")[0].strip()
+    except Exception:  # noqa: BLE001
+        logger.exception("LINE audio download error for %s", message_id)
+        return None
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as cx:
+            r2 = await cx.post(
+                f"{OPENAI_API_BASE.rstrip('/')}/audio/transcriptions",
+                headers={"Authorization": f"Bearer {OPENAI_API_KEY}"},
+                data={"model": "whisper-1"},
+                files={"file": (f"{message_id}.m4a", audio_bytes, ctype)},
+            )
+            if r2.status_code >= 400:
+                logger.error("STT failed: %s %s", r2.status_code, r2.text[:200])
+                return None
+            return (r2.text or "").strip()
+    except Exception:  # noqa: BLE001
+        logger.exception("STT error for %s", message_id)
+        return None
+
+
 def _verify_signature(body: bytes, signature: str) -> bool:
     if not LINE_CHANNEL_SECRET or not signature:
         return False
@@ -176,7 +244,7 @@ async def scan_timeouts_endpoint(req: Request):
     timed_out = await line_session.scan_timeouts()
     pushed = 0
     for row in timed_out:
-        if await push_to_user(row["user_id"], line_session.GOODBYE_TIMEOUT):
+        if await push_to_user(_push_target(row["user_id"]), line_session.GOODBYE_TIMEOUT):
             pushed += 1
     return {"ended": len(timed_out), "pushed": pushed}
 
@@ -203,6 +271,23 @@ async def line_webhook(req: Request):
     return {"ok": True}
 
 
+def _session_key(source: dict, user_id: Optional[str]) -> Optional[str]:
+    """對話記憶的 key：1:1 用 userId，群組/聊天室用 groupId/roomId（每個群一份記憶）。"""
+    st = source.get("type")
+    if st == "group" and source.get("groupId"):
+        return f"group:{source['groupId']}"
+    if st == "room" and source.get("roomId"):
+        return f"room:{source['roomId']}"
+    return user_id
+
+
+def _push_target(key: str) -> str:
+    """scan_timeouts 回傳的 user_id 可能是 group:xxx/room:xxx，LINE push 要剝前綴。"""
+    if key.startswith("group:") or key.startswith("room:"):
+        return key.split(":", 1)[1]
+    return key
+
+
 async def _handle_event(event: dict) -> None:
     evt_type = event.get("type")
     source = event.get("source", {}) or {}
@@ -222,29 +307,71 @@ async def _handle_event(event: dict) -> None:
         return
 
     msg = event.get("message", {}) or {}
-    if msg.get("type") != "text":
+    if msg.get("type") not in ("text", "image", "audio", "sticker"):
         return
 
-    text = (msg.get("text") or "").strip()
     reply_token = event.get("replyToken")
-    if not text or not reply_token or not user_id:
+    if not reply_token or not user_id:
         return
 
-    logger.info("LINE message from %s: %r", user_id, text[:80])
+    session_key = _session_key(source, user_id)
+    if not session_key:
+        return
 
     # 順手把 message sender 也 upsert 進 line_users（如果之前 follow 沒抓到）
     await _save_follow(user_id)
 
+    if msg.get("type") == "image":
+        image = await _download_line_image(msg.get("id", ""))
+        if not image:
+            await _line_reply(reply_token, "圖片下載失敗，再試一次 🙁")
+            return
+        result = await line_session.chat(
+            session_key, "", project=_LINE_DEVICE_PROJECT,
+            image_path=image["path"], image_mime=image["mime"],
+        )
+        await _line_reply(reply_token, result["reply"])
+        return
+
+    if msg.get("type") == "audio":
+        transcript = await _transcribe_line_audio(msg.get("id", ""))
+        if not transcript:
+            await _line_reply(reply_token, "語音聽不清楚，可以打字或重講一次嗎？")
+            return
+        result = await line_session.chat(
+            session_key, f"（語音轉文字）{transcript}", project=_LINE_DEVICE_PROJECT
+        )
+        await _line_reply(reply_token, result["reply"])
+        return
+
+    if msg.get("type") == "sticker":
+        keywords = msg.get("keywords")
+        if isinstance(keywords, list) and keywords:
+            sticker_text = f"（貼圖：{keywords[0]}）"
+        else:
+            sticker_text = "（你傳了一張貼圖）"
+        result = await line_session.chat(
+            session_key, sticker_text, project=_LINE_DEVICE_PROJECT
+        )
+        await _line_reply(reply_token, result["reply"])
+        return
+
+    text = (msg.get("text") or "").strip()
+    if not text:
+        return
+
+    logger.info("LINE message from %s: %r", session_key, text[:80])
+
     # 結束關鍵字 → 收掉 active session、回告別訊息
     if line_session.is_end_keyword(text):
-        sess = await line_session.get_active_session(user_id)
+        sess = await line_session.get_active_session(session_key)
         if sess is not None:
             await line_session.end_session(sess["id"], "user")
         await _line_reply(reply_token, line_session.GOODBYE_USER_INITIATED)
         return
 
     # 一次 agentic 呼叫：device tools 綁在對話那次 LLM 上，要嘛派工、要嘛純聊天（不再雙呼叫）。
-    result = await line_session.chat(user_id, text, project=_LINE_DEVICE_PROJECT)
+    result = await line_session.chat(session_key, text, project=_LINE_DEVICE_PROJECT)
     for cmd in result["commands"]:
         node_id = cmd.get("node")
         if node_id:
