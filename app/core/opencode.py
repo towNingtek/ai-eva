@@ -9,7 +9,7 @@ env：
 - `OPENCODE_SERVE_BASE`   例 `http://host.docker.internal:4096`；空 → 停用（is_enabled()=False）
 - `OPENCODE_SERVE_USER`   basic auth 帳號（對應 opencode serve 的 OPENCODE_SERVER_USERNAME）
 - `OPENCODE_SERVE_PASS`   basic auth 密碼
-- `OPENCODE_MODEL`        例 `litellm/local-cheap`；空 → litellm/cloud-fast
+- `OPENCODE_MODEL`        例 `litellm/local-cheap`；空 → anthropic/claude-haiku-4-5（需可用工具，swarm#164）
 - `OPENCODE_SESSION_TITLE` 新 session 的固定 title；空 → 由 caller 決定
 - `OPENCODE_IMAGE_HOST_DIR` 圖片的 host 側目錄（container /app/data ↔ host data/ 共享，
   opencode server 跑在 host 要用 host 路徑讀圖）；空 → 直接用 image_path
@@ -32,7 +32,7 @@ _OPENCODE_SERVE_PASS = os.getenv("OPENCODE_SERVE_PASS", "").strip()
 _HTTP_TIMEOUT = float(os.getenv("OPENCODE_HTTP_TIMEOUT", "180"))
 
 MODEL = os.getenv("OPENCODE_MODEL", "").strip()
-DEFAULT_MODEL_STR = MODEL or "litellm/cloud-fast"
+DEFAULT_MODEL_STR = MODEL or "anthropic/claude-haiku-4-5"
 SESSION_TITLE = os.getenv("OPENCODE_SESSION_TITLE", "").strip()
 
 # 圖片走 file:// URL 給 opencode server（跑在 host）讀
