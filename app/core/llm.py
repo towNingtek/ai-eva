@@ -27,7 +27,8 @@ def make_llm(
     不傳就走預設的 LITELLM_API_KEY（通常是 master key 或 ai-eva-web 的 virtual key）。
     `user` 傳 SSO user_id → 帶進請求的 `user` 欄，LiteLLM 按 end-user/customer 計量（帳號層，#62 B）。
     """
-    extra = {"model_kwargs": {"user": user}} if user else {}
+    # OpenAI 的 `user` 欄必須是字串；SSO 帶進來的 user_id 可能是整數 → 一律 str()（否則 400）。
+    extra = {"model_kwargs": {"user": str(user)}} if user else {}
     return ChatOpenAI(
         model=alias or LITELLM_DEFAULT_MODEL,
         api_key=api_key or LITELLM_API_KEY or "litellm-no-auth",
