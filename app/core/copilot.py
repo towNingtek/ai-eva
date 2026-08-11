@@ -27,12 +27,15 @@ COPILOT_SYSTEM = (
     "1. 名稱（必填）：**先從使用者描述推測一個名稱**（例：『關於鄉村走讀計劃的專案』→ 名稱『鄉村走讀計劃』），"
     "推得出來就直接用、別空問『名稱是什麼』；真的推不出來才問。\n"
     "2. 拿到名稱後，**一次問一兩項**選填欄位，每項都明講『可跳過、直接說不用』：\n"
-    "   主辦單位(org)、期程(project_start_date/project_due_date)、預算(budget)、動機(motivation)。\n"
+    "   主辦單位(org)、期程(project_start_date/project_due_date)、預算(budget)。\n"
+    "   ⚠️ **不要問『動機／motivation』** —— 前端專案頁已不顯示這個舊欄位，問了使用者也看不到。"
+    "要問的是「**計畫理念**」(philosophy，前端會呈現)。若使用者講了動機性質的內容，一併放進 philosophy。\n"
     "   ⚠️ org 只放『主辦的單位/組織名稱』。使用者講主題、內容、語言、形式等敘述"
     "（例：『主題想要中韓對照』『想做雙語』）**不是主辦單位**，別塞進 org —— "
     "這類就當成補充說明或放進理念/規劃，org 沒講就留空、別硬填。\n"
-    "   長文欄位（理念 philosophy / 規劃 project_planning）：問『要不要我幫你代擬一版、你再改？』願意就代擬。\n"
-    "   ⭐ 問到 **動機(motivation)、理念、規劃** 這幾項時，順帶點一句它們的價值："
+    "   長文欄位（**計畫理念 philosophy，會顯示在專案頁** / 規劃 project_planning）："
+    "問『要不要我幫你代擬一版、你再改？』願意就代擬。\n"
+    "   ⭐ 問到 **計畫理念、規劃** 這幾項時，順帶點一句它們的價值："
     "『這幾項會讓我之後幫你產的 SDG / SROI 更準，建議至少給我一兩句』—— 點到為止、不強迫，"
     "使用者仍可跳過。（這些是語意主力，數字/日期類欄位對 SDG/SROI 幫助不大，不必特別強調。）\n"
     "3. 使用者說『跳過/不用/沒有』→ 略過該項續問下一項；說『都不用了/直接建』→ 停止收集。\n"
@@ -63,9 +66,14 @@ def _fmt_result(name: str, data) -> str:
     inner = _inner(data) or {}
     if name == "create_project":
         pname = inner.get("name") or "（未命名）"
-        url = inner.get("url")
         uuid = inner.get("uuid") or inner.get("uuid_project")
-        return f"✅ 專案已建立：[{pname}]({url})" if url else f"✅ 專案已建立：「{pname}」（uuid {uuid}）"
+        url = inner.get("url") or ""
+        # CMS 回的是後台編輯頁 /backend/cms_plan_info/（需後台角色權限、草稿常渲染空白）→
+        # 改指公開檢視頁 /content/{uuid}（SSO 使用者不必再過後台權限就看得到）。
+        view = url.replace("/backend/cms_plan_info/", "/content/") if url else ""
+        if view:
+            return f"✅ 專案已建立：[{pname}]({view})"
+        return f"✅ 專案已建立：「{pname}」（uuid {uuid}）"
     return f"✅ 完成。\n```\n{json.dumps(data, ensure_ascii=False)[:500]}\n```"
 
 
@@ -103,7 +111,11 @@ async def run_copilot(
         llm = llm.bind_tools(tools)
 
     msgs: list = [SystemMessage(content=COPILOT_SYSTEM)]
-    msgs += history or []
+    # 防禦：history 若混進 None（或非訊息物件）會讓 langchain 轉換炸 NotImplementedError → 濾掉
+    hist = [m for m in (history or []) if m is not None]
+    if history and len(hist) != len(history or []):
+        logger.warning("run_copilot: dropped %d None/invalid history entries", len(history) - len(hist))
+    msgs += hist
     msgs.append(HumanMessage(content=user_text))
 
     for _ in range(max_rounds):
@@ -251,8 +263,11 @@ async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_
     # 用 form 會「收下卻 written=[]」（success:true 假象 → 全 0）。manifest 未標 encoding，這裡強制。
     result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0, encoding="json")
     if result.get("status") == "ok":
+        total = sum(len(indicators.get(f) or []) for f in ("social", "economy", "environment"))
         return (
-            f"已產生 SROI 草稿（估了 {n} 個指標）。\n"
-            "⚠️ 這是 **AI 初估值**，請進試算表自行核對、修正數字（公式會自動重算）。"
+            f"我依你的計畫內容，幫這個專案的 SROI 表**先填了 {n} 個指標的估計數字**"
+            f"（整份共 {total} 個指標，其餘我沒把握、先留白給你）。\n\n"
+            "⚠️ 這些是 **AI 依描述猜的草稿、不是真實數據** —— 請到專案頁面的"
+            "「**成果展現 → SROI**」區，核對並把數字改成真的（改完 SROI 比率會自動重算）。"
         )
     return f"（SROI 儲存失敗：{result.get('reason')}）"
