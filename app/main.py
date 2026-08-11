@@ -171,9 +171,10 @@ async def on_start():
 # ── 附件（#66 file_to_project MVP）────────────────────────────
 # 設計：上傳「只收不猜」→ 存進 session（lazy，先不讀內容）→ 問 + chips；
 # 使用者選動作/表達意圖時才讀（txt/md），內容當「資料」不當「指示」餵進 function-calling loop。
-# MVP 只支援 txt/md；PDF 解析（MinerU）在後續（#93）。詳見 issue #66。
 _TEXT_EXTS = {".txt", ".md"}
 _TEXT_MIMES = {"text/plain", "text/markdown"}
+_PDF_EXTS = {".pdf"}
+_PDF_MIMES = {"application/pdf", "application/x-pdf"}
 _MAX_FILE_CHARS = 20000
 # chip 動作 → 餵給 copilot 的意圖句（動作 chips = 對 manifest 的投影，非 LLM 生成）
 _ATTACH_INTENTS = {
@@ -201,6 +202,39 @@ def _read_text_file(path: str | None, mime: str, name: str) -> Optional[str]:
     if len(text) > _MAX_FILE_CHARS:
         text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
     return text.strip() or None
+
+
+def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
+    """讀取有文字層的 PDF；掃描 PDF 先明確回報，避免靜默產生空專案。"""
+    if not path or not os.path.exists(path):
+        return None
+    ext = os.path.splitext(name or "")[1].lower()
+    if ext not in _PDF_EXTS and (mime or "").lower() not in _PDF_MIMES:
+        return None
+    try:
+        import fitz
+
+        doc = fitz.open(path)
+        pages = [page.get_text("text") for page in doc]
+        text = "\n\n".join(p.strip() for p in pages if p and p.strip())
+        doc.close()
+    except Exception:  # noqa: BLE001
+        logger.exception("read PDF attachment failed: %s", name)
+        return None
+    if not text.strip():
+        return None
+    if len(text) > _MAX_FILE_CHARS:
+        text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
+    return text.strip()
+
+
+def _read_attachment(a: dict) -> Optional[str]:
+    """依附件類型 lazy 讀取；目前支援 txt/md 與文字層 PDF。"""
+    name, mime, path = a.get("name", ""), a.get("mime", ""), a.get("path")
+    ext = os.path.splitext(name)[1].lower()
+    if ext in _PDF_EXTS or (mime or "").lower() in _PDF_MIMES:
+        return _read_pdf_file(path, mime, name)
+    return _read_text_file(path, mime, name)
 
 
 def _frame_file(name: str, text: str) -> str:
@@ -245,7 +279,7 @@ async def _run_with_attachments(runtime, intent: str, atts: list, history: list)
     """讀 stash 的附件（lazy 此刻才讀）→ 框成資料 → 連同意圖餵進 copilot loop。"""
     blocks, ok = [], []
     for a in atts:
-        text = _read_text_file(a.get("path"), a.get("mime", ""), a.get("name", ""))
+        text = _read_attachment(a)
         if text is None:
             continue
         ok.append(a["name"])
@@ -266,7 +300,7 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
         name = e.name or "檔案"
         ext = os.path.splitext(name)[1].lower()
         mime = (e.mime or "").lower()
-        if ext in _TEXT_EXTS or mime in _TEXT_MIMES:
+        if ext in _TEXT_EXTS or mime in _TEXT_MIMES or ext in _PDF_EXTS or mime in _PDF_MIMES:
             readable.append({"name": name, "path": e.path, "mime": mime})
         else:
             rejected.append(name)
@@ -274,7 +308,7 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
                 [a["name"] for a in readable], rejected, bool(content))
     note = ""
     if rejected:
-        note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— MVP 先支援 .txt / .md，PDF 解析在後續 #93）"
+        note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— 目前支援 .txt / .md 與有文字層的 PDF）"
     if not readable:
         await cl.Message(content=("我收到檔案了，但這種格式目前還不能處理。" + note)).send()
         return
