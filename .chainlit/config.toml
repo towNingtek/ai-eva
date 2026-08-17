@@ -79,7 +79,7 @@ cot = "full"
 # The Javascript file can be served from the public directory.
 # #43: SSO 進站 splash（只在有 eva_sso cookie 時蓋「登入中…」，避免登入頁一閃；standalone 不受影響）
 # ?v= 是 cache-bust：custom.js 改版後瀏覽器會抓新的（同 URL 會用舊快取）。改 js 記得 bump。
-custom_js = "/public/custom.js?v=20260617c"
+custom_js = "/public/custom.js?v=20260817social2"
 
 # Specify a custom font url.
 # custom_font = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"

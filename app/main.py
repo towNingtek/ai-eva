@@ -302,6 +302,31 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
 async def on_message(msg: cl.Message):
     content = (msg.content or "").strip()
 
+    # Chainlit can retain the selected command on the next message. Once
+    # social_post has shown its project list, resolve the user's selection
+    # before the generic command dispatcher sees it again.
+    if content and cl.user_session.get("social_post_active"):
+        from app.apps.social_post.handler import handle_selection
+        await handle_selection(content)
+        return
+
+    # Chainlit tool commands can carry no text. Dispatch them before the CMS
+    # chat branch, whose empty-content guard would otherwise swallow the tool.
+    # Chainlit keeps the command chip attached to later messages. After a
+    # project is selected, those messages are normal Copilot turns, not a
+    # second social_post launch. Keep the command available for a fresh click.
+    command_is_followup = (
+        msg.command == "social_post"
+        and cl.user_session.get("social_post_completed")
+        and content not in {"社群貼文", "請開始社群貼文製作，不要要求我另外輸入 prompt。"}
+    )
+    if msg.command and not command_is_followup:
+        app = get_by_id(msg.command)
+        if app is not None:
+            logger.info("dispatch tool command → %s", app.id)
+            await app.handle(content, msg)
+            return
+
     # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
     runtime = cl.user_session.get("cms_runtime")
     if runtime is None:
