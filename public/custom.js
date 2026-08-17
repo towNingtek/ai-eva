@@ -46,8 +46,8 @@
   // 硬上限：4 秒一定移除（偵測失敗時不讓 splash 卡住）
   setTimeout(function () { try { obs.disconnect(); } catch (e) {} remove(); }, 4000);
 
-// Chainlit selects commands without sending a message. Submit social_post
-// explicitly so the app can seed its Copilot flow.
+// Chainlit selects commands without sending a message. Submit panel commands
+// explicitly so each app can seed its flow.
 (function () {
   function visibleInput() {
     return Array.from(document.querySelectorAll("textarea, [contenteditable='true']")).find(function (node) {
@@ -55,10 +55,9 @@
       return rect.width > 0 && rect.height > 0 && window.getComputedStyle(node).visibility !== "hidden";
     });
   }
-  function submit() {
+  function submit(prompt) {
     var input = visibleInput();
     if (!input || (input.value || input.textContent || "").trim()) return;
-    var prompt = "社群貼文";
     if (input.isContentEditable) {
       input.textContent = prompt;
       input.dispatchEvent(new InputEvent("input", { bubbles: true, inputType: "insertText", data: prompt }));
@@ -85,8 +84,11 @@
       var popover = item.closest("#command-popover");
       if (!popover && !item.closest('[data-popover-content="true"]')) return;
       var text = item.textContent || "";
-      if (text.includes("social_post") || text.includes("社群貼文")) {
-        setTimeout(submit, 120);
+      var prompt = text.includes("chart_analysis") || text.includes("圖表分析")
+        ? "圖表分析" : text.includes("social_post") || text.includes("社群貼文")
+          ? "社群貼文" : null;
+      if (prompt) {
+        setTimeout(function () { submit(prompt); }, 120);
       }
     }, true);
   }
