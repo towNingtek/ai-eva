@@ -1,4 +1,5 @@
 import chainlit as cl
+from datetime import date
 
 
 def _element():
@@ -6,7 +7,7 @@ def _element():
         name="ChartAnalysis",
         display="inline",
         props={
-            "year": "2025",
+            "year": str(date.today().year),
             "district": "",
             "sdgs": ["sdg9", "sdg12"],
             "items": [],
