@@ -118,11 +118,11 @@ async def on_chat_resume(thread):
     await _register_commands()
 
 
-async def _sso_session_for_current_user():
+async def _sso_session_for_current_user(*, allow_expired: bool = False):
     """目前 Chainlit user 若是 SSO 認證的，回它的 SSO session（含 ToolRuntime）；否則 None。"""
     user = cl.user_session.get("user")
     sid = (getattr(user, "metadata", None) or {}).get("sso_session_id") if user else None
-    return await sso_surface.get_sso_session(sid) if sid else None
+    return await sso_surface.get_sso_session(sid, allow_expired=allow_expired) if sid else None
 
 
 async def _load_sso_runtime():
@@ -140,6 +140,19 @@ async def _load_sso_runtime():
     # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
     cl.user_session.set("llm_user", idn.get("user_id") or idn.get("email"))
     return idn
+
+
+async def _refresh_sso_runtime():
+    """Refresh CMS callback credential immediately before a confirmed write."""
+    sess = await _sso_session_for_current_user(allow_expired=True)
+    sid = sess.get("session_id") if sess else None
+    if not sid:
+        return False
+    refreshed = await sso_surface.refresh_sso_session(sid)
+    if not refreshed:
+        return False
+    cl.user_session.set("cms_runtime", refreshed["runtime"])
+    return True
 
 
 @cl.on_chat_start
@@ -448,6 +461,12 @@ async def cms_confirm(action: cl.Action):
         await cl.Message(content="好，已取消，沒有送出。").send()
         return
     try:
+        if not await _refresh_sso_runtime():
+            await cl.Message(
+                content="⚠️ 登入授權已過期，這次沒有送出。請回 CMS 重新點一次「進 AI 秘書」後再確認。"
+            ).send()
+            return
+        runtime = cl.user_session.get("cms_runtime") or runtime
         res = await execute_confirmed(runtime, pending["name"], pending["args"])
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS confirm execute failed")

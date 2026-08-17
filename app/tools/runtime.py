@@ -111,6 +111,11 @@ class ToolRuntime:
     def is_allowed(self, name: str) -> bool:
         return name in self._tools
 
+    @property
+    def credential(self) -> str:
+        """The issuer credential used by the legacy manifest refresh fallback."""
+        return self._credential
+
     # ── 執行 ──────────────────────────────────────────────
     async def execute(self, name: str, args: dict, *, confirmed: bool = False,
                       timeout: float | None = None, encoding: str | None = None) -> dict:
