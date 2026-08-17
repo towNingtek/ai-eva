@@ -29,9 +29,14 @@ ISSUERS: dict[str, dict] = {
     "tplanet-cms": {
         "jwks_url": "https://dev.4impact.cc/api/tools/jwks",
         "manifest_url": "https://dev.4impact.cc/api/tools/manifest",
+        "refresh_url": "https://dev.4impact.cc/api/accounts/tools/refresh",
         "audience": "ai-eva",
         "project": "sechome",   # CMS AI 秘書遷移專案（#50）；tenant 取自 token 的 tenant_id
     },
+}
+
+TENANT_CMS_BASE_URL: dict[str, str] = {
+    "yunlin": "https://yunlin-beta.4impact.cc",
 }
 
 # tenant → project 覆寫（#94 雲林雙軌）：特定租戶獨立成自己的 project，
@@ -118,7 +123,8 @@ def verify_handoff(token: str) -> dict:
     }
 
 
-def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict:
+def fetch_manifest(issuer_id: str, token: str, *, tenant_id: str | None = None,
+                   timeout: float = 15.0) -> dict:
     """抓某 issuer 的 tool manifest，帶 token（握手選 (a)：直接帶 handoff token）。
 
     回該帳號可用的 manifest（{callback_base, credential, tools}），交給 ToolRuntime.load。
@@ -127,6 +133,9 @@ def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict
     if issuer is None:
         raise ValueError(f"unknown issuer: {issuer_id!r}")
     url = issuer.get("manifest_url")
+    tenant_base = TENANT_CMS_BASE_URL.get(tenant_id or "")
+    if tenant_base:
+        url = f"{tenant_base.rstrip('/')}/api/tools/manifest"
     if not url:
         raise ValueError(f"issuer {issuer_id!r} has no manifest_url")
     r = httpx.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=timeout)
@@ -134,4 +143,23 @@ def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict
     body = r.json()
     # CMS 回 {"success":true,"data":{callback_base,credential,tools}}；拆 data 信封交給 ToolRuntime。
     # 若無信封（其他 issuer 直接回 manifest）則原樣回。
+    return body.get("data", body) if isinstance(body, dict) else body
+
+
+def refresh_manifest(issuer_id: str, refresh_token: str, *, tenant_id: str | None = None,
+                     timeout: float = 15.0) -> dict:
+    """Exchange a CMS-issued AI-Eva refresh token for a new tool manifest."""
+    issuer = ISSUERS.get(issuer_id)
+    if issuer is None:
+        raise ValueError(f"unknown issuer: {issuer_id!r}")
+    tenant_base = TENANT_CMS_BASE_URL.get(tenant_id or "")
+    url = (
+        f"{tenant_base.rstrip('/')}/api/accounts/tools/refresh"
+        if tenant_base else issuer.get("refresh_url")
+    )
+    if not url:
+        raise ValueError(f"issuer {issuer_id!r} has no refresh endpoint")
+    r = httpx.post(url, headers={"Authorization": f"Bearer {refresh_token}"}, timeout=timeout)
+    r.raise_for_status()
+    body = r.json()
     return body.get("data", body) if isinstance(body, dict) else body
