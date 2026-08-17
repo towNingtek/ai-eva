@@ -504,6 +504,9 @@ async def chart_query(action: cl.Action):
             "items": data.get("budgetValues", data.get("items", [])),
             "totalBudget": data.get("totalBudget", 0),
             "totalProjects": data.get("totalProjects", 0),
+            "year": payload.get("year") or "2025",
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
         })
     except Exception as exc:  # noqa: BLE001
         logger.exception("chart query failed")
