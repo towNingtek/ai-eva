@@ -1,10 +1,11 @@
 import { useState } from "react";
 
 const SDGS = Array.from({ length: 17 }, (_, i) => [`sdg${i + 1}`, `SDG ${i + 1}`]);
+const YEARS = Array.from({ length: 6 }, (_, i) => String(new Date().getFullYear() - i));
 const COLORS = ["#2563eb", "#16a34a", "#ea580c", "#9333ea", "#0891b2"];
 
 export default function ChartAnalysis() {
-  const [year, setYear] = useState(props.year || "2025");
+  const [year, setYear] = useState(props.year || YEARS[0]);
   const [district, setDistrict] = useState(props.district || "");
   const [sdgs, setSdgs] = useState(props.sdgs || ["sdg9", "sdg12"]);
   const toggleSdg = (id) => setSdgs((current) => current.includes(id)
@@ -18,7 +19,7 @@ export default function ChartAnalysis() {
       <div className="mb-4 grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm">年度
           <select className="rounded-md border bg-background p-2" value={year} onChange={(e) => setYear(e.target.value)}>
-            <option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option>
+            {YEARS.map((value) => <option key={value} value={value}>{value}</option>)}
           </select>
         </label>
         <label className="grid gap-1 text-sm">行政區（可留空）
