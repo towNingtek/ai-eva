@@ -489,6 +489,7 @@ async def chart_query(action: cl.Action):
         return
     element.props.update({"loading": True, "error": ""})
     await element.update()
+    await cl.Message(content="⏳ 正在查詢圖表資料，請稍候…").send()
     try:
         result = await runtime.execute("dashboard_sdg_data", {
             "year": str(payload.get("year") or "2025"),
@@ -508,6 +509,10 @@ async def chart_query(action: cl.Action):
         logger.exception("chart query failed")
         element.props.update({"loading": False, "error": f"查詢失敗：{type(exc).__name__}"})
     await element.update()
+    if element.props.get("error"):
+        await cl.Message(content="⚠️ 圖表查詢失敗，請稍後再試。").send()
+    else:
+        await cl.Message(content="✅ 圖表資料已更新。").send()
 
 
 @cl.action_callback("chart_export")
@@ -517,6 +522,7 @@ async def chart_export(action: cl.Action):
     if not runtime or not runtime.is_allowed("chart_export"):
         await cl.Message(content="⚠️ 目前帳號沒有圖表匯出權限。").send()
         return
+    await cl.Message(content=f"⏳ 正在產生 {payload.get('format', 'pdf').upper()} 檔案，請稍候…").send()
     try:
         result = await runtime.execute("chart_export", {
             "year": str(payload.get("year") or "2025"),
