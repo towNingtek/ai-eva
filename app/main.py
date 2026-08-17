@@ -1,6 +1,8 @@
 import asyncio
+import base64
 import logging
 import os
+import tempfile
 from typing import Optional
 
 import chainlit as cl
@@ -526,6 +528,79 @@ async def cms_sroi(action: cl.Action):
         logger.exception("SROI estimate failed")
         reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
     await cl.Message(content=reply).send()
+
+
+@cl.action_callback("chart_query")
+async def chart_query(action: cl.Action):
+    element = cl.user_session.get("chart_element")
+    runtime = cl.user_session.get("cms_runtime")
+    payload = action.payload or {}
+    if not element or not runtime or not runtime.is_allowed("dashboard_sdg_data"):
+        if element:
+            element.props["error"] = "目前帳號沒有圖表資料權限。"
+            await element.update()
+        return
+    element.props.update({"loading": True, "error": ""})
+    await element.update()
+    await cl.Message(content="⏳ 正在查詢圖表資料，請稍候…").send()
+    try:
+        result = await runtime.execute("dashboard_sdg_data", {
+            "year": str(payload.get("year") or "2025"),
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+        }, timeout=15)
+        if result.get("status") != "ok":
+            raise RuntimeError(result.get("reason", "查詢失敗"))
+        data = result.get("result", {}).get("data", result.get("result", {}))
+        element.props.update({
+            "loading": False,
+            "items": data.get("budgetValues", data.get("items", [])),
+            "totalBudget": data.get("totalBudget", 0),
+            "totalProjects": data.get("totalProjects", 0),
+            "year": payload.get("year") or "2025",
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("chart query failed")
+        element.props.update({"loading": False, "error": f"查詢失敗：{type(exc).__name__}"})
+    await element.update()
+    if element.props.get("error"):
+        await cl.Message(content="⚠️ 圖表查詢失敗，請稍後再試。").send()
+    else:
+        await cl.Message(content="✅ 圖表資料已更新。").send()
+
+
+@cl.action_callback("chart_export")
+async def chart_export(action: cl.Action):
+    runtime = cl.user_session.get("cms_runtime")
+    payload = action.payload or {}
+    if not runtime or not runtime.is_allowed("chart_export"):
+        await cl.Message(content="⚠️ 目前帳號沒有圖表匯出權限。").send()
+        return
+    await cl.Message(content=f"⏳ 正在產生 {payload.get('format', 'pdf').upper()} 檔案，請稍候…").send()
+    try:
+        result = await runtime.execute("chart_export", {
+            "year": str(payload.get("year") or "2025"),
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+            "format": payload.get("format") or "pdf",
+        }, timeout=30)
+        if result.get("status") != "ok":
+            raise RuntimeError(result.get("reason", "匯出失敗"))
+        data = result.get("result", {}).get("data", result.get("result", {}))
+        content = base64.b64decode(data["content_base64"])
+        suffix = ".pdf" if data.get("mime_type") == "application/pdf" else ".png"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as output:
+            output.write(content)
+            path = output.name
+        await cl.Message(
+            content=f"✅ 已匯出 {data.get('filename', 'sdg-chart' + suffix)}。",
+            elements=[cl.File(name=data.get("filename", "sdg-chart" + suffix), path=path)],
+        ).send()
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("chart export failed")
+        await cl.Message(content=f"⚠️ 圖表匯出失敗（{type(exc).__name__}）。").send()
 
 
 @cl.action_callback("cms_attach")
