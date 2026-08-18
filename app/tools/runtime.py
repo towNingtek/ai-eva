@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 import httpx
 
@@ -41,6 +41,10 @@ class ToolRuntime:
         self._callback_base: str = ""
         self._credential: str = ""
         self._timeout = timeout
+        # 401 自癒 hook（#96）：credential 過期時由外部（SSO 層）換新 manifest。
+        # 回新 manifest → load() 後重試一次；回 None → 放棄、把 401 當 error 回報。
+        # core 不認得 SSO：refresh 邏輯在 caller，這裡只提供掛點。
+        self.on_unauthorized: Optional[Callable[[], Awaitable[Optional[dict]]]] = None
         if manifest is not None:
             self.load(manifest)
 
@@ -148,30 +152,45 @@ class ToolRuntime:
         endpoint = tool.get("endpoint") or ""
         url = f"{self._callback_base}{endpoint}"
         method = (tool.get("method") or ("GET" if (tool.get("kind") == "read") else "POST")).upper()
-        headers = {}
-        if self._credential:
-            headers["Authorization"] = f"Bearer {self._credential}"
 
         # 送法：GET→query；POST→預設 form-encoded（CMS 端點吃 form，不吃 JSON），
         # 工具可標 "encoding":"json" 改送 JSON body（給 JSON-based issuer）。
         encoding = (encoding or tool.get("encoding") or "form").lower()
-        try:
-            async with httpx.AsyncClient(timeout=timeout or self._timeout) as cx:
-                if method == "GET":
-                    r = await cx.get(url, params=args, headers=headers)
-                elif encoding == "json":
-                    r = await cx.request(method, url, json=args, headers=headers)
-                else:
-                    # form-encoded：巢狀值（dict/list，如 project_sdgs / SROI 各面向）
-                    # 無法直接 form 編 → json.dumps 成字串塞進欄位（CMS 接受 JSON 字串）。
-                    form = {
-                        k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
-                        for k, v in args.items()
-                    }
-                    r = await cx.request(method, url, data=form, headers=headers)
-        except Exception as e:  # noqa: BLE001
-            logger.exception("ToolRuntime execute '%s' transport error", name)
-            return {"status": "error", "reason": f"{type(e).__name__}: {e}", "tool": name}
+        # 最多兩次：第一次 401 → on_unauthorized 換新 credential → 重試一次（#96）。
+        for attempt in (1, 2):
+            headers = {}
+            if self._credential:
+                headers["Authorization"] = f"Bearer {self._credential}"
+            try:
+                async with httpx.AsyncClient(timeout=timeout or self._timeout) as cx:
+                    if method == "GET":
+                        r = await cx.get(url, params=args, headers=headers)
+                    elif encoding == "json":
+                        r = await cx.request(method, url, json=args, headers=headers)
+                    else:
+                        # form-encoded：巢狀值（dict/list，如 project_sdgs / SROI 各面向）
+                        # 無法直接 form 編 → json.dumps 成字串塞進欄位（CMS 接受 JSON 字串）。
+                        form = {
+                            k: (json.dumps(v, ensure_ascii=False) if isinstance(v, (dict, list)) else v)
+                            for k, v in args.items()
+                        }
+                        r = await cx.request(method, url, data=form, headers=headers)
+            except Exception as e:  # noqa: BLE001
+                logger.exception("ToolRuntime execute '%s' transport error", name)
+                return {"status": "error", "reason": f"{type(e).__name__}: {e}", "tool": name}
+
+            if r.status_code != 401 or attempt == 2 or self.on_unauthorized is None:
+                break
+            # credential 過期 → 請 SSO 層換新 manifest，成功就重試這次呼叫
+            logger.info("ToolRuntime execute '%s' got 401, attempting credential refresh", name)
+            try:
+                fresh = await self.on_unauthorized()
+            except Exception:  # noqa: BLE001
+                logger.exception("ToolRuntime on_unauthorized hook failed")
+                fresh = None
+            if not fresh:
+                break
+            self.load(fresh)
 
         if r.status_code == 403:
             # 發起專案後端判定越權 —— core 不複製權限，原樣回報

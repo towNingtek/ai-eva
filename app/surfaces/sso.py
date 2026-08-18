@@ -109,8 +109,8 @@ async def get_sso_session(session_id: str | None, *, allow_expired: bool = False
     try:
         expiry_clause = "" if allow_expired else " AND expires_at > NOW()"
         row = await conn.fetchrow(
-            "SELECT identity, manifest, refresh_token FROM sso_sessions "
-            f"WHERE id = $1{expiry_clause}", session_id,
+            "SELECT identity, manifest, refresh_token, (expires_at <= NOW()) AS expired "
+            f"FROM sso_sessions WHERE id = $1{expiry_clause}", session_id,
         )
     finally:
         await conn.close()
@@ -118,12 +118,13 @@ async def get_sso_session(session_id: str | None, *, allow_expired: bool = False
         return None
     identity = row["identity"] if isinstance(row["identity"], dict) else json.loads(row["identity"])
     manifest = row["manifest"] if isinstance(row["manifest"], dict) else json.loads(row["manifest"])
-    return {"session_id": session_id, "identity": identity,
-            "refresh_token": row["refresh_token"], "runtime": ToolRuntime(manifest)}
+    return {"session_id": session_id, "identity": identity, "expired": bool(row["expired"]),
+            "refresh_token": row["refresh_token"], "manifest": manifest,
+            "runtime": ToolRuntime(manifest)}
 
 
 async def refresh_sso_session(session_id: str | None) -> dict | None:
-    """Rotate the callback credential before a confirmed CMS write."""
+    """Rotate the callback credential（confirmed write 前、讀取 401 自癒、過期 session 復活都走這）。"""
     current = await get_sso_session(session_id, allow_expired=True)
     if not current or not _DATABASE_URL:
         return None
@@ -147,8 +148,9 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
             )
         finally:
             await conn.close()
-        return {"session_id": session_id, "identity": identity,
-                "refresh_token": next_refresh_token, "runtime": ToolRuntime(manifest)}
+        return {"session_id": session_id, "identity": identity, "expired": False,
+                "refresh_token": next_refresh_token, "manifest": manifest,
+                "runtime": ToolRuntime(manifest)}
     return None
 
 
