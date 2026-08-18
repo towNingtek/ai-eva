@@ -127,13 +127,38 @@ async def _sso_session_for_current_user(*, allow_expired: bool = False):
     return await sso_surface.get_sso_session(sid, allow_expired=allow_expired) if sid else None
 
 
+def _attach_refresh_handler(runtime, sid: str):
+    """給 runtime 掛 401 自癒 hook（#96）：credential 過期 → refresh → 回新 manifest 重試。
+
+    hook 直接 load 進同一個 runtime 物件，所以 copilot 迴圈中既有的 reference 也會生效。
+    """
+    async def _on_unauthorized():
+        refreshed = await sso_surface.refresh_sso_session(sid)
+        if not refreshed:
+            logger.warning("SSO 401 self-heal failed for session %s…", sid[:8])
+            return None
+        logger.info("SSO 401 self-heal ok for session %s…", sid[:8])
+        return refreshed.get("manifest")
+    runtime.on_unauthorized = _on_unauthorized
+
+
 async def _load_sso_runtime():
     """SSO 使用者 → 把 ToolRuntime + LiteLLM key/user 載入 session；回 identity 或 None。
-    on_chat_start 與 on_chat_resume 共用（兩條進入 thread 的路都要載）。"""
-    sess = await _sso_session_for_current_user()
+    on_chat_start 與 on_chat_resume 共用（兩條進入 thread 的路都要載）。
+
+    #96：session 過期不再直接放棄 —— refresh token 還有效（24h）就先換新 credential
+    再載入；換不到才回 None（引導重新登入）。絕不把過期 credential 放進 runtime。"""
+    sess = await _sso_session_for_current_user(allow_expired=True)
     if not sess:
         return None
-    cl.user_session.set("cms_runtime", sess["runtime"])
+    if sess.get("expired"):
+        refreshed = await sso_surface.refresh_sso_session(sess["session_id"])
+        if not refreshed:
+            return None  # refresh token 也失效 → 需要重新走 CMS handoff
+        sess = refreshed
+    runtime = sess["runtime"]
+    _attach_refresh_handler(runtime, sess["session_id"])
+    cl.user_session.set("cms_runtime", runtime)
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
     idn = sess["identity"]
@@ -153,7 +178,9 @@ async def _refresh_sso_runtime():
     refreshed = await sso_surface.refresh_sso_session(sid)
     if not refreshed:
         return False
-    cl.user_session.set("cms_runtime", refreshed["runtime"])
+    runtime = refreshed["runtime"]
+    _attach_refresh_handler(runtime, sid)
+    cl.user_session.set("cms_runtime", runtime)
     return True
 
 
