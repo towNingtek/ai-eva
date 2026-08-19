@@ -33,3 +33,13 @@ docker-compose.override.yml
 # IDE
 .vscode/
 .idea/
+
+# 法規語料 ingest 的中繼快取（重跑不必重花 LLM 的錢，但不進版控）
+app/regulations/corpus/.cache/
+
+# Playwright E2E
+tests/e2e/node_modules/
+tests/e2e/test-results/
+tests/e2e/playwright-report/
+tests/e2e/downloads/
+tests/e2e/.auth/

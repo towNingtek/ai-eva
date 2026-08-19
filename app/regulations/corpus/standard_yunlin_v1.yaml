@@ -1,0 +1,90 @@
+# 法規檢核標準 — 雲林農村再生
+#
+# 來源：R0 沙推定案的 v1（https://hackmd.io/@yillkid/BJIzoEIzzg），Round 1 實作時同步更新。
+# 分工不變：**YAML 訂規則，LLM 做判斷**。
+#   YAML 管：查表（類型→區塊）、門檻、涵蓋邊界、偽陽性政策、輸出格式
+#   LLM 管：「這份計畫有沒有踩到這一條」的語意判斷
+#
+# 換這個檔 = 換行為，不動程式。judge prompt 之後接資策會 SOP 時也只換 judge 區塊。
+
+standard:
+  id: regcheck.yunlin.rural-regen
+  version: 0.2.0-r1
+  title: 雲林農村再生計畫法規檢核
+  subject: multi_tenant.project.philosophy   # 受檢對象 = 計畫書（專案 philosophy 欄）
+  interaction_mode: PUSH                     # 非即時：提交 → 稍後回報告
+  judge:
+    type: llm
+    model_tier: strong
+    # 判定用的模型別名（LiteLLM alias）。判定要用強模型，不能跟著聊天的預設模型跑 ——
+    # 對話預設是 gpt-4o-mini 等級，拿來判法規會退步。可用 REGCHECK_JUDGE_MODEL 覆蓋。
+    model: openai-5.4-xiaozhen
+    swap_note: judge 可替換（待資策會正式 SOP）
+    # r0 是 retrieval: none（137 條全部一起餵）。Round 1 語料長到 1,187 條，
+    # 改成 scoped_sql：按類別過濾 + 按法領域分組平行判定。
+    # 仍然**不做向量檢索** —— recall 是驗收 KPI，top-k 會靜默漏條文。
+    retrieval: scoped_sql
+
+# 類型 → 區塊（固定查表）。某條屬哪一類是 ingest 時就標好的，這裡只照類別分流。
+verdict_routing:
+  實質管制: { section: 違規風險, severity: high }
+  罰則:     { section: 違規風險, severity: high }
+  行政經費: { section: 合規提醒, severity: low }
+  程序要件: { section: 合規提醒, severity: medium }
+
+# 規模門檻：門檻數字固定，但「這個計畫多大」要 LLM 從計畫書抓；抓不到 → 需補資訊。
+# 暫定，待資策會核定。
+scale_thresholds:
+  - law: 環境影響評估法
+    article: "§5"
+    trigger: 開發行為達附表規模或位於特定區位 → 應實施環評
+    note: 未達門檻不報，降偽陽性
+  - law: 非都市土地使用管制規則
+    article: "§11"
+    trigger: 社區開發 ≥50戶 或 ≥1公頃 / 工業 ≥10公頃 → 須辦使用分區變更
+  - law: 非都市土地使用管制規則
+    article: "§52-1"
+    trigger: 興辦事業計畫位於山坡地 → 面積不得少於 10 公頃
+
+# 適用前提閘門（法規層級）——
+# scale_thresholds 管的是「某一條」要看規模才算；這裡管的是「整部法」要先成立前提才適用。
+# 例：非都市土地開發審議作業規範只在案子須送區域計畫委員會審議時才適用，而是否須送審
+# 本身是門檻（非都市土地使用管制規則§11：開發面積 ≥1 公頃 或 ≥50 戶）。前提不成立卻照判，
+# 會生出一整批甲方一句「這不是我們要走的程序」就全數作廢的違規。
+#
+# 三種結果：
+#   成立   → 照常納入判定
+#   不成立 → 整部法不判，報告寫明「前提未成立，未評估」
+#   待確認 → 整部法不判，報告列「前提待確認」+ 缺什麼資料（計畫書沒寫清楚，這件事甲方該知道）
+applicability_gate:
+  - law: 非都市土地開發審議作業規範
+    precondition: 開發案依非都市土地使用管制規則§11 須報請區域計畫委員會審議
+    threshold: 開發（申請變更）面積 ≥1 公頃，或社區型開發 ≥50 戶
+    note: 判斷的是「本次申請開發／變更編定的基地面積」，不是社區行政區總面積
+
+# 涵蓋邊界：正面宣告收了哪些領域；範圍外一律當「沒檢查」，不代表合規。
+coverage:
+  covered: [農村再生, 區域計畫, 國土計畫, 都市計畫, 非都市土地使用管制,
+            開發審議, 環境影響評估, 水土保持, 農業發展, 農地農用認定]
+  # 未涵蓋：觀光民宿、休閒農業、建築技術、地方自治、水利、漁業、能源光電…
+
+# 偽陽性政策（寧缺勿誤報）
+false_positive_policy:
+  on_law_not_in_corpus: flag_as_需補語料   # 該有法卻沒收 → 標「需補語料」，不硬湊
+  on_uncertain: 保守不列入違規             # 判定信心低 → 降到合規提醒，不算違規
+
+# refer-out：條文寫「應依○○法辦理」時，去翻那部母法來判。
+# 農再類法規多是這種指向（實測：農村再生條例實質管制僅 3 條、罰則 0 條），不追母法等於沒判。
+refer_out:
+  follow: true
+
+output:
+  format: markdown
+  sections: [摘要, 違規風險, 合規提醒, 需補語料, 免責]
+  # 規模門檻的判定結果（抓不到規模數字者）歸到「需補語料」區塊，標成「需補資訊」。
+  scale_gate_section: 需補語料
+  disclaimer: 本報告為 AI 初篩，非正式法律意見，最終以人工複核為準。
+  scope_disclaimer: 只檢查 coverage 所列領域；其他領域（觀光民宿、休閒農業、建築技術、地方自治…）未評估，不代表合規。
+
+# 法條清單（資料跟設定分開放）
+clauses_source: negative_list.json
