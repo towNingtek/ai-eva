@@ -84,6 +84,7 @@ from app.surfaces import line_opencode  # noqa: E402
 from app.surfaces import discord_voice  # noqa: E402  # 註冊 /discord-voice/chat route
 from app.projects import registry as project_registry  # noqa: E402
 from app.nodes import registry as node_registry  # noqa: E402
+from app.regulations import registry as regulations_registry  # noqa: E402  # 法規語料（#111/#112）
 
 
 async def _init_tables():
@@ -95,6 +96,12 @@ async def _init_tables():
     await sso_surface.ensure_sso_sessions_table()
     await line_opencode.ensure_line_opencode_table()
     await discord_voice.ensure_discord_voice_table()
+    # 法規語料：建表後從 repo 的 corpus/ 灌進去（不呼叫 LLM、不連外網；
+    # 抽取是建置時的事，見 app/regulations/ingest.py）。sha256 對不上的不給 active。
+    await regulations_registry.ensure_regulations_tables()
+    seeded = await regulations_registry.seed_from_corpus()
+    if seeded.get("problems"):
+        logger.warning("法規語料 seed 問題：%s", "；".join(seeded["problems"]))
 
 
 try:
@@ -186,6 +193,11 @@ async def _refresh_sso_runtime():
 
 @cl.on_chat_start
 async def on_start():
+    # 工具選單要先註冊：SSO 分支下面會 early return，擺在後面等於 SSO 使用者
+    # （CMS 進來的承辦人）在**新對話**永遠看不到工具選單，只有 resume 舊對話才有
+    # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
+    await _register_commands()
+
     idn = await _load_sso_runtime()
     if idn:
         # CMS 副駕模式
@@ -200,7 +212,6 @@ async def on_start():
         ).send()
         return
 
-    await _register_commands()
     await cl.Message(
         content=(
             "嗨，我是 **Eva**。\n\n"
