@@ -43,3 +43,6 @@ tests/e2e/test-results/
 tests/e2e/playwright-report/
 tests/e2e/downloads/
 tests/e2e/.auth/
+
+# runtime 產物（上傳的法規、產出的報告）
+data/regulations/
