@@ -9,15 +9,16 @@ test.describe('#111 法規檢核', () => {
     await loginViaSSO(page);
     await runCommand(page, '法規檢核');
 
+    // 點下工具要立刻有回應（不能靜默）——使用者最容易在這裡以為點壞了
+    await waitForText(page, '法規檢核', 20_000);
+    await waitForText(page, '正在讀取你可管理的計畫書', 20_000);
+
     // 專案選單（CMS list_my_projects → get_project_info 並行拉回）
-    await waitForText(page, '要檢核哪一份計畫書', 120_000);
+    await waitForText(page, '份你可管理的計畫書', 120_000);
     const listing = await page.evaluate(() => document.body.innerText);
     expect(listing).toContain(PLAN);
-    // 清單是 markdown 有序列表，innerText 不含編號 → 用完整名稱回覆（handler 支援名稱比對）
-    const name = listing.split('\n').map((l) => l.trim()).find((l) => l.includes(PLAN));
-    expect(name, `清單裡找不到「${PLAN}」`).toBeTruthy();
-
-    await page.locator('#chat-input').fill(name);
+    // 關鍵字就該選得到，不必打完整名稱
+    await page.locator('#chat-input').fill(PLAN);
     await page.locator('#chat-submit').click();
 
     // 判定是 PUSH 非即時流程，實測 45~120 秒

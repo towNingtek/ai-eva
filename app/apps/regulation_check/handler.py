@@ -60,17 +60,44 @@ def _plan_text(info: dict) -> str:
 
 
 async def _pick_project(projects: list[dict]) -> dict | None:
+    """讓使用者挑一份計畫書。
+
+    比對順序：完整名稱 → 唯一的部分比對 → 編號。
+    編號放最後而且**不當主要指引**：清單在 Chainlit 是 markdown 有序列表，
+    前端渲染後畫面上看不到我們寫的數字，叫使用者「回覆編號」等於叫他猜。
+    """
     if len(projects) == 1:
         return projects[0]
+
     listing = "\n".join(f"{i}. {p['name']}" for i, p in enumerate(projects, 1))
-    ans = await cl.AskUserMessage(
-        content=f"要檢核哪一份計畫書？請回覆編號或完整名稱：\n\n{listing}",
-        timeout=180,
-    ).send()
-    choice = ((ans or {}).get("output") or "").strip()
-    if choice.isdigit() and 1 <= int(choice) <= len(projects):
-        return projects[int(choice) - 1]
-    return next((p for p in projects if p["name"] == choice), None)
+    prompt = (f"找到 **{len(projects)}** 份你可管理的計畫書。\n\n"
+              f"{listing}\n\n"
+              "請直接回覆計畫名稱（打得出關鍵字就行，例如「晴耕」）。")
+
+    for attempt in range(3):
+        ans = await cl.AskUserMessage(content=prompt, timeout=300).send()
+        choice = ((ans or {}).get("output") or "").strip()
+        if not choice:
+            return None
+
+        exact = next((p for p in projects if p["name"] == choice), None)
+        if exact:
+            return exact
+
+        hits = [p for p in projects if choice and choice in p["name"]]
+        if len(hits) == 1:
+            return hits[0]
+        if len(hits) > 1:
+            names = "\n".join(f"- {p['name']}" for p in hits[:10])
+            prompt = (f"「{choice}」對到 {len(hits)} 份，請講得更精確一點：\n\n{names}")
+            continue
+
+        if choice.isdigit() and 1 <= int(choice) <= len(projects):
+            return projects[int(choice) - 1]
+
+        prompt = (f"找不到含「{choice}」的計畫書。請從下面挑一個關鍵字回覆：\n\n{listing}")
+
+    return None
 
 
 async def handle(payload: str, msg: cl.Message) -> None:
@@ -79,13 +106,36 @@ async def handle(payload: str, msg: cl.Message) -> None:
         await cl.Message(content="⚠️ 請先從 CMS 重新進入 AI-Eva（法規檢核需要讀取你的專案）。").send()
         return
 
-    projects = await _my_projects(runtime)
+    await cl.Message(
+        content="## ⚖️ 法規檢核\n\n"
+                "拿你的計畫書逐條比對法規語料，產出風險報告。流程：\n\n"
+                "1. 挑一份計畫書\n"
+                "2. 逐條判定（約一分鐘，會顯示進度）\n"
+                "3. 產出 5 區塊報告，可下載 `.md`\n\n"
+                "正在讀取你可管理的計畫書…"
+    ).send()
+
+    # 先出聲再做慢動作：CMS 的 list_scoped 只回 uuid，名稱要逐一問，
+    # 二十幾個專案就算並行也要好幾秒。不先回話的話使用者只看到一片空白，
+    # 不知道是在跑還是點壞了。
+    async with cl.Step(name="讀取你可管理的計畫書", type="tool") as step:
+        projects = await _my_projects(runtime)
+        step.output = f"找到 {len(projects)} 份"
+
     if not projects:
-        await cl.Message(content="⚠️ 沒有找到你可管理的專案。").send()
+        await cl.Message(
+            content="⚠️ 沒有找到你可管理的計畫書。\n\n"
+                    "法規檢核是對「你在 CMS 底下的專案」做比對；"
+                    "如果你確定有專案，可能是登入的角色沒有管理權限。"
+        ).send()
         return
+
     picked = await _pick_project(projects)
     if not picked:
-        await cl.Message(content="沒有對應到專案，請重新點一次「法規檢核」。").send()
+        await cl.Message(
+            content="沒有挑到計畫書，這次就先停在這裡。要重跑的話，"
+                    "點輸入框旁的 `...` → 選「法規檢核」→ 按送出。"
+        ).send()
         return
 
     plan = _plan_text(picked["info"])
