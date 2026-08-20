@@ -77,16 +77,28 @@
       }));
     }, 80);
   }
+  // 選單項目的文字長得像 "knowledge_base法規知識庫"（id + 標籤）。
+  // 有分行就取最後一段，否則把開頭的英數 id 去掉，留人看得懂的標籤。
+  function commandLabel(item) {
+    var parts = (item.innerText || item.textContent || "")
+      .split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (parts.length > 1) return parts[parts.length - 1];
+    var t = parts[0] || "";
+    var stripped = t.replace(/^[a-z0-9_.-]+/i, "").trim();
+    return stripped || t;
+  }
+
   function start() {
     document.addEventListener("click", function (event) {
       var item = event.target.closest('button, [role="menuitem"], [role="option"]');
       if (!item || item.id === "command-button" || item.closest("#command-button")) return;
       var popover = item.closest("#command-popover");
       if (!popover && !item.closest('[data-popover-content="true"]')) return;
-      var text = item.textContent || "";
-      var prompt = text.includes("chart_analysis") || text.includes("圖表分析")
-        ? "圖表分析" : text.includes("social_post") || text.includes("社群貼文")
-          ? "社群貼文" : null;
+      // 原本這裡寫死只認「圖表分析 / 社群貼文」，其他 app 一律不送出 ——
+      // 於是從選單點新的工具（法規檢核、法規知識庫）就毫無反應，使用者以為壞掉。
+      // 改成通用：把選到的那一項的標籤送出去即可，實際派工是看 msg.command，
+      // 內容只是讓訊息非空、順便在對話裡留下「使用者點了什麼」的痕跡。
+      var prompt = commandLabel(item);
       if (prompt) {
         setTimeout(function () { submit(prompt); }, 120);
       }

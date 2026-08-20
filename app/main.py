@@ -10,7 +10,13 @@ import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
+from app.apps._registry import (
+    chainlit_commands,
+    default_app,
+    discover,
+    get_by_id,
+    menu_apps,
+)
 from app.core.copilot import (
     run_copilot,
     execute_confirmed,
@@ -84,6 +90,7 @@ from app.surfaces import line_opencode  # noqa: E402
 from app.surfaces import discord_voice  # noqa: E402  # 註冊 /discord-voice/chat route
 from app.projects import registry as project_registry  # noqa: E402
 from app.nodes import registry as node_registry  # noqa: E402
+from app.regulations import registry as regulations_registry  # noqa: E402  # 法規語料（#111/#112）
 
 
 async def _init_tables():
@@ -95,6 +102,12 @@ async def _init_tables():
     await sso_surface.ensure_sso_sessions_table()
     await line_opencode.ensure_line_opencode_table()
     await discord_voice.ensure_discord_voice_table()
+    # 法規語料：建表後從 repo 的 corpus/ 灌進去（不呼叫 LLM、不連外網；
+    # 抽取是建置時的事，見 app/regulations/ingest.py）。sha256 對不上的不給 active。
+    await regulations_registry.ensure_regulations_tables()
+    seeded = await regulations_registry.seed_from_corpus()
+    if seeded.get("problems"):
+        logger.warning("法規語料 seed 問題：%s", "；".join(seeded["problems"]))
 
 
 try:
@@ -110,6 +123,40 @@ async def _register_commands():
     cmds = chainlit_commands()
     await cl.context.emitter.set_commands(cmds)
     logger.info("Registered %d command(s): %s", len(cmds), [c["id"] for c in cmds])
+
+
+def _app_actions() -> list[cl.Action]:
+    """工具選單的 app → 一排「點了就跑」的按鈕。
+
+    Chainlit 的 command（輸入框旁 `...` 那個選單）選完只是把標籤掛到輸入框上，
+    **還要按送出**才會派工 —— 使用者選了以為壞掉是常態（實際回報過）。
+    Action 按鈕點下去直接觸發 callback，不需要送出，才是「選了就有反應」。
+    command 保留（熟手打字更快），按鈕是給第一次用的人看的。
+    """
+    # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
+    # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
+    def _label(a) -> str:
+        return f"{a.icon} {a.label}".replace("\ufe0f", "")
+
+    return [
+        cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
+        for a in menu_apps()
+    ]
+
+
+@cl.action_callback("open_app")
+async def open_app(action: cl.Action):
+    """按下工具按鈕 → 直接跑那個 app（不必再送一次訊息）。"""
+    app_id = (action.payload or {}).get("app") or ""
+    app = get_by_id(app_id)
+    if app is None:
+        await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
+        return
+    logger.info("action open_app → %s", app.id)
+    # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
+    # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
+    anchor = await cl.Message(content=f"▶ {app.label}").send()
+    await app.handle("", anchor)
 
 
 @cl.on_chat_resume
@@ -186,6 +233,11 @@ async def _refresh_sso_runtime():
 
 @cl.on_chat_start
 async def on_start():
+    # 工具選單要先註冊：SSO 分支下面會 early return，擺在後面等於 SSO 使用者
+    # （CMS 進來的承辦人）在**新對話**永遠看不到工具選單，只有 resume 舊對話才有
+    # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
+    await _register_commands()
+
     idn = await _load_sso_runtime()
     if idn:
         # CMS 副駕模式
@@ -195,18 +247,20 @@ async def on_start():
             content=(
                 f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
                 f"我可以幫你查：{', '.join(tools) or '（目前無可用工具）'}。\n"
-                "試試問「**列出我的專案**」或「**我的 SROI**」。"
-            )
+                "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
+                "或直接點下面的工具："
+            ),
+            actions=_app_actions(),
         ).send()
         return
 
-    await _register_commands()
     await cl.Message(
         content=(
             "嗨，我是 **Eva**。\n\n"
             "- 直接輸入問題 → 一般對話（OpenAI gpt-4o-mini）\n"
-            "- 輸入框工具選單可挑：🪞 模型對照 / 🌐 網頁搜尋"
-        )
+            "- 或直接點下面的工具："
+        ),
+        actions=_app_actions(),
     ).send()
 
 
