@@ -17,21 +17,18 @@ async function loginViaSSO(page) {
 
 /** 開工具選單並選一個 app。
  *
- * Chainlit 把 commands 收在輸入框旁的「...」展開鈕後面（不是常駐 chip），
- * 所以要先展開再點。 */
-async function runCommand(page, label, text = '') {
+ * 選完**不要**自己填字或按送出：public/custom.js 有一段自動送出的 shim，
+ * 而它只在輸入框是空的時候才動作 —— 先填字反而會把它擋掉，兩邊打架。
+ * 這也正是真實使用者的操作：從選單點一下，就這樣。
+ */
+async function runCommand(page, label) {
+  await runCommandViaMenu(page, label);
+}
+
+/** 只從「...」選單挑 app，**不自己按送出** —— 驗 custom.js 的自動送出有沒有生效。 */
+async function runCommandViaMenu(page, label) {
   await page.getByRole('button', { name: '...' }).first().click();
-  // 一定要限定在展開的選單裡（role=option）：歡迎訊息也有同名的工具按鈕，
-  // 不限定會誤點到它、而且它被選單遮住 → 整個卡死
   await page.getByRole('option', { name: label }).first().click();
-  // 選 command 只是把它掛到輸入框上，還要送出才會派工（main.py on_message 靠 msg.command 分派）。
-  // 用送出鈕而不是 Enter：帶附件時 Enter 不一定會觸發送出。
-  const input = page.locator('#chat-input');
-  await input.click();
-  if (text) await input.fill(text);
-  const submit = page.locator('#chat-submit');
-  await submit.waitFor({ state: 'visible', timeout: 10_000 });
-  await submit.click();
 }
 
 /** 點歡迎訊息上的工具按鈕（cl.Action）—— 點了直接跑，不必送訊息。 */
@@ -45,4 +42,4 @@ async function waitForText(page, text, timeout = 5 * 60 * 1000) {
     (t) => document.body.innerText.includes(t), text, { timeout, polling: 1000 });
 }
 
-module.exports = { token, loginViaSSO, runCommand, openTool, waitForText };
+module.exports = { token, loginViaSSO, runCommand, runCommandViaMenu, openTool, waitForText };

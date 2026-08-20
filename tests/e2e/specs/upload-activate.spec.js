@@ -26,7 +26,7 @@ test.describe('#112 上傳 → 啟用 → 被檢核引用', () => {
     // 1. 上傳 → 待審核
     await page.locator('#upload-button-input').setInputFiles(UPLOAD_PDF);
     await expect(page.getByText(`${UPLOAD_NAME}.pdf`).first()).toBeVisible({ timeout: 60_000 });
-    await runCommand(page, '法規知識庫', '上傳法規');
+    await runCommand(page, '法規知識庫');
     // 等「這一部」出現在待審核清單裡 —— 只等「待審核」字樣的話，
     // 上一輪測試留下的 pending 就會讓斷言誤判成功，然後卡在按一顆不存在的按鈕上
     await waitForText(page, `啟用 ${UPLOAD_NAME}`.slice(0, 12), 120_000);

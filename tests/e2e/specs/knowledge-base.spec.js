@@ -33,7 +33,7 @@ test.describe('#112 知識庫管理', () => {
     await page.locator('#upload-button-input').setInputFiles(pdf);
     await expect(page.getByText('水土保持法.pdf').first()).toBeVisible({ timeout: 60_000 });
 
-    await runCommand(page, '法規知識庫', '上傳法規');
+    await runCommand(page, '法規知識庫');
     await waitForText(page, '待審核', 120_000);
 
     const body = await page.evaluate(() => document.body.innerText);
