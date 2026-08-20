@@ -215,7 +215,8 @@ async def seed_from_corpus() -> dict:
                 VALUES ($1,$2,$3,$4,$5,$6,$7,'manifest',NOW())
                 ON CONFLICT (name, version) DO UPDATE SET
                     category=EXCLUDED.category, sha256=EXCLUDED.sha256,
-                    chars=EXCLUDED.chars, status=EXCLUDED.status, origin='manifest'
+                    chars=EXCLUDED.chars, status=EXCLUDED.status, origin='manifest',
+                    uploaded_by=NULL, reviewed_by=NULL
                 RETURNING id
                 """,
                 name, entry["category"], entry.get("version") or "",
@@ -411,24 +412,121 @@ async def add_upload(name: str, category: str, *, source_file: str, sha256: str,
 
     語料庫是判定的分母：混進一部錯的法規，報告就會憑空長出違規，而且沒人看得出來。
     所以 runtime 上傳只到 pending 為止，要有人按下啟用（activate_regulation）才生效；
-    repo MANIFEST 裡的 31 部則在開機 seed 時直接 active（有 sha256 把關）。
+    repo MANIFEST 裡的則在開機 seed 時直接 active（有 sha256 把關）。
+
+    **絕不覆蓋 manifest 來源的列。** 早期版本的 ON CONFLICT DO UPDATE 沒有限定 origin，
+    上傳一部跟語料庫同名、且 version 都是空字串的法規（例如農村再生條例施行細則），
+    就會把版控那一列的 sha256 與 uploaded_by 悄悄改掉 —— 等於上傳能污染判定分母的
+    來源紀錄。現在衝突到 manifest 列時改用帶標記的 version 另開一列。
     """
     if not _DATABASE_URL:
         return None
     conn = await _connect()
     try:
-        return await conn.fetchval(
-            """
-            INSERT INTO regulations
-                (name, category, version, source_file, sha256, chars, status, origin, uploaded_by)
-            VALUES ($1,$2,$3,$4,$5,$6,'pending','upload',$7)
-            ON CONFLICT (name, version) DO UPDATE SET
-                source_file=EXCLUDED.source_file, sha256=EXCLUDED.sha256,
-                chars=EXCLUDED.chars, uploaded_by=EXCLUDED.uploaded_by
-            RETURNING id
-            """,
-            name, category, version, source_file, sha256, chars, uploaded_by,
+        # 第二個候選帶「（上傳）」標記，用來跟版控語料的同名同版列區隔
+        candidates = [version, f"{version}（上傳）" if version else "（上傳）"]
+        for attempt_version in candidates:
+            reg_id = await conn.fetchval(
+                """
+                INSERT INTO regulations
+                    (name, category, version, source_file, sha256, chars, status, origin, uploaded_by)
+                VALUES ($1,$2,$3,$4,$5,$6,'pending','upload',$7)
+                ON CONFLICT (name, version) DO UPDATE SET
+                    source_file=EXCLUDED.source_file, sha256=EXCLUDED.sha256,
+                    chars=EXCLUDED.chars, uploaded_by=EXCLUDED.uploaded_by,
+                    status='pending'
+                WHERE regulations.origin = 'upload'
+                RETURNING id
+                """,
+                name, category, attempt_version, source_file, sha256, chars, uploaded_by,
+            )
+            if reg_id is not None:
+                return reg_id
+            # 走到這裡代表衝突的是 manifest 列（DO UPDATE 的 WHERE 沒通過）→ 換 version 再試
+            logger.info("上傳與版控語料同名同版（%s）→ 另開一列", name)
+        return None
+    finally:
+        await conn.close()
+
+
+async def get_regulation(reg_id: int) -> Optional[dict]:
+    if not _DATABASE_URL:
+        return None
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow("SELECT * FROM regulations WHERE id=$1", reg_id)
+        return dict(row) if row else None
+    finally:
+        await conn.close()
+
+
+async def replace_content(reg_id: int, articles: list[dict], controls: list[dict],
+                          *, extracted_by: str, corpus_version: str = "") -> None:
+    """寫入某部法規的條文與管制條目（整批換掉）。
+
+    上傳的法規沒有 repo 產物，corpus_version 留空 —— 報告要分得出這條管制
+    是版控來的還是 runtime 抽的。
+    """
+    if not _DATABASE_URL:
+        return
+    conn = await _connect()
+    try:
+        await conn.execute("DELETE FROM regulation_articles WHERE regulation_id=$1", reg_id)
+        if articles:
+            await conn.copy_records_to_table(
+                "regulation_articles",
+                records=[(reg_id, a.get("seq", i), a["article_no"], a.get("chapter"), a["text"])
+                         for i, a in enumerate(articles)],
+                columns=["regulation_id", "seq", "article_no", "chapter", "text"],
+            )
+        await conn.execute("DELETE FROM negative_list WHERE regulation_id=$1", reg_id)
+        if controls:
+            await conn.copy_records_to_table(
+                "negative_list",
+                records=[(reg_id, c.get("article_no", ""), c["law_domain"], c["tag"], c["situation"],
+                          c.get("requirement"), c.get("penalty"), corpus_version, extracted_by)
+                         for c in controls],
+                columns=["regulation_id", "article_no", "law_domain", "tag", "situation",
+                         "requirement", "penalty", "corpus_version", "extracted_by"],
+            )
+    finally:
+        await conn.close()
+
+
+async def set_version(reg_id: int, version: str) -> None:
+    if not _DATABASE_URL or not version:
+        return
+    conn = await _connect()
+    try:
+        await conn.execute("UPDATE regulations SET version=$2 WHERE id=$1", reg_id, version)
+    except asyncpg.UniqueViolationError:
+        logger.warning("version 撞到既有 (name, version)，保留原值：reg_id=%s", reg_id)
+    finally:
+        await conn.close()
+
+
+async def mark_no_fulltext(reg_id: int, reason: str = "") -> None:
+    if not _DATABASE_URL:
+        return
+    conn = await _connect()
+    try:
+        await conn.execute("UPDATE regulations SET status='no_fulltext' WHERE id=$1", reg_id)
+    finally:
+        await conn.close()
+
+
+async def name_clashes(name: str, exclude_id: int) -> list[dict]:
+    """同名但不同列的法規 —— 上傳跟語料庫撞名時要提醒，否則會重複計入判定。"""
+    if not _DATABASE_URL:
+        return []
+    conn = await _connect()
+    try:
+        rows = await conn.fetch(
+            "SELECT id, name, version, status, origin FROM regulations "
+            "WHERE name=$1 AND id<>$2 ORDER BY id",
+            name, exclude_id,
         )
+        return [dict(r) for r in rows]
     finally:
         await conn.close()
 
@@ -443,6 +541,19 @@ async def activate_regulation(reg_id: int, reviewed_by: str) -> bool:
             "UPDATE regulations SET status='active', reviewed_by=$2, activated_at=NOW() WHERE id=$1 AND status='pending'",
             reg_id, reviewed_by,
         )
+        return res.endswith("1")
+    finally:
+        await conn.close()
+
+
+async def delete_regulation(reg_id: int) -> bool:
+    """只准刪上傳來的（origin='upload'）；MANIFEST 的以 repo 為真相，不從 UI 刪。"""
+    if not _DATABASE_URL:
+        return False
+    conn = await _connect()
+    try:
+        res = await conn.execute(
+            "DELETE FROM regulations WHERE id=$1 AND origin='upload'", reg_id)
         return res.endswith("1")
     finally:
         await conn.close()

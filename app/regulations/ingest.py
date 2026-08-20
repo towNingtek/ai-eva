@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import logging
 import re
 import sys
 import time
@@ -27,6 +28,8 @@ from pathlib import Path
 import yaml
 
 from app.core.llm import make_llm
+
+logger = logging.getLogger(__name__)
 
 CORPUS = Path(__file__).parent / "corpus"
 CACHE = CORPUS / ".cache"
@@ -226,6 +229,72 @@ async def extract_controls(name: str, articles: list[dict], llm, model: str,
                 "extracted_by": model,
             })
     return got
+
+
+# ── runtime 用：啟用一部上傳的法規時，就地抽條文與管制條目 ─────────────
+async def ingest_uploaded_pdf(pdf_path: Path, name: str, *, model: str | None = None,
+                              reasoning: str = "none") -> dict:
+    """一部上傳的 PDF → {articles, controls, version, no_fulltext}。
+
+    這是唯一會在 runtime 呼叫 LLM 的 ingest 路徑，只給「管理者上傳並審核啟用」用。
+    MANIFEST 內的 31 部走建置時抽取、產物進版控（可 diff、可追是哪個模型抽的）；
+    使用者上傳的沒有 repo 產物，只能就地抽 —— 所以 corpus_version 留空、
+    extracted_by 記下模型，報告才分得出這條管制是哪來的。
+    """
+    from app.regulations import standard
+
+    txt = pdf_to_text(pdf_path)
+    if not txt.strip():
+        return {"articles": [], "controls": [], "version": "", "no_fulltext": True,
+                "error": "PDF 抽不出文字（可能是掃描件，需要 OCR）"}
+    if is_no_fulltext(txt):
+        return {"articles": [], "controls": [], "version": detect_version(txt),
+                "no_fulltext": True, "error": "內容不是法規全文"}
+
+    articles = split_articles(txt)
+    model = model or standard.judge_model(standard.load()) or None
+    if reasoning == "none":
+        llm = make_llm(alias=model, temperature=0, streaming=False).bind(max_completion_tokens=16000)
+    else:
+        llm = make_llm(alias=model, temperature=1, streaming=False).bind(
+            max_completion_tokens=16000, reasoning_effort=reasoning)
+    controls = await extract_controls(name, articles, llm, model or "(預設)")
+    domain = LAW_DOMAIN.get(name, "其他")
+    for c in controls:
+        c["law_domain"] = domain
+    return {"articles": articles, "controls": controls,
+            "version": detect_version(txt), "no_fulltext": False, "error": ""}
+
+
+def pdf_to_text(pdf_path: Path) -> str:
+    """PDF → 純文字。抽不出來（掃描件）回空字串，讓上層標成需要 OCR。
+
+    優先用 PyMuPDF（已是既有依賴、純 Python，容器裡就有）；沒有才退回 pdftotext。
+    註：版控語料（corpus/extracted/）是建置時用 pdftotext 抽的，兩者斷行細節略有
+    差異；影響只在條文切分的邊界，判定用的是條文內容，不受影響。
+    """
+    try:
+        try:
+            import pymupdf                      # 新名稱
+        except ImportError:
+            import fitz as pymupdf              # 舊名稱（1.24 之前）
+        with pymupdf.open(pdf_path) as doc:
+            return "\n".join(page.get_text() for page in doc)
+    except ImportError:
+        pass
+    except Exception:  # noqa: BLE001
+        logger.exception("PyMuPDF 抽文字失敗，改試 pdftotext：%s", pdf_path.name)
+
+    import subprocess
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp) / "out.txt"
+        try:
+            subprocess.run(["pdftotext", "-enc", "UTF-8", str(pdf_path), str(out)],
+                           check=True, capture_output=True, timeout=120)
+        except Exception:  # noqa: BLE001
+            return ""
+        return out.read_text(encoding="utf-8", errors="replace") if out.exists() else ""
 
 
 async def main() -> int:
