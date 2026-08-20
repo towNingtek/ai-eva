@@ -78,4 +78,6 @@ async def handle(payload: str, msg: cl.Message) -> None:
     if uploaded:
         parts.insert(1, f"\n✅ 已收到 **{uploaded}** 份上傳的法規，狀態為「待審核」。"
                         f"未經啟用前不會影響檢核結果。\n")
-    await cl.Message(content="\n".join(parts), parent_id=getattr(msg, "id", None)).send()
+    # 不掛 parent_id：子訊息會被收合，而且從按鈕（Action）進來時 msg 是我們自己造的、
+    # 根本沒送出過，掛上去等於指向不存在的父訊息 → 整段輸出看不見
+    await cl.Message(content="\n".join(parts)).send()

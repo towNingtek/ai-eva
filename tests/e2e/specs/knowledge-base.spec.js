@@ -1,13 +1,13 @@
 // #112 知識庫管理（法規資料）—— KPI：可上傳 PDF、可重複使用既有索引、檢核時可引用
 const { test, expect } = require('@playwright/test');
 const path = require('node:path');
-const { loginViaSSO, runCommand, waitForText } = require('./helpers');
+const { loginViaSSO, runCommand, openTool, waitForText } = require('./helpers');
 
 test.describe('#112 知識庫管理', () => {
   test('KPI: 可重複使用已建立之法規索引（開機直接就緒，不必重跑 ingest）', async ({ page }) => {
     await loginViaSSO(page);
-    await runCommand(page, '法規知識庫');
-    await waitForText(page, '法規知識庫', 60_000);
+    await openTool(page, '法規知識庫');
+    await waitForText(page, '部生效', 60_000);
 
     const body = await page.evaluate(() => document.body.innerText);
     // 語料庫是 repo 帶進來、開機 seed 的：一進來就有生效法規與管制條目

@@ -10,7 +10,13 @@ import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
+from app.apps._registry import (
+    chainlit_commands,
+    default_app,
+    discover,
+    get_by_id,
+    menu_apps,
+)
 from app.core.copilot import (
     run_copilot,
     execute_confirmed,
@@ -119,6 +125,40 @@ async def _register_commands():
     logger.info("Registered %d command(s): %s", len(cmds), [c["id"] for c in cmds])
 
 
+def _app_actions() -> list[cl.Action]:
+    """工具選單的 app → 一排「點了就跑」的按鈕。
+
+    Chainlit 的 command（輸入框旁 `...` 那個選單）選完只是把標籤掛到輸入框上，
+    **還要按送出**才會派工 —— 使用者選了以為壞掉是常態（實際回報過）。
+    Action 按鈕點下去直接觸發 callback，不需要送出，才是「選了就有反應」。
+    command 保留（熟手打字更快），按鈕是給第一次用的人看的。
+    """
+    # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
+    # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
+    def _label(a) -> str:
+        return f"{a.icon} {a.label}".replace("\ufe0f", "")
+
+    return [
+        cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
+        for a in menu_apps()
+    ]
+
+
+@cl.action_callback("open_app")
+async def open_app(action: cl.Action):
+    """按下工具按鈕 → 直接跑那個 app（不必再送一次訊息）。"""
+    app_id = (action.payload or {}).get("app") or ""
+    app = get_by_id(app_id)
+    if app is None:
+        await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
+        return
+    logger.info("action open_app → %s", app.id)
+    # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
+    # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
+    anchor = await cl.Message(content=f"▶ {app.label}").send()
+    await app.handle("", anchor)
+
+
 @cl.on_chat_resume
 async def on_chat_resume(thread):
     # 關鍵：resumed thread 走的是這裡（不是 on_chat_start）→ 也要載入 SSO runtime，
@@ -207,8 +247,10 @@ async def on_start():
             content=(
                 f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
                 f"我可以幫你查：{', '.join(tools) or '（目前無可用工具）'}。\n"
-                "試試問「**列出我的專案**」或「**我的 SROI**」。"
-            )
+                "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
+                "或直接點下面的工具："
+            ),
+            actions=_app_actions(),
         ).send()
         return
 
@@ -216,8 +258,9 @@ async def on_start():
         content=(
             "嗨，我是 **Eva**。\n\n"
             "- 直接輸入問題 → 一般對話（OpenAI gpt-4o-mini）\n"
-            "- 輸入框工具選單可挑：🪞 模型對照 / 🌐 網頁搜尋"
-        )
+            "- 或直接點下面的工具："
+        ),
+        actions=_app_actions(),
     ).send()
 
 

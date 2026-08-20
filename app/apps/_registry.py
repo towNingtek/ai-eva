@@ -83,9 +83,17 @@ def discover() -> dict[str, App]:
     return _APPS
 
 
+def menu_apps() -> list[App]:
+    """會出現在工具選單的 app（也給 Action 按鈕用）。"""
+    discover()
+    return [
+        a for a in _APPS.values()
+        if a.show_in_menu and a.enabled and not a.is_default
+    ]
+
+
 def chainlit_commands() -> list[dict]:
     """CommandDict list for cl.context.emitter.set_commands()."""
-    discover()
     return [
         {
             "id": a.id,
@@ -93,8 +101,7 @@ def chainlit_commands() -> list[dict]:
             "icon": a.cl_icon,
             "persistent": True,
         }
-        for a in _APPS.values()
-        if a.show_in_menu and a.enabled and not a.is_default
+        for a in menu_apps()
     ]
 
 
