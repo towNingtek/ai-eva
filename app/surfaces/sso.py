@@ -164,6 +164,22 @@ async def sso_handoff(token: str, request: Request, refresh_token: str | None = 
         raise HTTPException(403, f"SSO handoff failed: {type(e).__name__}")
 
     resp = RedirectResponse(url="/", status_code=303)
+    # Chainlit 的 websocket 認證讀它自己的 access_token cookie，不讀 eva_sso。每次 handoff
+    # 都要覆寫，否則瀏覽器沿用上一次的 JWT（可能是別的租戶、已過期），裡面帶舊的
+    # sso_session_id → refresh 打到錯的租戶 401 → cms_runtime 消失（#100）。
+    from chainlit.auth import create_jwt, set_auth_cookie
+    from chainlit.user import User
+
+    idn = sess["identity"]
+    set_auth_cookie(request, resp, create_jwt(User(
+        identifier=idn.get("email") or f'{idn["project"]}:{idn.get("user_id")}',
+        metadata={
+            "sso_session_id": sess["session_id"],
+            "project": idn["project"],
+            "tenant_id": idn.get("tenant_id"),
+            "role": "cms-user",
+        },
+    )))
     resp.set_cookie(
         "eva_sso", sess["session_id"],
         httponly=True, secure=True, samesite="lax", max_age=_SESSION_TTL,
