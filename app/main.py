@@ -167,9 +167,28 @@ async def on_chat_resume(thread):
     await _register_commands()
 
 
+def _current_chainlit_user():
+    """本連線的 Chainlit user。優先解 websocket token —— data layer 可能把它換成
+    PersistedUser，那份 metadata 是「第一次登入時」寫進 DB 的，換租戶後會是舊的（#100）。"""
+    token = getattr(cl.context.session, "token", None)
+    if token:
+        try:
+            from chainlit.auth import decode_jwt
+            return decode_jwt(token)
+        except Exception:  # noqa: BLE001
+            logger.warning("Unable to decode Chainlit websocket token", exc_info=True)
+    return cl.user_session.get("user") or getattr(cl.context.session, "user", None)
+
+
+def _is_sso_user() -> bool:
+    """這條連線是不是從 CMS SSO 進來的（runtime 掛掉時要不要明講的判斷依據）。"""
+    user = _current_chainlit_user()
+    return (getattr(user, "metadata", None) or {}).get("role") == "cms-user"
+
+
 async def _sso_session_for_current_user(*, allow_expired: bool = False):
     """目前 Chainlit user 若是 SSO 認證的，回它的 SSO session（含 ToolRuntime）；否則 None。"""
-    user = cl.user_session.get("user")
+    user = _current_chainlit_user()
     sid = (getattr(user, "metadata", None) or {}).get("sso_session_id") if user else None
     return await sso_surface.get_sso_session(sid, allow_expired=allow_expired) if sid else None
 
@@ -485,6 +504,18 @@ async def on_message(msg: cl.Message):
             return
         await _run_copilot_emit(runtime, content, content, history)
         return
+
+    # runtime 仍為 None 但這是 SSO 使用者 → CMS 工具全掛。一般對話還能用，但先明講一次，
+    # 免得 LLM 沒工具硬答 CMS 問題（#100：問「你有哪些專案」卻回「我將進行專案建立」）。
+    if _is_sso_user() and not cl.user_session.get("cms_runtime_warned"):
+        cl.user_session.set("cms_runtime_warned", True)
+        await cl.Message(
+            content=(
+                "⚠️ 目前讀不到你的 CMS 資料（登入憑證已失效）——"
+                "專案查詢、SROI、圖表匯出、法規檢核都暫時無法使用。\n\n"
+                "請回 CMS 重新點一次「進 AI 秘書」。在那之前，以下回答**不含**你的專案資料。"
+            )
+        ).send()
 
     # runtime 仍為 None：若使用者上傳了附件（期待副駕），多半是 SSO session 過期 → 明講、別靜默丟
     if msg.elements:
