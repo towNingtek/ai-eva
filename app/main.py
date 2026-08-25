@@ -223,7 +223,10 @@ async def _load_sso_runtime():
             return None  # refresh token 也失效 → 需要重新走 CMS handoff
         sess = refreshed
     runtime = sess["runtime"]
-    _attach_refresh_handler(runtime, sess["session_id"])
+    # Refresh 失敗（degraded）時，仍維持 runtime 不被拆除 —— tools 已載入，可正常使用；
+    # 401 會由 on_unauthorized hook 捕獲嘗試自癒，若仍失敗再由使用者重新登入。
+    if not sess.get("degraded"):
+        _attach_refresh_handler(runtime, sess["session_id"])
     cl.user_session.set("cms_runtime", runtime)
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
@@ -236,18 +239,28 @@ async def _load_sso_runtime():
 
 
 async def _refresh_sso_runtime():
-    """Refresh CMS callback credential immediately before a confirmed write."""
-    sess = await _sso_session_for_current_user(allow_expired=True)
-    sid = sess.get("session_id") if sess else None
-    if not sid:
+    """Refresh CMS callback credential immediately before a confirmed write.
+
+    Refresh 成功 → 全新 manifest + credential。
+    Refresh 失敗（degraded）→ 仍回傳 True（runtime 存活、tools 可用），
+      但 credential 可能過期，寫入操作可能觸發 401 → on_unauthorized → 使用者重新登入。
+    """
+    try:
+        sess = await _sso_session_for_current_user(allow_expired=True)
+        sid = sess.get("session_id") if sess else None
+        if not sid:
+            return False
+        refreshed = await sso_surface.refresh_sso_session(sid)
+        if not refreshed:
+            return False
+        runtime = refreshed["runtime"]
+        if not refreshed.get("degraded"):
+            _attach_refresh_handler(runtime, sid)
+        cl.user_session.set("cms_runtime", runtime)
+        return True
+    except Exception:
+        logger.exception("_refresh_sso_runtime failed unexpectedly")
         return False
-    refreshed = await sso_surface.refresh_sso_session(sid)
-    if not refreshed:
-        return False
-    runtime = refreshed["runtime"]
-    _attach_refresh_handler(runtime, sid)
-    cl.user_session.set("cms_runtime", runtime)
-    return True
 
 
 @cl.on_chat_start

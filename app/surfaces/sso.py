@@ -124,7 +124,11 @@ async def get_sso_session(session_id: str | None, *, allow_expired: bool = False
 
 
 async def refresh_sso_session(session_id: str | None) -> dict | None:
-    """Rotate the callback credential（confirmed write 前、讀取 401 自癒、過期 session 復活都走這）。"""
+    """Rotate the callback credential（confirmed write 前、讀取 401 自癒、過期 session 復活都走這）。
+
+    Refresh 成功 → 回傳完整 session（新 manifest + 新 credential）。
+    Refresh 失敗 → 降級沿用既有 manifest（tools 已載入，runtime 不被拆除）。
+    """
     current = await get_sso_session(session_id, allow_expired=True)
     if not current or not _DATABASE_URL:
         return None
@@ -135,22 +139,34 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
             manifest = issuers.refresh_manifest(
                 identity["issuer"], refresh_token, tenant_id=identity.get("tenant_id")
             )
+            next_refresh_token = manifest.get("refresh_token") or refresh_token
+            conn = await _connect()
+            try:
+                await conn.execute(
+                    "UPDATE sso_sessions SET manifest = $2::jsonb, refresh_token = $3, "
+                    "expires_at = NOW() + ($4 || ' seconds')::interval WHERE id = $1",
+                    session_id, json.dumps(manifest), next_refresh_token, str(_SESSION_TTL),
+                )
+            finally:
+                await conn.close()
+            return {"session_id": session_id, "identity": identity, "expired": False,
+                    "refresh_token": next_refresh_token, "manifest": manifest,
+                    "runtime": ToolRuntime(manifest)}
         except Exception:
-            logger.warning("SSO credential refresh failed for session %s", (session_id or "")[:8], exc_info=True)
-            return None
-        next_refresh_token = manifest.get("refresh_token") or refresh_token
-        conn = await _connect()
-        try:
-            await conn.execute(
-                "UPDATE sso_sessions SET manifest = $2::jsonb, refresh_token = $3, "
-                "expires_at = NOW() + ($4 || ' seconds')::interval WHERE id = $1",
-                session_id, json.dumps(manifest), next_refresh_token, str(_SESSION_TTL),
-            )
-        finally:
-            await conn.close()
-        return {"session_id": session_id, "identity": identity, "expired": False,
-                "refresh_token": next_refresh_token, "manifest": manifest,
-                "runtime": ToolRuntime(manifest)}
+            logger.warning("SSO credential refresh failed (degraded) for session %s", (session_id or "")[:8], exc_info=True)
+            manifest = current["manifest"]
+            conn = await _connect()
+            try:
+                await conn.execute(
+                    "UPDATE sso_sessions SET expires_at = NOW() + ($2 || ' seconds')::interval "
+                    "WHERE id = $1",
+                    session_id, str(_SESSION_TTL),
+                )
+            finally:
+                await conn.close()
+            return {"session_id": session_id, "identity": identity, "expired": False,
+                    "refresh_token": refresh_token, "manifest": manifest,
+                    "runtime": ToolRuntime(manifest), "degraded": True}
     return None
 
 
