@@ -163,8 +163,8 @@ _SDG_PROMPT = (
 )
 
 
-async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
-    """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
+async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
+    """只生成結構化 SDG 結果，不執行 CMS 寫入。"""
     llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SDG_PROMPT),
@@ -172,6 +172,12 @@ async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_k
     ])
     sdgs = _parse_json_obj(resp.content or "")
     sdgs = {str(k): v for k, v in sdgs.items() if str(k).isdigit() and v}  # 清成 {編號:描述}
+    return sdgs
+
+
+async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
+    """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。"""
+    sdgs = await generate_sdg(project_info, api_key=api_key, user=user)
     if not sdgs:
         return "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」重試）"
     result = await runtime.execute("save_sdg", {"uuid": uuid, "project_sdgs": sdgs}, confirmed=True)
