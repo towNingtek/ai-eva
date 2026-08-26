@@ -334,7 +334,7 @@ def _read_text_file(path: str | None, mime: str, name: str) -> Optional[str]:
 
 
 def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
-    """讀取有文字層的 PDF；掃描 PDF 先明確回報，避免靜默產生空專案。"""
+    """Read a PDF text layer, falling back to Traditional Chinese OCR."""
     if not path or not os.path.exists(path):
         return None
     ext = os.path.splitext(name or "")[1].lower()
@@ -346,6 +346,16 @@ def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
         doc = fitz.open(path)
         pages = [page.get_text("text") for page in doc]
         text = "\n\n".join(p.strip() for p in pages if p and p.strip())
+        if not text.strip():
+            import pytesseract
+            from PIL import Image
+
+            ocr_pages = []
+            for page in doc:
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                ocr_pages.append(pytesseract.image_to_string(image, lang="chi_tra+eng"))
+            text = "\n\n".join(p.strip() for p in ocr_pages if p and p.strip())
         doc.close()
     except Exception:  # noqa: BLE001
         logger.exception("read PDF attachment failed: %s", name)
@@ -358,7 +368,7 @@ def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
 
 
 def _read_attachment(a: dict) -> Optional[str]:
-    """依附件類型 lazy 讀取；目前支援 txt/md 與文字層 PDF。"""
+    """依附件類型 lazy 讀取；支援 txt/md 與文字層或掃描型 PDF。"""
     name, mime, path = a.get("name", ""), a.get("mime", ""), a.get("path")
     ext = os.path.splitext(name)[1].lower()
     if ext in _PDF_EXTS or (mime or "").lower() in _PDF_MIMES:
