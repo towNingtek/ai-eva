@@ -1,0 +1,29 @@
+# Attach ai-eva to the CMS (tplanet multi-tenant) network.
+#
+# The CMS calls ai-eva server-to-server at http://ai-eva:7860/internal/sdg/generate
+# (#196). Going through the public hostname puts Cloudflare between two backend
+# services and it answers those calls with 403 (error 1010), so the call has to
+# stay on the container network — which means ai-eva must be a member of it.
+#
+# This used to be done by hand with `docker network connect`, which does not
+# survive `docker compose up --force-recreate`: the container comes back on its
+# own network only, the CMS stops resolving `ai-eva`, and SDG generation fails
+# with 502 until someone notices and reconnects it.
+#
+# The network itself is owned by the CMS compose project, so it is external here.
+# Override CMS_NETWORK when the CMS project is named something other than `dev`
+# (e.g. CMS_NETWORK=stable_tplanet-net).
+#
+# Kept as a separate file so ai-eva still starts on hosts with no CMS. Hosts that
+# do run the CMS opt in via COMPOSE_FILE in .env — see .env.example.
+
+networks:
+  cms:
+    external: true
+    name: ${CMS_NETWORK:-dev_tplanet-net}
+
+services:
+  ai-eva:
+    networks:
+      - default
+      - cms
