@@ -30,6 +30,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      CMS_SDG_SERVICE_TOKEN: ${CMS_SDG_SERVICE_TOKEN:-}
     ports:
       - "7860:7860"
     volumes:
