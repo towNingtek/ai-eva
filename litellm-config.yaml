@@ -54,7 +54,16 @@ model_list:
     api_key: os.environ/NVIDIA_API_KEY
 router_settings:
   fallbacks:
-  - local-cheap:
-    - cloud-fast
+    - local-cheap: ["cloud-fast"]
+    # ai-eva#110：法規檢核的判定模型。免費額度不穩，掛掉就逐級退；
+    # 全部掛才回到付費的 gpt-5.4 —— 功能不會因為免費額度用完而死掉，
+    # 而實際用了哪一個，報告的「判定引擎」欄會寫出來。
+    #
+    # alias 用本機這份檔案裡實際存在的名字（beta 那份叫 nvidia-kimi /
+    # nvidia-llama33，這裡沒有）—— fallback 指到不存在的 alias 等於沒有 fallback。
+    - nvidia-gpt-oss: ["nvidia-kimi-k3", "nvidia-nemotron-super", "openai-5.4-xiaozhen"]
   num_retries: 1
-  timeout: 60
+  # 原為 60。2026-08-29 以 judge.py 的真實 prompt、40 條管制條目實測單批耗時：
+  #   gpt-oss-120b 30s／kimi-k3 104s／nemotron-super 140s
+  # 60 秒會把後兩者直接砍掉，fallback 於是變成「每一級都逾時」。
+  timeout: 180
