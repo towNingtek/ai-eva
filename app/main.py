@@ -236,6 +236,10 @@ async def _load_sso_runtime():
     cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
     # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
     cl.user_session.set("llm_user", idn.get("user_id") or idn.get("email"))
+    # ai-eva#110：判定模型可由 CMS 在簽 token 時指定（目前只給 e2e 帳號），
+    # 讓 QA 走免費模型而正式檢核維持 gpt-5.4。放在 token 而不是參數 ——
+    # RS256 簽章瀏覽器改不了，且由 CMS 決定給誰，呼叫端說了不算。
+    cl.user_session.set("judge_model", (idn.get("claims") or {}).get("judge_model"))
     return idn
 
 
