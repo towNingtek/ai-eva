@@ -46,3 +46,5 @@ tests/e2e/.auth/
 
 # runtime 產物（上傳的法規、產出的報告）
 data/regulations/
+.env.*
+*.bak-*

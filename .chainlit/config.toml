@@ -73,7 +73,7 @@ cot = "full"
 
 # Specify a CSS file that can be used to customize the user interface.
 # The CSS file can be served from the public directory or via an external link.
-# custom_css = "/public/custom.css"
+custom_css = "/public/custom.css?v=20260820brand"
 
 # Specify a Javascript file that can be used to customize the user interface.
 # The Javascript file can be served from the public directory.
@@ -81,7 +81,7 @@ cot = "full"
 # ?v= 是 cache-bust：custom.js 改版後瀏覽器會抓新的（同 URL 會用舊快取）。改 js 記得 bump。
 # ⚠️ 改了 public/custom.js 一定要同時 bump 這個 ?v= —— 這支 JS 是 SPA 動態插入的
 # 子資源，URL 沒變的話瀏覽器會一直吃快取，連 hard reload 都可能繞不掉。
-custom_js = "/public/custom.js?v=20260820cmdgeneric"
+custom_js = "/public/custom.js?v=20260820brand"
 
 # Specify a custom font url.
 # custom_font = "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap"
@@ -99,6 +99,9 @@ custom_js = "/public/custom.js?v=20260820cmdgeneric"
     #layout = "wide"
     #font_family = "Inter, sans-serif"
 # Override default MUI light theme. (Check theme.ts)
+# ⚠️ 這整個 [UI.theme] 區塊是 MUI 時代的遺留設定，Chainlit 2.x **不會讀**。
+# 實際生效的是 public/theme.json（server.py 會把它注入成 window.theme，
+# 前端再 setProperty 到 :root 的 CSS 變數）。改配色請改那個檔。
 [UI.theme.light]
     #background = "#FAFAFA"
     #paper = "#FFFFFF"

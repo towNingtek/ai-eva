@@ -1,124 +1,67 @@
-# LiteLLM proxy config — ai-eva LLM gateway
-#
-# 三個 model 別名：
-#   cloud-fast  → OpenAI gpt-4o-mini（互動主線、快速、品質高）
-#   local-cheap → Pi5 Qwen 2.5:3b-q4 via Tailscale（被動推播 / 省錢節點）
-#   default     → 同 cloud-fast（給沒指定 model 的 client 用）
-#
-# Fallback：local-cheap 失敗（Pi5 掛了 / Tailscale 斷）→ 自動回 cloud-fast
-
 model_list:
-  - model_name: cloud-fast
-    litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  - model_name: local-cheap
-    litellm_params:
-      model: ollama_chat/qwen2.5:3b-instruct-q4_K_M
-      api_base: http://100.74.6.41:11434   # Pi5 Tailscale IP
-
-  - model_name: default
-    litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
-
-  # 雲林正式商業模型（付費；金鑰沿用 xiaozhen 的 OPENAI_API_KEY）
-  - model_name: openai-5.4-xiaozhen
-    litellm_params:
-      model: openai/gpt-5.4
-      api_key: os.environ/OPENAI_API_KEY
-
-  # ===== NVIDIA NIM 免費 endpoint（多模型對照用）=====
-  - model_name: nvidia-llama
-    litellm_params:
-      model: nvidia_nim/meta/llama-3.1-70b-instruct
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-deepseek
-    litellm_params:
-      model: nvidia_nim/deepseek-ai/deepseek-v4-flash
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-qwen
-    litellm_params:
-      model: nvidia_nim/qwen/qwen3-next-80b-a3b-instruct
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-minimax
-    litellm_params:
-      model: nvidia_nim/minimaxai/minimax-m2.7
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-glm
-    litellm_params:
-      model: nvidia_nim/z-ai/glm-5.1
-      api_key: os.environ/NVIDIA_API_KEY
-
-  # ===== 2026-06-27 擴充:NVIDIA build 旗艦/升級/工作用(全免費)=====
-  - model_name: nvidia-llama33
-    litellm_params:
-      model: nvidia_nim/meta/llama-3.3-70b-instruct
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-llama4
-    litellm_params:
-      model: nvidia_nim/meta/llama-4-maverick-17b-128e-instruct
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-deepseek-pro
-    litellm_params:
-      model: nvidia_nim/deepseek-ai/deepseek-v4-pro
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-qwen35
-    litellm_params:
-      model: nvidia_nim/qwen/qwen3.5-397b-a17b
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-kimi
-    litellm_params:
-      model: nvidia_nim/moonshotai/kimi-k2.6
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-nemotron-ultra
-    litellm_params:
-      model: nvidia_nim/nvidia/nemotron-3-ultra-550b-a55b
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-mistral-large
-    litellm_params:
-      model: nvidia_nim/mistralai/mistral-large-3-675b-instruct-2512
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-gpt-oss
-    litellm_params:
-      model: nvidia_nim/openai/gpt-oss-120b
-      api_key: os.environ/NVIDIA_API_KEY
-
-  # 工作用(特殊端點:parse=文件解析, embed=向量化, phi4-mm=多模態)
-  - model_name: nvidia-parse
-    litellm_params:
-      model: nvidia_nim/nvidia/nemotron-parse
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-embed
-    litellm_params:
-      model: nvidia_nim/nvidia/llama-nemotron-embed-1b-v2
-      api_key: os.environ/NVIDIA_API_KEY
-
-  - model_name: nvidia-phi4-mm
-    litellm_params:
-      model: nvidia_nim/microsoft/phi-4-multimodal-instruct
-      api_key: os.environ/NVIDIA_API_KEY
-
+- model_name: cloud-fast
+  litellm_params:
+    model: openai/gpt-4o-mini
+    api_key: os.environ/OPENAI_API_KEY
+- model_name: local-cheap
+  litellm_params:
+    model: ollama_chat/qwen2.5:3b-instruct-q4_K_M
+    api_base: http://100.74.6.41:11434
+- model_name: default
+  litellm_params:
+    model: openai/gpt-4o-mini
+    api_key: os.environ/OPENAI_API_KEY
+- model_name: openai-5.4-xiaozhen
+  litellm_params:
+    model: openai/gpt-5.4
+    api_key: os.environ/OPENAI_API_KEY
+- model_name: nvidia-llama
+  litellm_params:
+    model: openai/meta/llama-3.1-70b-instruct
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-nemotron-ultra
+  litellm_params:
+    model: openai/nvidia/nemotron-3-ultra-550b-a55b
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-gpt-oss
+  litellm_params:
+    model: openai/openai/gpt-oss-120b
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-embed
+  litellm_params:
+    model: openai/nvidia/llama-nemotron-embed-1b-v2
+    input_type: query
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-nemotron-super
+  litellm_params:
+    model: openai/nvidia/nemotron-3-super-120b-a12b
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: os.environ/NVIDIA_API_KEY
+- model_name: nvidia-kimi-k3
+  litellm_params:
+    model: openai/moonshotai/kimi-k3
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: os.environ/NVIDIA_API_KEY
+- model_name: nvidia-embed-v1
+  litellm_params:
+    model: openai/nvidia/nv-embed-v1
+    input_type: query
+    api_base: https://integrate.api.nvidia.com/v1
+    api_key: os.environ/NVIDIA_API_KEY
 router_settings:
   fallbacks:
     - local-cheap: ["cloud-fast"]
     # ai-eva#110：法規檢核的判定模型。免費額度不穩，掛掉就逐級退；
     # 全部掛才回到付費的 gpt-5.4 —— 功能不會因為免費額度用完而死掉，
-    # 而實際用了哪一個，報告的「判定引擎」欄會寫出來，不會靜靜多花錢。
-    - nvidia-gpt-oss: ["nvidia-kimi", "nvidia-llama33", "openai-5.4-xiaozhen"]
+    # 而實際用了哪一個，報告的「判定引擎」欄會寫出來。
+    #
+    # alias 用本機這份檔案裡實際存在的名字（beta 那份叫 nvidia-kimi /
+    # nvidia-llama33，這裡沒有）—— fallback 指到不存在的 alias 等於沒有 fallback。
+    - nvidia-gpt-oss: ["nvidia-kimi-k3", "nvidia-nemotron-super", "openai-5.4-xiaozhen"]
   num_retries: 1
   # 原為 60。2026-08-29 以 judge.py 的真實 prompt、40 條管制條目實測單批耗時：
   #   gpt-oss-120b 30s／kimi-k3 104s／nemotron-super 140s
