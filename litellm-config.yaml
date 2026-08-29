@@ -115,5 +115,12 @@ model_list:
 router_settings:
   fallbacks:
     - local-cheap: ["cloud-fast"]
+    # ai-eva#110：法規檢核的判定模型。免費額度不穩，掛掉就逐級退；
+    # 全部掛才回到付費的 gpt-5.4 —— 功能不會因為免費額度用完而死掉，
+    # 而實際用了哪一個，報告的「判定引擎」欄會寫出來，不會靜靜多花錢。
+    - nvidia-gpt-oss: ["nvidia-kimi", "nvidia-llama33", "openai-5.4-xiaozhen"]
   num_retries: 1
-  timeout: 60
+  # 原為 60。2026-08-29 以 judge.py 的真實 prompt、40 條管制條目實測單批耗時：
+  #   gpt-oss-120b 30s／kimi-k3 104s／nemotron-super 140s
+  # 60 秒會把後兩者直接砍掉，fallback 於是變成「每一級都逾時」。
+  timeout: 180

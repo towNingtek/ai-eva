@@ -156,7 +156,11 @@ async def handle(payload: str, msg: cl.Message) -> None:
             step.output = f"觸發 {ev['hit']} 條 · {ev['elapsed']:.0f}s"
 
     try:
-        result = await judge.run_check(plan, DEFAULT_CATEGORY, on_progress=on_progress)
+        # ai-eva#110：判定模型可由 CMS 在簽 SSO token 時指定（目前只給 e2e 帳號）。
+        # 沒有這個 claim 就用 standard.yaml 設定的正式模型 —— 一般使用者不受影響。
+        judge_model = cl.user_session.get("judge_model")
+        result = await judge.run_check(plan, DEFAULT_CATEGORY,
+                                       model=judge_model, on_progress=on_progress)
     except Exception as e:  # noqa: BLE001
         logger.exception("法規檢核失敗")
         await cl.Message(content=f"⚠️ 檢核失敗（{type(e).__name__}）。請稍後再試。").send()
@@ -178,7 +182,8 @@ async def handle(payload: str, msg: cl.Message) -> None:
     summary = (f"✅ **{picked['name']}** 檢核完成（{result['elapsed']:.0f} 秒）\n\n"
                f"🔴 違規風險 **{violations}** 條文　🟡 合規提醒 **{reminders}** 條文　"
                f"📚 需補 **{gaps}** 條文\n\n"
-               f"逐條評估 {cov['evaluated']} 條管制條目，涵蓋 {len(cov['domains'])} 個法領域。")
+               f"逐條評估 {cov['evaluated']} 條管制條目，涵蓋 {len(cov['domains'])} 個法領域。"
+               + (f"\n判定模型：{judge_model}" if judge_model else ""))
 
     # 結果分兩則送，而且都不掛 parent_id：
     #   1. 子訊息在 Chainlit 會被收合，使用者要展開才看得到（E2E 實測踩到：
