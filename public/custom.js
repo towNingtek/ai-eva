@@ -108,3 +108,33 @@
   else start();
 })();
 })();
+
+// 鎖定淺色主題。
+//
+// Chainlit 的主題偏好存在 localStorage['vite-ui-theme']（值 light / dark / system），
+// 由 React 在啟動時讀取並在 <html> 掛上 dark class。custom.css 只是把切換鈕藏起來，
+// 之前切過深色的使用者會卡在深色出不來 —— 所以這裡直接把偏好寫回 light，
+// 並在啟動初期盯著 <html>，把殘留的 dark class 拿掉。
+(function () {
+  var KEY = "vite-ui-theme";
+  try { localStorage.setItem(KEY, "light"); } catch (e) {}
+
+  function forceLight() {
+    var el = document.documentElement;
+    if (el && el.classList.contains("dark")) {
+      el.classList.remove("dark");
+      el.classList.add("light");
+    }
+  }
+  forceLight();
+
+  // React 掛載後可能再套一次 dark，盯 8 秒就夠（之後使用者也切不了，按鈕已隱藏）
+  var obs = new MutationObserver(forceLight);
+  function start() {
+    forceLight();
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();

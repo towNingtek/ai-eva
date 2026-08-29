@@ -14,7 +14,8 @@ test.describe('#111 法規檢核', () => {
     await waitForText(page, '正在讀取你可管理的計畫書', 20_000);
 
     // 專案選單（CMS list_my_projects → get_project_info 並行拉回）
-    await waitForText(page, '份你可管理的計畫書', 120_000);
+    // 首次抓清單要對 CMS 打 1+N 次（走 tunnel 會更慢），給寬一點
+    await waitForText(page, '份你可管理的計畫書', 240_000);
     const listing = await page.evaluate(() => document.body.innerText);
     expect(listing).toContain(PLAN);
     // 關鍵字就該選得到，不必打完整名稱

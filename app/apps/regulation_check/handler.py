@@ -32,20 +32,43 @@ def _unwrap(result: dict) -> dict:
     return inner.get("data", inner) if isinstance(inner, dict) else {}
 
 
-async def _my_projects(runtime) -> list[dict]:
+# get_project_info 是**延遲綁定**（每次一個小 JSON 往返），走 Cloudflare tunnel 時
+# 延遲被放大。25 個專案在 8 併發要跑 4 輪、20 併發只要 2 輪。上限仍留著避免打爆 CMS。
+_PROJECT_FETCH_CONCURRENCY = 20
+_PROJECTS_CACHE_KEY = "regcheck_projects"
+
+
+async def _my_projects(runtime, *, refresh: bool = False) -> list[dict]:
+    """列出可管理的計畫書，**同一個 session 只抓一次**。
+
+    CMS 的 list_scoped 只回 uuid，名稱要逐一問 —— 二十幾份專案就是 1+N 次呼叫。
+    這段卡在使用者看到任何東西之前，走 Cloudflare tunnel 時延遲被放大到會超時
+    （實測：打 localhost 十幾秒、打公開網址超過兩分鐘）。清單在一次對話裡幾乎
+    不會變，快取起來即可；真的變了就重開工具（或傳 refresh=True）。
+    """
+    if not refresh:
+        cached = cl.user_session.get(_PROJECTS_CACHE_KEY)
+        if cached:
+            return cached
+
     res = await runtime.execute("list_my_projects", {})
     if res.get("status") != "ok":
         return []
     data = _unwrap(res)
-    out = []
-    for uuid in (data.get("projects") or []) if isinstance(data, dict) else []:
-        detail = await runtime.execute("get_project_info", {"uuid": uuid})
+    uuids = (data.get("projects") or []) if isinstance(data, dict) else []
+    sem = asyncio.Semaphore(_PROJECT_FETCH_CONCURRENCY)
+
+    async def one(uuid: str) -> dict | None:
+        async with sem:
+            detail = await runtime.execute("get_project_info", {"uuid": uuid})
         if detail.get("status") != "ok":
-            continue
+            return None
         info = _unwrap(detail)
-        if info.get("name"):
-            out.append({"uuid": uuid, "name": info["name"], "info": info})
-    return out
+        return {"uuid": uuid, "name": info["name"], "info": info} if info.get("name") else None
+
+    projects = [p for p in await asyncio.gather(*(one(u) for u in uuids)) if p]
+    cl.user_session.set(_PROJECTS_CACHE_KEY, projects)
+    return projects
 
 
 def _plan_text(info: dict) -> str:
