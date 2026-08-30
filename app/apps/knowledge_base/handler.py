@@ -14,6 +14,26 @@ from app.settings import ROOT
 
 logger = logging.getLogger(__name__)
 
+
+def _source_label(row: dict) -> str:
+    """法規清單「來源」欄的顯示值（#109）。
+
+    這一欄要回答的是「這筆是內建的還是有人上傳的」，不需要完整信箱。
+    2026-08-30 之前直接顯示 uploaded_by，於是期中報告的截圖裡出現了
+    真實個人信箱，並隨素材上到公開圖床。
+
+    遮成 local-part@… ——「誰放的」還看得出來（同一個人前後對得起來），
+    但不再是可直接使用的聯絡方式。完整值仍在資料庫，管理者查得到。
+    """
+    if row.get("origin") == "manifest":
+        return "repo"
+    who = (row.get("uploaded_by") or "").strip()
+    if not who:
+        return "上傳"
+    return f"{who.split('@')[0]}@…" if "@" in who else who
+
+logger = logging.getLogger(__name__)
+
 UPLOAD_DIR = ROOT / "data" / "regulations" / "uploads"
 _CATEGORIES = ("農村再生", "鄉村地區", "都市地區")
 
@@ -45,7 +65,7 @@ async def _list_table() -> str:
     for r in rows:
         out.append(f"| {icon.get(r['status'], '•')} | {r['name']} | {r['category']} "
                    f"| {r['version'] or '—'} | {r['articles']} | {r['controls']} "
-                   f"| {'repo' if r['origin'] == 'manifest' else (r['uploaded_by'] or '上傳')} |")
+                   f"| {_source_label(r)} |")
     return "\n".join(out)
 
 
@@ -174,7 +194,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
     pending = await registry.list_regulations(status=registry.STATUS_PENDING)
     if pending:
         parts += ["", "### 待審核（按「啟用」才會納入檢核）", "",
-                  *(f"- **{r['name']}**（{r['category']}・上傳者 {r['uploaded_by'] or '不明'}）"
+                  *(f"- **{r['name']}**（{r['category']}・上傳者 {_source_label(r)}）"
                     for r in pending),
                   "", "啟用時會就地建立索引（抽條文與管制條目），一部法規約需 10~90 秒。"]
 
