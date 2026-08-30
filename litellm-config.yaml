@@ -52,18 +52,44 @@ model_list:
     input_type: query
     api_base: https://integrate.api.nvidia.com/v1
     api_key: os.environ/NVIDIA_API_KEY
+- model_name: nvidia-gpt-oss-20b
+  litellm_params:
+    model: openai/openai/gpt-oss-20b
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-nemotron-nano
+  litellm_params:
+    model: openai/nvidia/nemotron-3-nano-30b-a3b
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-gemma4
+  litellm_params:
+    model: openai/google/gemma-4-31b-it
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
+- model_name: nvidia-minimax
+  litellm_params:
+    model: openai/minimaxai/minimax-m3
+    api_key: os.environ/NVIDIA_API_KEY
+    api_base: https://integrate.api.nvidia.com/v1
 router_settings:
   fallbacks:
-    - local-cheap: ["cloud-fast"]
-    # ai-eva#110：法規檢核的判定模型。免費額度不穩，掛掉就逐級退；
-    # 全部掛才回到付費的 gpt-5.4 —— 功能不會因為免費額度用完而死掉，
-    # 而實際用了哪一個，報告的「判定引擎」欄會寫出來。
+    # local-cheap → cloud-fast（付費 gpt-4o-mini）那條已移除：
+    # 沒有任何 code 呼叫 make_llm(alias="local-cheap")，settings.py 定義了
+    # LITELLM_CHEAP_MODEL 但只出現在註解的使用範例裡。保護一條沒人走的路，
+    # 只會讓人以為有備援。
     #
-    # alias 用本機這份檔案裡實際存在的名字（beta 那份叫 nvidia-kimi /
-    # nvidia-llama33，這裡沒有）—— fallback 指到不存在的 alias 等於沒有 fallback。
-    - nvidia-gpt-oss: ["nvidia-kimi-k3", "nvidia-nemotron-super", "openai-5.4-xiaozhen"]
+    # ai-eva#110／#113：判定模型的退階鏈，七級，**全部留在免費層**。
+    # 付費模型刻意不進鏈 —— 2026-08-30 曾把 openai-5.4-xiaozhen 放鏈尾，
+    # NVIDIA key 失效時 LiteLLM 靜靜換成付費模型跑完，報告仍印
+    # 「判定模型：nvidia-gpt-oss」，耗時與數字都正常，三個判準全過 ——
+    # 失敗變成看不見的付費。全部不通就該明確失敗。
+    #
+    # 順序＝真實批次實測速度（40 條管制條目、judge.py 原始 prompt）：
+    #   gpt-oss-20b 25s／gpt-oss-120b 28s／nemotron-super 33s／nano 50s
+    #   gemma-4 139s／nemotron-ultra 160s／minimax 180s
+    - nvidia-gpt-oss-20b: ["nvidia-gpt-oss", "nvidia-nemotron-super", "nvidia-nemotron-nano", "nvidia-gemma4", "nvidia-nemotron-ultra", "nvidia-minimax"]
   num_retries: 1
-  # 原為 60。2026-08-29 以 judge.py 的真實 prompt、40 條管制條目實測單批耗時：
-  #   gpt-oss-120b 30s／kimi-k3 104s／nemotron-super 140s
-  # 60 秒會把後兩者直接砍掉，fallback 於是變成「每一級都逾時」。
-  timeout: 180
+  # 原 60。鏈尾三個單批 138–180 秒，60 或 180 會把它們直接砍掉，
+  # fallback 於是變成「每一級都逾時」。judge.py 的 CALL_TIMEOUT 是 300，留緩衝。
+  timeout: 240
