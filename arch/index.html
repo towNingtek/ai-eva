@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>ai-eva 架構圖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  body { font-family: -apple-system, system-ui, "Segoe UI", "Noto Sans TC", sans-serif; margin: 0; padding: 24px; background: #0f1117; color: #e6e6e6; }
+  header h1 { margin: 0 0 4px; font-size: 22px; }
+  header .meta { color: #9aa0aa; font-size: 13px; margin-bottom: 20px; }
+  #graph { background: #171a21; border-radius: 10px; padding: 16px; overflow: auto; }
+  #graph svg { max-width: none; }
+  .legend { margin-top: 12px; font-size: 12px; color: #9aa0aa; }
+  code { background: #22252d; padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ai-eva 架構圖</h1>
+  <div class="meta">來源：.codeboarding/analysis.json（CodeBoarding sync，免費 tier）</div>
+</header>
+<div class="legend">節點 = component；邊 = 關聯（含 call / message / runtime 依賴）。只展示，無互動下鑽。</div>
+<div id="graph" class="mermaid">
+flowchart LR
+    N0["Multi-Surface Intent Dispatcher & Command Router"]
+    N1["Core LLM, Search & Copilot Reasoning Engine"]
+    N0 -->|"instantiates LLM models for intent resolution and multi-turn conversation"| N1
+    N2["Session Lifecycle & Project Tenancy Manager"]
+    N0 -->|"calls"| N2
+    N3["Chainlit Interaction & Applet Dispatcher"]
+    N3 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N0
+    N3 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N1
+    N3 -->|"Synchronizes tenancy session and runtime context during message handling"| N2
+    N4["SSO Token Verification & Tool Runtime Engine"]
+    N3 -->|"Inspects tool manifests and delegates tool execution to ToolRuntime"| N4
+    N2 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N0
+    N2 -->|"Discovers and registers applet slash commands on session start"| N3
+    N2 -->|"Rehydrates authenticated SSO sessions and instantiates ToolRuntime"| N4
+    N5["LINE and Queue Channel Ingress"]
+    N2 -->|"Bootstraps channel database tables and launches background queue workers"| N5
+    N6["OpenCode Client and Voice Services"]
+    N2 -->|"Initializes voice/opencode tables and configures local element storage client"| N6
+    N4 -->|"calls"| N2
+    N5 -->|"Dispatches webhook events and conversational queries for intent resolution"| N0
+    N5 -->|"Routes coding agent commands to OpenCode session handlers"| N6
+    N7["Frontend Custom UI Extension"]
+    N8["Chainlit Server and Authentication Runtime"]
+    N7 -->|"Injects DOM enhancements and transmits UI interactions via WebSocket"| N8
+</div>
+<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+</body>
+</html>
