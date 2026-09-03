@@ -6,48 +6,122 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
-  body { font-family: -apple-system, system-ui, "Segoe UI", "Noto Sans TC", sans-serif; margin: 0; padding: 24px; background: #0f1117; color: #e6e6e6; }
+  body { font-family: -apple-system, system-ui, "Segoe UI", "Noto Sans TC", sans-serif;
+         margin: 0; padding: 24px 24px 64px; background: #0f1117; color: #e6e6e6; }
   header h1 { margin: 0 0 4px; font-size: 22px; }
-  header .meta { color: #9aa0aa; font-size: 13px; margin-bottom: 20px; }
+  header .meta { color: #9aa0aa; font-size: 13px; }
+  .hint { color: #9aa0aa; font-size: 12px; margin: 14px 0 10px; }
   #graph { background: #171a21; border-radius: 10px; padding: 16px; overflow: auto; }
   #graph svg { max-width: none; }
-  .legend { margin-top: 12px; font-size: 12px; color: #9aa0aa; }
-  code { background: #22252d; padding: 2px 6px; border-radius: 4px; }
+  #graph .node.clickable rect, #graph .node.clickable polygon { cursor: pointer; }
+  h2 { font-size: 16px; margin: 32px 0 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #262a33; vertical-align: top; }
+  th { color: #9aa0aa; font-weight: 600; }
+  td.files { white-space: nowrap; }
+  a { color: #7cc4ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #22252d; padding: 2px 6px; border-radius: 4px; font-size: 12px; }
 </style>
 </head>
 <body>
 <header>
   <h1>ai-eva 架構圖</h1>
-  <div class="meta">來源：.codeboarding/analysis.json（CodeBoarding sync，免費 tier）</div>
+  <div class="meta">來源：<code>.codeboarding/analysis.json</code>（CodeBoarding sync）· 分支 <code>main</code></div>
 </header>
-<div class="legend">節點 = component；邊 = 關聯（含 call / message / runtime 依賴）。只展示，無互動下鑽。</div>
+<div class="hint">方框 = 實際程式檔案，點一下開 GitHub。外框 = CodeBoarding 歸納的元件分組。箭頭 = 檔案之間的實際呼叫關係。</div>
 <div id="graph" class="mermaid">
 flowchart LR
-    N0["Multi-Surface Intent Dispatcher & Command Router"]
-    N1["Core LLM, Search & Copilot Reasoning Engine"]
-    N0 -->|"instantiates LLM models for intent resolution and multi-turn conversation"| N1
-    N2["Session Lifecycle & Project Tenancy Manager"]
-    N0 -->|"calls"| N2
-    N3["Chainlit Interaction & Applet Dispatcher"]
-    N3 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N0
-    N3 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N1
-    N3 -->|"Synchronizes tenancy session and runtime context during message handling"| N2
-    N4["SSO Token Verification & Tool Runtime Engine"]
-    N3 -->|"Inspects tool manifests and delegates tool execution to ToolRuntime"| N4
-    N2 -->|"Dispatches chat messages, device intents, and copilot reasoning tasks"| N0
-    N2 -->|"Discovers and registers applet slash commands on session start"| N3
-    N2 -->|"Rehydrates authenticated SSO sessions and instantiates ToolRuntime"| N4
-    N5["LINE and Queue Channel Ingress"]
-    N2 -->|"Bootstraps channel database tables and launches background queue workers"| N5
-    N6["OpenCode Client and Voice Services"]
-    N2 -->|"Initializes voice/opencode tables and configures local element storage client"| N6
-    N4 -->|"calls"| N2
-    N5 -->|"Dispatches webhook events and conversational queries for intent resolution"| N0
-    N5 -->|"Routes coding agent commands to OpenCode session handlers"| N6
-    N7["Frontend Custom UI Extension"]
-    N8["Chainlit Server and Authentication Runtime"]
-    N7 -->|"Injects DOM enhancements and transmits UI interactions via WebSocket"| N8
+    subgraph G0["Dispatch and Core Reasoning Engine"]
+    direction TB
+        F0["copilot.py<br/>app/core"]
+        F1["llm.py<br/>app/core"]
+        F2["search.py<br/>app/core"]
+        F3["dispatch.py<br/>app"]
+        F4["commands.py<br/>app/nodes"]
+    end
+    subgraph G1["Chainlit Server and Authentication Runtime"]
+    direction TB
+        F5["_registry.py<br/>app/apps"]
+        F6["issuers.py<br/>app/auth"]
+        F7["main.py<br/>app"]
+        F8["registry.py<br/>app/projects"]
+        F9["sso.py<br/>app/surfaces"]
+        F10["runtime.py<br/>app/tools"]
+    end
+    subgraph G2["LINE and Queue Channel Ingress"]
+    direction TB
+        F11["line.py<br/>app/surfaces"]
+    end
+    subgraph G3["OpenCode Client and Voice Services"]
+    direction TB
+        F12["opencode.py<br/>app/core"]
+        F13["storage.py<br/>app/core"]
+    end
+    subgraph G4["Frontend Custom UI Extension"]
+    direction TB
+        F14["custom.js<br/>public"]
+    end
+    subgraph G5["其他檔案"]
+    direction TB
+        F15["registry.py<br/>app/nodes"]
+        F16["discord_voice.py<br/>app/surfaces"]
+        F17["line_opencode.py<br/>app/surfaces"]
+        F18["line_session.py<br/>app/surfaces"]
+    end
+    F0 -->|"make_llm"| F1
+    F3 -->|"make_llm"| F1
+    F7 -->|"chainlit_commands"| F5
+    F7 -->|"Envelope +1"| F3
+    F7 -->|"enqueue_command +1"| F4
+    F7 -->|"ensure_nodes_table"| F15
+    F7 -->|"ensure_discord_voice_table"| F16
+    F7 -->|"ensure_line_opencode_table"| F17
+    F7 -->|"visible_tools"| F10
+    F11 -->|"enqueue_command"| F4
+    F18 -->|"converse"| F3
+    F18 -->|"chat"| F17
+    F9 -->|"ToolRuntime"| F10
+    click F0 href "https://github.com/towNingtek/ai-eva/blob/main/app/core/copilot.py#L145" "app/core/copilot.py"
+    click F1 href "https://github.com/towNingtek/ai-eva/blob/main/app/core/llm.py#L16" "app/core/llm.py"
+    click F2 href "https://github.com/towNingtek/ai-eva/blob/main/app/core/search.py#L77" "app/core/search.py"
+    click F3 href "https://github.com/towNingtek/ai-eva/blob/main/app/dispatch.py#L132" "app/dispatch.py"
+    click F4 href "https://github.com/towNingtek/ai-eva/blob/main/app/nodes/commands.py#L69" "app/nodes/commands.py"
+    click F5 href "https://github.com/towNingtek/ai-eva/blob/main/app/apps/_registry.py#L115" "app/apps/_registry.py"
+    click F6 href "https://github.com/towNingtek/ai-eva/blob/main/app/auth/issuers.py#L84" "app/auth/issuers.py"
+    click F7 href "https://github.com/towNingtek/ai-eva/blob/main/app/main.py#L114" "app/main.py"
+    click F8 href "https://github.com/towNingtek/ai-eva/blob/main/app/projects/registry.py#L127" "app/projects/registry.py"
+    click F9 href "https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/sso.py#L70" "app/surfaces/sso.py"
+    click F10 href "https://github.com/towNingtek/ai-eva/blob/main/app/tools/runtime.py#L38" "app/tools/runtime.py"
+    click F11 href "https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line.py#L253" "app/surfaces/line.py"
+    click F12 href "https://github.com/towNingtek/ai-eva/blob/main/app/core/opencode.py#L123" "app/core/opencode.py"
+    click F13 href "https://github.com/towNingtek/ai-eva/blob/main/app/core/storage.py#L18" "app/core/storage.py"
+    click F14 href "https://github.com/towNingtek/ai-eva/blob/main/public/custom.js#L19" "public/custom.js"
+    click F15 href "https://github.com/towNingtek/ai-eva/blob/main/app/nodes/registry.py" "app/nodes/registry.py"
+    click F16 href "https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/discord_voice.py" "app/surfaces/discord_voice.py"
+    click F17 href "https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line_opencode.py" "app/surfaces/line_opencode.py"
+    click F18 href "https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line_session.py" "app/surfaces/line_session.py"
 </div>
-<script>mermaid.initialize({ startOnLoad: true, theme: 'dark' });</script>
+
+<h2>元件分組</h2>
+<table>
+<thead><tr><th>元件</th><th>說明</th><th class="files">檔案</th></tr></thead>
+<tbody>
+<tr><td>Dispatch and Core Reasoning Engine</td><td>Orchestrates multi-surface conversational intent dispatching, LLM interactions, copilot executions, and external tool search services.</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/app/core/copilot.py"><code>app/core/copilot.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/core/llm.py"><code>app/core/llm.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/core/search.py"><code>app/core/search.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/dispatch.py"><code>app/dispatch.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/nodes/commands.py"><code>app/nodes/commands.py</code></a></td></tr>
+<tr><td>Chainlit Server and Authentication Runtime</td><td>Manages Chainlit UI session lifecycles, SSO authentication token verification, and dynamic applet/node registry discovery.</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/app/apps/_registry.py"><code>app/apps/_registry.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/auth/issuers.py"><code>app/auth/issuers.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/main.py"><code>app/main.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/projects/registry.py"><code>app/projects/registry.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/sso.py"><code>app/surfaces/sso.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/tools/runtime.py"><code>app/tools/runtime.py</code></a></td></tr>
+<tr><td>LINE and Queue Channel Ingress</td><td>Receives inbound webhooks, audio transcriptions, and background queue events for LINE messaging platform integration.</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line.py"><code>app/surfaces/line.py</code></a></td></tr>
+<tr><td>OpenCode Client and Voice Services</td><td>Provides OpenCode agent session management, persistent file storage interfaces, and Discord voice surface connectivity.</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/app/core/opencode.py"><code>app/core/opencode.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/core/storage.py"><code>app/core/storage.py</code></a></td></tr>
+<tr><td>Frontend Custom UI Extension</td><td>Executes browser-side JavaScript to customize Chainlit web client behaviors and dynamic DOM interactions.</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/public/custom.js"><code>public/custom.js</code></a></td></tr>
+<tr><td>其他檔案</td><td>分析有呼叫關係、但未被歸入上述元件的檔案。</td><td class="files"><a href="https://github.com/towNingtek/ai-eva/blob/main/app/nodes/registry.py"><code>app/nodes/registry.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/discord_voice.py"><code>app/surfaces/discord_voice.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line_opencode.py"><code>app/surfaces/line_opencode.py</code></a><br><a href="https://github.com/towNingtek/ai-eva/blob/main/app/surfaces/line_session.py"><code>app/surfaces/line_session.py</code></a></td></tr>
+</tbody>
+</table>
+
+<h2>系統概述</h2>
+<p style="font-size:13px;line-height:1.7;color:#c3c8d2;max-width:900px">The system operates as a multi-surface conversational AI platform designed around a hexagonal adapter architecture. Inbound requests arrive via messaging channels such as LINE webhooks and background message queues, through voice surfaces like Discord, or directly via the web frontend powered by Chainlit and custom UI scripts. Authentication and registry services authenticate user identity and resolve available application nodes before forwarding normalized envelopes to the core dispatch engine. The dispatch and reasoning core orchestrates downstream tool execution, search operations, OpenCode agent sessions, and LLM completions via LiteLLM to formulate and stream contextualized responses back to the originating channel surface.</p>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: 'dark', securityLevel: 'loose',
+                     flowchart: { curve: 'basis', useMaxWidth: false } });
+</script>
 </body>
 </html>
