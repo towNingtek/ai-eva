@@ -1,7 +1,7 @@
 {
   "repository_name": ".codeboarding-target",
-  "timestamp": "2026-09-03T12:46:20.914522+00:00",
-  "overall_score": 0.9813953488372094,
+  "timestamp": "2026-09-03T13:07:02.463390+00:00",
+  "overall_score": 0.9663888888888889,
   "check_summaries": [
     {
       "check_name": "function_size",
@@ -15,17 +15,6 @@
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "javascript"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [],
-      "packages_checked": 1,
-      "packages_in_cycles": 0
     },
     {
       "check_name": "unused_code_diagnostics",
@@ -47,24 +36,11 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 160,
+      "total_entities_checked": 165,
       "findings_count": 0,
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "python"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [
-        "app -> app.surfaces -> app"
-      ],
-      "packages_checked": 11,
-      "packages_in_cycles": 2
     },
     {
       "check_name": "unused_code_diagnostics",
@@ -73,10 +49,10 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 8,
-      "findings_count": 8,
-      "warning_count": 2,
-      "score": 0.6,
+      "total_entities_checked": 11,
+      "findings_count": 11,
+      "warning_count": 3,
+      "score": 0.44999999999999996,
       "finding_groups": [
         {
           "severity": "info",
@@ -124,6 +100,20 @@
               "line_start": 31,
               "line_end": 31,
               "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"html_mod\" is not accessed",
+              "file_path": "arch/build.py",
+              "line_start": 11,
+              "line_end": 11,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"seen\" is not accessed",
+              "file_path": "arch/build.py",
+              "line_start": 52,
+              "line_end": 52,
+              "metric_value": 0.0
             }
           ]
         },
@@ -145,6 +135,13 @@
               "line_start": 31,
               "line_end": 31,
               "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_import] Import \"html_mod\" is not accessed",
+              "file_path": "arch/build.py",
+              "line_start": 11,
+              "line_end": 11,
+              "metric_value": 0.0
             }
           ]
         }
@@ -154,6 +151,12 @@
   "file_summaries": [
     {
       "file_path": "app/main.py",
+      "total_findings": 3,
+      "warning_findings": 1,
+      "composite_risk_score": 35.0
+    },
+    {
+      "file_path": "arch/build.py",
       "total_findings": 3,
       "warning_findings": 1,
       "composite_risk_score": 35.0

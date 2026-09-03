@@ -1,16 +1,16 @@
 {
   "metadata": {
-    "generated_at": "2026-09-03T12:48:36.575591+00:00",
-    "source_tree_hash": "0a62cbf9454314b10964ed2a248bb7db66083384fccfcb9086862284ddb70e8c",
+    "generated_at": "2026-09-03T13:07:17.633198+00:00",
+    "source_tree_hash": "44fa25b415dd7e75224e174e0b1dd832c4935cd2bff4ac6a080b1b46e03acabf",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
     "file_coverage_summary": {
-      "total_files": 58,
-      "analyzed": 40,
-      "not_analyzed": 18,
+      "total_files": 60,
+      "analyzed": 41,
+      "not_analyzed": 19,
       "not_analyzed_by_reason": {
-        "other": 18
+        "other": 19
       }
     }
   },
@@ -325,6 +325,17 @@
       ],
       "content_hash": "3456b99c11932a68",
       "module_hash": "9b6c31acff807299"
+    },
+    "arch/build.py": {
+      "method_keys": [
+        "arch/build.py|arch.build.build_mermaid",
+        "arch/build.py|arch.build.build_mermaid.node_id",
+        "arch/build.py|arch.build.esc",
+        "arch/build.py|arch.build.re_id",
+        "arch/build.py|arch.build.main"
+      ],
+      "content_hash": "fe07054ffa7e044d",
+      "module_hash": "782c01b82789a7e5"
     },
     "public/custom.js": {
       "method_keys": [
@@ -1668,6 +1679,46 @@
       "type": "FUNCTION",
       "content_hash": "4110468bac17b772"
     },
+    "arch/build.py|arch.build.build_mermaid": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.build_mermaid",
+      "start_line": 49,
+      "end_line": 77,
+      "type": "FUNCTION",
+      "content_hash": "feabf0764a0f1168"
+    },
+    "arch/build.py|arch.build.build_mermaid.node_id": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.build_mermaid.node_id",
+      "start_line": 56,
+      "end_line": 64,
+      "type": "FUNCTION",
+      "content_hash": "5801ea31f5bd95c4"
+    },
+    "arch/build.py|arch.build.esc": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.esc",
+      "start_line": 80,
+      "end_line": 81,
+      "type": "FUNCTION",
+      "content_hash": "2157836dcc96edf2"
+    },
+    "arch/build.py|arch.build.re_id": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.re_id",
+      "start_line": 84,
+      "end_line": 85,
+      "type": "FUNCTION",
+      "content_hash": "04dc27e5f6e1ac24"
+    },
+    "arch/build.py|arch.build.main": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.main",
+      "start_line": 88,
+      "end_line": 109,
+      "type": "FUNCTION",
+      "content_hash": "ec1ae7b3565e7f37"
+    },
     "public/custom.js|public.custom.<function>": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>",
@@ -2865,6 +2916,16 @@
       ],
       "file_methods": [
         {
+          "file_path": "arch/build.py",
+          "methods": [
+            "arch.build.build_mermaid",
+            "arch.build.build_mermaid.node_id",
+            "arch.build.esc",
+            "arch.build.re_id",
+            "arch.build.main"
+          ]
+        },
+        {
           "file_path": "public/custom.js",
           "methods": [
             "public.custom.<function>",
@@ -3435,17 +3496,6 @@
           "description": ""
         }
       ]
-    },
-    {
-      "relation": "Injects DOM enhancements and transmits UI interactions via WebSocket",
-      "src_name": "Frontend Custom UI Extension",
-      "dst_name": "Chainlit Server and Authentication Runtime",
-      "evidence": "Browser-side custom JavaScript hooks into the Chainlit client lifecycle, mutating web components and transmitting action events back over the WebSocket runtime.",
-      "key_edges": [],
-      "src_id": "5",
-      "dst_id": "2",
-      "is_static": false,
-      "all_edges": []
     }
   ]
 }
