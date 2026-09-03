@@ -1,7 +1,7 @@
 {
   "repository_name": ".codeboarding-target",
-  "timestamp": "2026-09-03T13:07:02.463390+00:00",
-  "overall_score": 0.9663888888888889,
+  "timestamp": "2026-09-03T15:05:27.865207+00:00",
+  "overall_score": 0.9822222222222223,
   "check_summaries": [
     {
       "check_name": "function_size",
@@ -36,7 +36,7 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 165,
+      "total_entities_checked": 168,
       "findings_count": 0,
       "warning_count": 0,
       "score": 1.0,
@@ -49,10 +49,10 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 11,
-      "findings_count": 11,
-      "warning_count": 3,
-      "score": 0.44999999999999996,
+      "total_entities_checked": 8,
+      "findings_count": 8,
+      "warning_count": 2,
+      "score": 0.6,
       "finding_groups": [
         {
           "severity": "info",
@@ -100,20 +100,6 @@
               "line_start": 31,
               "line_end": 31,
               "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"html_mod\" is not accessed",
-              "file_path": "arch/build.py",
-              "line_start": 11,
-              "line_end": 11,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"seen\" is not accessed",
-              "file_path": "arch/build.py",
-              "line_start": 52,
-              "line_end": 52,
-              "metric_value": 0.0
             }
           ]
         },
@@ -135,13 +121,6 @@
               "line_start": 31,
               "line_end": 31,
               "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_import] Import \"html_mod\" is not accessed",
-              "file_path": "arch/build.py",
-              "line_start": 11,
-              "line_end": 11,
-              "metric_value": 0.0
             }
           ]
         }
@@ -151,12 +130,6 @@
   "file_summaries": [
     {
       "file_path": "app/main.py",
-      "total_findings": 3,
-      "warning_findings": 1,
-      "composite_risk_score": 35.0
-    },
-    {
-      "file_path": "arch/build.py",
       "total_findings": 3,
       "warning_findings": 1,
       "composite_risk_score": 35.0

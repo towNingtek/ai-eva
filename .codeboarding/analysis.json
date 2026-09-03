@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-09-03T13:07:17.633198+00:00",
-    "source_tree_hash": "44fa25b415dd7e75224e174e0b1dd832c4935cd2bff4ac6a080b1b46e03acabf",
+    "generated_at": "2026-09-03T15:07:13.182635+00:00",
+    "source_tree_hash": "696bc31ac1761a6bc4892e2b13ae3d21da5ce60653d764482a12d25e552faf90",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
@@ -328,14 +328,17 @@
     },
     "arch/build.py": {
       "method_keys": [
+        "arch/build.py|arch.build.esc_label",
+        "arch/build.py|arch.build.esc_html",
+        "arch/build.py|arch.build.file_ref",
+        "arch/build.py|arch.build.collect",
+        "arch/build.py|arch.build.collect.claim",
         "arch/build.py|arch.build.build_mermaid",
-        "arch/build.py|arch.build.build_mermaid.node_id",
-        "arch/build.py|arch.build.esc",
-        "arch/build.py|arch.build.re_id",
+        "arch/build.py|arch.build.build_component_rows",
         "arch/build.py|arch.build.main"
       ],
-      "content_hash": "fe07054ffa7e044d",
-      "module_hash": "782c01b82789a7e5"
+      "content_hash": "6f647392d03891a5",
+      "module_hash": "25151c6c7d62d44d"
     },
     "public/custom.js": {
       "method_keys": [
@@ -1679,45 +1682,69 @@
       "type": "FUNCTION",
       "content_hash": "4110468bac17b772"
     },
+    "arch/build.py|arch.build.esc_label": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.esc_label",
+      "start_line": 74,
+      "end_line": 78,
+      "type": "FUNCTION",
+      "content_hash": "a8c84f1ce144c6e0"
+    },
+    "arch/build.py|arch.build.esc_html": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.esc_html",
+      "start_line": 81,
+      "end_line": 83,
+      "type": "FUNCTION",
+      "content_hash": "bf54cc8104c42d2a"
+    },
+    "arch/build.py|arch.build.file_ref": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.file_ref",
+      "start_line": 86,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "2a6d55fff23a807c"
+    },
+    "arch/build.py|arch.build.collect": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.collect",
+      "start_line": 94,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "c4e5664a11aed5f6"
+    },
+    "arch/build.py|arch.build.collect.claim": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.collect.claim",
+      "start_line": 105,
+      "end_line": 112,
+      "type": "FUNCTION",
+      "content_hash": "490081eb0224a058"
+    },
     "arch/build.py|arch.build.build_mermaid": {
       "file_path": "arch/build.py",
       "qualified_name": "arch.build.build_mermaid",
-      "start_line": 49,
-      "end_line": 77,
+      "start_line": 160,
+      "end_line": 204,
       "type": "FUNCTION",
-      "content_hash": "feabf0764a0f1168"
+      "content_hash": "fd1a8ee4f6dcac6c"
     },
-    "arch/build.py|arch.build.build_mermaid.node_id": {
+    "arch/build.py|arch.build.build_component_rows": {
       "file_path": "arch/build.py",
-      "qualified_name": "arch.build.build_mermaid.node_id",
-      "start_line": 56,
-      "end_line": 64,
+      "qualified_name": "arch.build.build_component_rows",
+      "start_line": 207,
+      "end_line": 221,
       "type": "FUNCTION",
-      "content_hash": "5801ea31f5bd95c4"
-    },
-    "arch/build.py|arch.build.esc": {
-      "file_path": "arch/build.py",
-      "qualified_name": "arch.build.esc",
-      "start_line": 80,
-      "end_line": 81,
-      "type": "FUNCTION",
-      "content_hash": "2157836dcc96edf2"
-    },
-    "arch/build.py|arch.build.re_id": {
-      "file_path": "arch/build.py",
-      "qualified_name": "arch.build.re_id",
-      "start_line": 84,
-      "end_line": 85,
-      "type": "FUNCTION",
-      "content_hash": "04dc27e5f6e1ac24"
+      "content_hash": "ff9b76356e0baee6"
     },
     "arch/build.py|arch.build.main": {
       "file_path": "arch/build.py",
       "qualified_name": "arch.build.main",
-      "start_line": 88,
-      "end_line": 109,
+      "start_line": 224,
+      "end_line": 247,
       "type": "FUNCTION",
-      "content_hash": "ec1ae7b3565e7f37"
+      "content_hash": "7d4c5c2d82613b50"
     },
     "public/custom.js|public.custom.<function>": {
       "file_path": "public/custom.js",
@@ -2918,10 +2945,13 @@
         {
           "file_path": "arch/build.py",
           "methods": [
+            "arch.build.esc_label",
+            "arch.build.esc_html",
+            "arch.build.file_ref",
+            "arch.build.collect",
+            "arch.build.collect.claim",
             "arch.build.build_mermaid",
-            "arch.build.build_mermaid.node_id",
-            "arch.build.esc",
-            "arch.build.re_id",
+            "arch.build.build_component_rows",
             "arch.build.main"
           ]
         },
@@ -3023,6 +3053,17 @@
           "description": ""
         }
       ]
+    },
+    {
+      "relation": "Serves static script assets and CSS customizations to the web client",
+      "src_name": "Chainlit Server and Authentication Runtime",
+      "dst_name": "Frontend Custom UI Extension",
+      "evidence": "Runtime asset hosting: Chainlit web server automatically discovers and serves static files from `public/` (`custom.js` and `custom.css`) to the browser client to inject custom DOM handlers, mutation observers, and SSO splash overlays.",
+      "key_edges": [],
+      "src_id": "2",
+      "dst_id": "5",
+      "is_static": false,
+      "all_edges": []
     },
     {
       "relation": "Dispatches chat messages, device intents, and copilot reasoning tasks",
