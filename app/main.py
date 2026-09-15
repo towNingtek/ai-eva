@@ -8,7 +8,8 @@ import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.apps._registry import chainlit_commands, default_app, discover, get_by_id
+from app.apps._registry import chainlit_commands, default_app, discover, get_by_id, is_enabled_for
+from app.apps._registry import DEFAULT_PROJECT
 from app.core.copilot import (
     run_copilot,
     execute_confirmed,
@@ -104,10 +105,29 @@ except RuntimeError:
 queue_consumer.start_in_background()
 
 
+async def _current_user_project(user) -> Optional[str]:
+    """SSO 使用者回其 project（identity.project）；非 SSO 回 None（全開）。"""
+    if user is None:
+        return None
+    md = getattr(user, "metadata", None) or {}
+    return md.get("project")
+
+
+async def _enabled_apps_for(project: Optional[str]) -> Optional[set[str]]:
+    """該登入 project 的啟用矩陣；project 為 None → 全開（None）。"""
+    if not project:
+        return None
+    return await project_registry.get_enabled_apps(project)
+
+
 async def _register_commands():
-    cmds = chainlit_commands()
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    cmds = chainlit_commands(enabled)
     await cl.context.emitter.set_commands(cmds)
-    logger.info("Registered %d command(s): %s", len(cmds), [c["id"] for c in cmds])
+    logger.info("Registered %d command(s) for project=%s: %s",
+                len(cmds), project, [c["id"] for c in cmds])
 
 
 @cl.on_chat_resume
@@ -372,6 +392,17 @@ async def on_message(msg: cl.Message):
         await cl.Message(content="⚠️ 沒有可用的處理器").send()
         return
 
+    # #127 dispatch guard：該登入 project 啟用矩陣遮蔽的 app，直接被呼叫 → 回「未啟用」，不跑 handler。
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        logger.info("dispatch blocked: app=%s not enabled for project=%s", app.full_id, project)
+        await cl.Message(
+            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+        ).send()
+        return
+
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
     await app.handle(content, msg)
 
@@ -463,6 +494,8 @@ async def cms_attach(action: cl.Action):
         return
     if not (atts and runtime):
         await cl.Message(content="找不到剛剛的檔案了，請再上傳一次。").send()
+        return
+    if not act:
         return
     intent = _ATTACH_INTENTS.get(act)
     if not intent:
