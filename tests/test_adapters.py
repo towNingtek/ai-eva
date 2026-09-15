@@ -16,6 +16,8 @@ from app.adapters.registry import create, get_adapter_cls, register
 from app.modules.registry import invoke
 from app.modules.base import ModuleContext
 
+pytestmark = pytest.mark.anyio
+
 _CHART_DATA = {
     "series": [{"year": 2025, "district": "竹山", "sdg": 9, "label": "創新生態", "amount": 120000}],
     "total": 120000,

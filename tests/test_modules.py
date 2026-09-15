@@ -18,6 +18,8 @@ from app.modules.registry import (
     modules_for_project,
 )
 
+pytestmark = pytest.mark.anyio
+
 
 class FakeLLM:
     """假 LLM：回給定的 content。/ langchain-callable 形狀：resp.content 字串。"""
@@ -66,10 +68,15 @@ def test_modules_for_project_multi_tenant():
     assert all(m.project == CORE_PROJECT for m in only_core)
     assert "sustainability.sdg" not in {m.id for m in only_core}  # 非 core、不在 enabled
 
-    # 另一 tenant（yunlin）沒有 sechome 自家 module
+    # 另一 tenant（yunlin）看不到 sechome 自家 module，只可能看到 core 常駐層
     yunlin_mods = modules_for_project("yunlin", enabled=None)
-    assert "sustainability.sdg" not in {m.id for m in yunlin_mods}
-    assert any(m.project == CORE_PROJECT for m in yunlin_mods)
+    yunlin_ids = {m.id for m in yunlin_mods}
+    assert "sustainability.sdg" not in yunlin_ids
+    assert "sustainability.sroi" not in yunlin_ids
+    assert "sechome.chart" not in yunlin_ids
+    # yunlin 看到的集合 ⊆ core（現在 repo 沒有 core module → 空集，這斷言也成立）
+    core_ids = {m.id for m in modules_for_project(CORE_PROJECT, enabled=None)}
+    assert yunlin_ids <= core_ids
 
 
 async def test_sdg_module_runs_via_stub_adapter():
