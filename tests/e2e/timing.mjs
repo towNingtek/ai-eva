@@ -1,0 +1,21 @@
+import fs from 'fs';
+import { chromium } from '@playwright/test';
+const token = fs.readFileSync('.auth/token.txt','utf8').trim();
+const BASE = process.env.EVA_BASE_URL || 'https://beta-eva.4impact.cc';
+const b = await chromium.launch();
+const p = await (await b.newContext()).newPage();
+await p.goto(`${BASE}/sso/handoff?token=${token}`, {waitUntil:'domcontentloaded'});
+await p.waitForSelector('#chat-input', {timeout:60000});
+await p.waitForTimeout(2500);
+
+const t0 = Date.now();
+await p.getByRole('button', { name: /法規檢核/ }).first().click();
+await p.waitForFunction(()=>document.body.innerText.includes('正在讀取你可管理的計畫書'), null, {timeout:60000});
+const tAck = Date.now();
+await p.waitForFunction(()=>document.body.innerText.includes('份你可管理的計畫書'), null, {timeout:300000});
+const tList = Date.now();
+const n = (await p.evaluate(()=>document.body.innerText)).match(/找到 \*{0,2}(\d+)\*{0,2} 份/);
+console.log(`  點擊 → 引導詞:   ${((tAck-t0)/1000).toFixed(1)}s`);
+console.log(`  引導詞 → 清單:   ${((tList-tAck)/1000).toFixed(1)}s   （${n?n[1]:'?'} 份專案，1+N 次 CMS 呼叫）`);
+console.log(`  合計:            ${((tList-t0)/1000).toFixed(1)}s`);
+await b.close();

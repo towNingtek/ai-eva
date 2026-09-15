@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- 對話泡＝AI 秘書；泡內的 E＝Eva -->
+  <path fill="#0F766E" d="M28 10h72a26 26 0 0 1 26 26v46a26 26 0 0 1-26 26H62l-24 20a3 3 0 0 1-5-2.3V108h-5A26 26 0 0 1 2 82V36A26 26 0 0 1 28 10Z"/>
+  <g fill="#FFFFFF">
+    <rect x="40" y="36" width="52" height="13" rx="6.5"/>
+    <rect x="40" y="52.5" width="34" height="13" rx="6.5"/>
+    <rect x="40" y="69" width="52" height="13" rx="6.5"/>
+  </g>
+</svg>

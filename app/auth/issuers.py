@@ -8,8 +8,8 @@ verify_handoff(token) 做三件事：
 2. 用該 issuer 的 JWKS 公鑰驗 RS256 簽章 + `aud` + `exp`（擋重放/過期）
 3. 回 identity：**把 token 映成 project + tenant + user**（正是 #31 卡住的 identity→project）
 
-issuer registry 目前 hardcode dev 那筆；上 stable 補各環境的 jwks（per-env issuer key）。
-之後可挪去 DB / project registry。
+issuer registry 目前 hardcode dev / stable 兩筆（per-env issuer key：CMS 每個環境
+自己生 RS256 keypair、自己一個 iss）。之後可挪去 DB / project registry。
 """
 from __future__ import annotations
 
@@ -25,20 +25,41 @@ from jwt.algorithms import RSAAlgorithm
 logger = logging.getLogger(__name__)
 
 # ── issuer registry（誰可信 + 怎麼驗 + 映哪個 project）──────────────
+# tenant_cms_base_url：同名 tenant（如 yunlin）在 dev/stable 都存在，CMS host 不同，
+#   所以 tenant → CMS base 的映射跟著 issuer 走，不能全域共用。
+# tenant_project_map：tenant → project 覆寫（#94 雲林雙軌）：特定租戶獨立成自己的
+#   project，讓用量/LiteLLM key 分流（見 projects.metadata.litellm_key）。
+#   沒列到的 tenant 沿用 issuer 的預設 project（如一般 CMS 租戶 → sechome）。
 ISSUERS: dict[str, dict] = {
+    # dev / beta CMS（dev.4impact.cc、yunlin-beta.4impact.cc、beta.sechome.cc）
     "tplanet-cms": {
         "jwks_url": "https://dev.4impact.cc/api/tools/jwks",
         "manifest_url": "https://dev.4impact.cc/api/tools/manifest",
+        "refresh_url": "https://dev.4impact.cc/api/accounts/tools/refresh",
         "audience": "ai-eva",
         "project": "sechome",   # CMS AI 秘書遷移專案（#50）；tenant 取自 token 的 tenant_id
+        "tenant_cms_base_url": {
+            "yunlin": "https://yunlin-beta.4impact.cc",
+        },
+        "tenant_project_map": {
+            "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
+        },
     },
-}
-
-# tenant → project 覆寫（#94 雲林雙軌）：特定租戶獨立成自己的 project，
-# 讓用量/LiteLLM key 分流（見 projects.metadata.litellm_key）。
-# 沒列到的 tenant 沿用 issuer 的預設 project（如一般 CMS 租戶 → sechome）。
-TENANT_PROJECT_MAP: dict[str, str] = {
-    "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
+    # stable CMS（stable.4impact.cc、sechome.cc、yunlin.4impact.cc）
+    # stable backend 需設 AI_EVA_ISSUER=tplanet-cms-stable（各環境自己的 RS256 key）
+    "tplanet-cms-stable": {
+        "jwks_url": "https://stable.4impact.cc/api/tools/jwks",
+        "manifest_url": "https://stable.4impact.cc/api/tools/manifest",
+        "refresh_url": "https://stable.4impact.cc/api/accounts/tools/refresh",
+        "audience": "ai-eva",
+        "project": "sechome",
+        "tenant_cms_base_url": {
+            "yunlin": "https://yunlin.4impact.cc",
+        },
+        "tenant_project_map": {
+            "yunlin": "yunlin",
+        },
+    },
 }
 
 _AUDIENCE_DEFAULT = "ai-eva"
@@ -109,7 +130,7 @@ def verify_handoff(token: str) -> dict:
     )
     tenant_id = claims.get("tenant_id")
     return {
-        "project": TENANT_PROJECT_MAP.get(tenant_id) or issuer["project"],
+        "project": issuer.get("tenant_project_map", {}).get(tenant_id) or issuer["project"],
         "tenant_id": tenant_id,
         "user_id": claims.get("user_id"),
         "email": claims.get("email"),
@@ -118,7 +139,8 @@ def verify_handoff(token: str) -> dict:
     }
 
 
-def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict:
+def fetch_manifest(issuer_id: str, token: str, *, tenant_id: str | None = None,
+                   timeout: float = 15.0) -> dict:
     """抓某 issuer 的 tool manifest，帶 token（握手選 (a)：直接帶 handoff token）。
 
     回該帳號可用的 manifest（{callback_base, credential, tools}），交給 ToolRuntime.load。
@@ -127,6 +149,9 @@ def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict
     if issuer is None:
         raise ValueError(f"unknown issuer: {issuer_id!r}")
     url = issuer.get("manifest_url")
+    tenant_base = issuer.get("tenant_cms_base_url", {}).get(tenant_id or "")
+    if tenant_base:
+        url = f"{tenant_base.rstrip('/')}/api/tools/manifest"
     if not url:
         raise ValueError(f"issuer {issuer_id!r} has no manifest_url")
     r = httpx.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=timeout)
@@ -134,4 +159,23 @@ def fetch_manifest(issuer_id: str, token: str, *, timeout: float = 15.0) -> dict
     body = r.json()
     # CMS 回 {"success":true,"data":{callback_base,credential,tools}}；拆 data 信封交給 ToolRuntime。
     # 若無信封（其他 issuer 直接回 manifest）則原樣回。
+    return body.get("data", body) if isinstance(body, dict) else body
+
+
+def refresh_manifest(issuer_id: str, refresh_token: str, *, tenant_id: str | None = None,
+                     timeout: float = 15.0) -> dict:
+    """Exchange a CMS-issued AI-Eva refresh token for a new tool manifest."""
+    issuer = ISSUERS.get(issuer_id)
+    if issuer is None:
+        raise ValueError(f"unknown issuer: {issuer_id!r}")
+    tenant_base = issuer.get("tenant_cms_base_url", {}).get(tenant_id or "")
+    url = (
+        f"{tenant_base.rstrip('/')}/api/accounts/tools/refresh"
+        if tenant_base else issuer.get("refresh_url")
+    )
+    if not url:
+        raise ValueError(f"issuer {issuer_id!r} has no refresh endpoint")
+    r = httpx.post(url, headers={"Authorization": f"Bearer {refresh_token}"}, timeout=timeout)
+    r.raise_for_status()
+    body = r.json()
     return body.get("data", body) if isinstance(body, dict) else body

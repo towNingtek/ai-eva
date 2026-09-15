@@ -174,6 +174,23 @@ def _make_module_ctx(runtime, api_key, user, make_llm) -> ModuleContext:
     )
 
 
+async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
+    """只生成結構化 SDG 結果，不執行 CMS 寫入（surfaces/sdg.py 的 endpoint 用）。"""
+    _SDG_PROMPT = (
+        "你是 SDG 顧問。根據專案資訊，從聯合國 17 個 SDG 中挑出 **3~6 個最相關的**，"
+        "為每個寫一句『這專案如何推進該 SDG』的繁體中文描述（約 30~60 字）。"
+        "只放真的命中的，別硬湊。**只回 JSON 物件** {\"SDG編號(字串1~17)\":\"描述\"}，不要其他文字。"
+    )
+    llm = make_llm(api_key=api_key, user=user, streaming=False)
+    resp = await llm.ainvoke([
+        SystemMessage(content=_SDG_PROMPT),
+        HumanMessage(content=json.dumps(project_info, ensure_ascii=False)),
+    ])
+    sdgs = _parse_json_obj(resp.content or "")
+    sdgs = {str(k): v for k, v in sdgs.items() if str(k).isdigit() and v}  # 清成 {編號:描述}
+    return sdgs
+
+
 async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
     """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
     from app.modules.registry import invoke

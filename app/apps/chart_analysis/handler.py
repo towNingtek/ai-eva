@@ -2,8 +2,12 @@
 
 薄 app：只負責把「登入者的資料後端」組好（SSO → CMSDataSource；無 SSO → StubDataSource，
 方便未登入時也能看格式範例），實際 query 邏輯全在 module（跨後端共用）。
+
+前端匯出（RD 版）：進入頁面渲染 ChartAnalysis CustomElement，SDG 長條圖 + PDF/PNG 匯出；
+其 chart_query / chart_export 是 main.py 的 action callback（讀 cl.user_session["chart_element"]）。
 """
 import logging
+from datetime import date
 
 import chainlit as cl
 
@@ -26,6 +30,26 @@ _STUB_CHART = {
         "buckets": ["2025"],
     },
 }
+
+
+def _element() -> cl.CustomElement:
+    """ChartAnalysis 前端元件（RD 匯出依賴 chart_element 存 session）。"""
+    element = cl.CustomElement(
+        name="ChartAnalysis",
+        display="inline",
+        props={
+            "year": str(date.today().year),
+            "district": "",
+            "sdgs": ["sdg9", "sdg12"],
+            "items": [],
+            "totalBudget": 0,
+            "totalProjects": 0,
+            "loading": False,
+            "error": "",
+        },
+    )
+    cl.user_session.set("chart_element", element)
+    return element
 
 
 def _fmt(data) -> str:
@@ -57,24 +81,31 @@ async def _mock_runtime():
     return rt
 
 
+async def _chart_source(project: str | None):
+    """依登入者決定資料後端：SSO（CMS）→ CMSDataSource；否則 stub 示範。"""
+    if project:
+        runtime = cl.user_session.get("cms_runtime")
+        if runtime:
+            return CMSDataSource(runtime)
+        return CMSDataSource(await _mock_runtime())
+    return StubDataSource(_STUB_CHART)
+
+
 async def handle(payload: str, msg: cl.Message) -> None:
     if not payload.strip():
+        # 無快取資料時的初始畫面：渲染前端元件（RD 匯出 + SDG 圖表互動）。
+        element = _element()
         await cl.Message(
-            content="📊 **圖表查詢**\n\n輸入要查的年度/地區（例：`2025 竹山`）。"
+            content="📊 請設定條件後生成 SDG 投入圖表，或匯出成 PDF / PNG。數值來自 CMS 專案資料。",
+            elements=[element],
+            parent_id=getattr(msg, "id", None),
         ).send()
         return
 
     try:
-        # 依登入者決定後端：SSO（CMS）→ CMSDataSource；否則 stub 示範
         user = cl.user_session.get("user")
         project = (getattr(user, "metadata", None) or {}).get("project") if user else None
-        if project:
-            runtime = cl.user_session.get("cms_runtime")
-            data = CMSDataSource(runtime) if runtime else None
-            if data is None:
-                data = CMSDataSource(await _mock_runtime())
-        else:
-            data = StubDataSource(_STUB_CHART)
+        data = await _chart_source(project)
 
         year, _, rest = payload.partition(" ")
         ctx = ModuleContext(project=project or "stub", data=data, action="query")

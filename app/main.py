@@ -1,6 +1,8 @@
 import asyncio
+import base64
 import logging
 import os
+import tempfile
 from typing import Optional
 
 import chainlit as cl
@@ -8,8 +10,16 @@ import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.apps._registry import chainlit_commands, default_app, discover, get_by_id, is_enabled_for
-from app.apps._registry import DEFAULT_PROJECT
+from app.apps._registry import (
+    chainlit_commands,
+    default_app,
+    discover,
+    filter_enabled,
+    get_by_id,
+    is_enabled_for,
+    menu_apps,
+    DEFAULT_PROJECT,
+)
 from app.core.copilot import (
     run_copilot,
     execute_confirmed,
@@ -23,6 +33,7 @@ from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
 from app.surfaces import device as device_surface  # noqa: F401  # 註冊 /device/* route
 from app.surfaces import sso as sso_surface  # noqa: F401  # 註冊 /sso/handoff route + SSO session
+from app.surfaces import sdg as sdg_surface  # noqa: F401  # 註冊 /internal/sdg/generate route
 from app.surfaces import queue_consumer  # RabbitMQ consumer 給 M4 cron push 用
 
 logger = logging.getLogger(__name__)
@@ -83,6 +94,7 @@ from app.surfaces import line_opencode  # noqa: E402
 from app.surfaces import discord_voice  # noqa: E402  # 註冊 /discord-voice/chat route
 from app.projects import registry as project_registry  # noqa: E402
 from app.nodes import registry as node_registry  # noqa: E402
+from app.regulations import registry as regulations_registry  # noqa: E402  # 法規語料（#111/#112）
 
 
 async def _init_tables():
@@ -94,6 +106,12 @@ async def _init_tables():
     await sso_surface.ensure_sso_sessions_table()
     await line_opencode.ensure_line_opencode_table()
     await discord_voice.ensure_discord_voice_table()
+    # 法規語料：建表後從 repo 的 corpus/ 灌進去（不呼叫 LLM、不連外網；
+    # 抽取是建置時的事，見 app/regulations/ingest.py）。sha256 對不上的不給 active。
+    await regulations_registry.ensure_regulations_tables()
+    seeded = await regulations_registry.seed_from_corpus()
+    if seeded.get("problems"):
+        logger.warning("法規語料 seed 問題：%s", "；".join(seeded["problems"]))
 
 
 try:
@@ -130,6 +148,59 @@ async def _register_commands():
                 len(cmds), project, [c["id"] for c in cmds])
 
 
+async def _app_actions() -> list[cl.Action]:
+    """工具選單的 app → 一排「點了就跑」的按鈕。
+
+    Chainlit 的 command（輸入框旁 `...` 那個選單）選完只是把標籤掛到輸入框上，
+    **還要按送出**才會派工 —— 使用者選了以為壞掉是常態（實際回報過）。
+    Action 按鈕點下去直接觸發 callback，不需要送出，才是「選了就有反應」。
+    command 保留（熟手打字更快），按鈕是給第一次用的人看的。
+
+    #127：按鈕也套用 per-project 啟用矩陣，遮蔽的 app 連按鈕都不出現。
+    """
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    candidates = menu_apps() if enabled is None else filter_enabled(menu_apps(), enabled)
+
+    # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
+    # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
+    def _label(a) -> str:
+        return f"{a.icon} {a.label}".replace("\ufe0f", "")
+
+    return [
+        cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
+        for a in candidates
+    ]
+
+
+@cl.action_callback("open_app")
+async def open_app(action: cl.Action):
+    """按下工具按鈕 → 直接跑那個 app（不必再送一次訊息）。"""
+    app_id = (action.payload or {}).get("app") or ""
+    app = get_by_id(app_id)
+    if app is None:
+        await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
+        return
+
+    # #127：按鈕是依當下 enable 矩陣產的，但再抗一層防呆 —— session 換人/矩陣變動時
+    # 舊按鈕可能殘留，被點到也要能擋。
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        await cl.Message(
+            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+        ).send()
+        return
+
+    logger.info("action open_app → %s", app.id)
+    # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
+    # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
+    anchor = await cl.Message(content=f"▶ {app.label}").send()
+    await app.handle("", anchor)
+
+
 @cl.on_chat_resume
 async def on_chat_resume(thread):
     # 關鍵：resumed thread 走的是這裡（不是 on_chat_start）→ 也要載入 SSO runtime，
@@ -138,20 +209,67 @@ async def on_chat_resume(thread):
     await _register_commands()
 
 
-async def _sso_session_for_current_user():
+def _current_chainlit_user():
+    """本連線的 Chainlit user。優先解 websocket token —— data layer 可能把它換成
+    PersistedUser，那份 metadata 是「第一次登入時」寫進 DB 的，換租戶後會是舊的（#100）。"""
+    token = getattr(cl.context.session, "token", None)
+    if token:
+        try:
+            from chainlit.auth import decode_jwt
+            return decode_jwt(token)
+        except Exception:  # noqa: BLE001
+            logger.warning("Unable to decode Chainlit websocket token", exc_info=True)
+    return cl.user_session.get("user") or getattr(cl.context.session, "user", None)
+
+
+def _is_sso_user() -> bool:
+    """這條連線是不是從 CMS SSO 進來的（runtime 掛掉時要不要明講的判斷依據）。"""
+    user = _current_chainlit_user()
+    return (getattr(user, "metadata", None) or {}).get("role") == "cms-user"
+
+
+async def _sso_session_for_current_user(*, allow_expired: bool = False):
     """目前 Chainlit user 若是 SSO 認證的，回它的 SSO session（含 ToolRuntime）；否則 None。"""
-    user = cl.user_session.get("user")
+    user = _current_chainlit_user()
     sid = (getattr(user, "metadata", None) or {}).get("sso_session_id") if user else None
-    return await sso_surface.get_sso_session(sid) if sid else None
+    return await sso_surface.get_sso_session(sid, allow_expired=allow_expired) if sid else None
+
+
+def _attach_refresh_handler(runtime, sid: str):
+    """給 runtime 掛 401 自癒 hook（#96）：credential 過期 → refresh → 回新 manifest 重試。
+
+    hook 直接 load 進同一個 runtime 物件，所以 copilot 迴圈中既有的 reference 也會生效。
+    """
+    async def _on_unauthorized():
+        refreshed = await sso_surface.refresh_sso_session(sid)
+        if not refreshed:
+            logger.warning("SSO 401 self-heal failed for session %s…", sid[:8])
+            return None
+        logger.info("SSO 401 self-heal ok for session %s…", sid[:8])
+        return refreshed.get("manifest")
+    runtime.on_unauthorized = _on_unauthorized
 
 
 async def _load_sso_runtime():
     """SSO 使用者 → 把 ToolRuntime + LiteLLM key/user 載入 session；回 identity 或 None。
-    on_chat_start 與 on_chat_resume 共用（兩條進入 thread 的路都要載）。"""
-    sess = await _sso_session_for_current_user()
+    on_chat_start 與 on_chat_resume 共用（兩條進入 thread 的路都要載）。
+
+    #96：session 過期不再直接放棄 —— refresh token 還有效（24h）就先換新 credential
+    再載入；換不到才回 None（引導重新登入）。絕不把過期 credential 放進 runtime。"""
+    sess = await _sso_session_for_current_user(allow_expired=True)
     if not sess:
         return None
-    cl.user_session.set("cms_runtime", sess["runtime"])
+    if sess.get("expired"):
+        refreshed = await sso_surface.refresh_sso_session(sess["session_id"])
+        if not refreshed:
+            return None  # refresh token 也失效 → 需要重新走 CMS handoff
+        sess = refreshed
+    runtime = sess["runtime"]
+    # Refresh 失敗（degraded）時，仍維持 runtime 不被拆除 —— tools 已載入，可正常使用；
+    # 401 會由 on_unauthorized hook 捕獲嘗試自癒，若仍失敗再由使用者重新登入。
+    if not sess.get("degraded"):
+        _attach_refresh_handler(runtime, sess["session_id"])
+    cl.user_session.set("cms_runtime", runtime)
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
     idn = sess["identity"]
@@ -159,11 +277,45 @@ async def _load_sso_runtime():
     cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
     # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
     cl.user_session.set("llm_user", idn.get("user_id") or idn.get("email"))
+    # ai-eva#110：判定模型可由 CMS 在簽 token 時指定（目前只給 e2e 帳號），
+    # 讓 QA 走免費模型而正式檢核維持 gpt-5.4。放在 token 而不是參數 ——
+    # RS256 簽章瀏覽器改不了，且由 CMS 決定給誰，呼叫端說了不算。
+    cl.user_session.set("judge_model", (idn.get("claims") or {}).get("judge_model"))
     return idn
+
+
+async def _refresh_sso_runtime():
+    """Refresh CMS callback credential immediately before a confirmed write.
+
+    Refresh 成功 → 全新 manifest + credential。
+    Refresh 失敗（degraded）→ 仍回傳 True（runtime 存活、tools 可用），
+      但 credential 可能過期，寫入操作可能觸發 401 → on_unauthorized → 使用者重新登入。
+    """
+    try:
+        sess = await _sso_session_for_current_user(allow_expired=True)
+        sid = sess.get("session_id") if sess else None
+        if not sid:
+            return False
+        refreshed = await sso_surface.refresh_sso_session(sid)
+        if not refreshed:
+            return False
+        runtime = refreshed["runtime"]
+        if not refreshed.get("degraded"):
+            _attach_refresh_handler(runtime, sid)
+        cl.user_session.set("cms_runtime", runtime)
+        return True
+    except Exception:
+        logger.exception("_refresh_sso_runtime failed unexpectedly")
+        return False
 
 
 @cl.on_chat_start
 async def on_start():
+    # 工具選單要先註冊：SSO 分支下面會 early return，擺在後面等於 SSO 使用者
+    # （CMS 進來的承辦人）在**新對話**永遠看不到工具選單，只有 resume 舊對話才有
+    # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
+    await _register_commands()
+
     idn = await _load_sso_runtime()
     if idn:
         # CMS 副駕模式
@@ -173,27 +325,30 @@ async def on_start():
             content=(
                 f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
                 f"我可以幫你查：{', '.join(tools) or '（目前無可用工具）'}。\n"
-                "試試問「**列出我的專案**」或「**我的 SROI**」。"
-            )
+                "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
+                "或直接點下面的工具："
+            ),
+            actions=await _app_actions(),
         ).send()
         return
 
-    await _register_commands()
     await cl.Message(
         content=(
             "嗨，我是 **Eva**。\n\n"
             "- 直接輸入問題 → 一般對話（OpenAI gpt-4o-mini）\n"
-            "- 輸入框工具選單可挑：🪞 模型對照 / 🌐 網頁搜尋"
-        )
+            "- 或直接點下面的工具："
+        ),
+        actions=await _app_actions(),
     ).send()
 
 
 # ── 附件（#66 file_to_project MVP）────────────────────────────
 # 設計：上傳「只收不猜」→ 存進 session（lazy，先不讀內容）→ 問 + chips；
 # 使用者選動作/表達意圖時才讀（txt/md），內容當「資料」不當「指示」餵進 function-calling loop。
-# MVP 只支援 txt/md；PDF 解析（MinerU）在後續（#93）。詳見 issue #66。
 _TEXT_EXTS = {".txt", ".md"}
 _TEXT_MIMES = {"text/plain", "text/markdown"}
+_PDF_EXTS = {".pdf"}
+_PDF_MIMES = {"application/pdf", "application/x-pdf"}
 _MAX_FILE_CHARS = 20000
 # chip 動作 → 餵給 copilot 的意圖句（動作 chips = 對 manifest 的投影，非 LLM 生成）
 _ATTACH_INTENTS = {
@@ -221,6 +376,49 @@ def _read_text_file(path: str | None, mime: str, name: str) -> Optional[str]:
     if len(text) > _MAX_FILE_CHARS:
         text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
     return text.strip() or None
+
+
+def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
+    """Read a PDF text layer, falling back to Traditional Chinese OCR."""
+    if not path or not os.path.exists(path):
+        return None
+    ext = os.path.splitext(name or "")[1].lower()
+    if ext not in _PDF_EXTS and (mime or "").lower() not in _PDF_MIMES:
+        return None
+    try:
+        import fitz
+
+        doc = fitz.open(path)
+        pages = [page.get_text("text") for page in doc]
+        text = "\n\n".join(p.strip() for p in pages if p and p.strip())
+        if not text.strip():
+            import pytesseract
+            from PIL import Image
+
+            ocr_pages = []
+            for page in doc:
+                pix = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+                image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                ocr_pages.append(pytesseract.image_to_string(image, lang="chi_tra+eng"))
+            text = "\n\n".join(p.strip() for p in ocr_pages if p and p.strip())
+        doc.close()
+    except Exception:  # noqa: BLE001
+        logger.exception("read PDF attachment failed: %s", name)
+        return None
+    if not text.strip():
+        return None
+    if len(text) > _MAX_FILE_CHARS:
+        text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
+    return text.strip()
+
+
+def _read_attachment(a: dict) -> Optional[str]:
+    """依附件類型 lazy 讀取；支援 txt/md 與文字層或掃描型 PDF。"""
+    name, mime, path = a.get("name", ""), a.get("mime", ""), a.get("path")
+    ext = os.path.splitext(name)[1].lower()
+    if ext in _PDF_EXTS or (mime or "").lower() in _PDF_MIMES:
+        return _read_pdf_file(path, mime, name)
+    return _read_text_file(path, mime, name)
 
 
 def _frame_file(name: str, text: str) -> str:
@@ -265,7 +463,7 @@ async def _run_with_attachments(runtime, intent: str, atts: list, history: list)
     """讀 stash 的附件（lazy 此刻才讀）→ 框成資料 → 連同意圖餵進 copilot loop。"""
     blocks, ok = [], []
     for a in atts:
-        text = _read_text_file(a.get("path"), a.get("mime", ""), a.get("name", ""))
+        text = _read_attachment(a)
         if text is None:
             continue
         ok.append(a["name"])
@@ -286,7 +484,7 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
         name = e.name or "檔案"
         ext = os.path.splitext(name)[1].lower()
         mime = (e.mime or "").lower()
-        if ext in _TEXT_EXTS or mime in _TEXT_MIMES:
+        if ext in _TEXT_EXTS or mime in _TEXT_MIMES or ext in _PDF_EXTS or mime in _PDF_MIMES:
             readable.append({"name": name, "path": e.path, "mime": mime})
         else:
             rejected.append(name)
@@ -294,7 +492,7 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
                 [a["name"] for a in readable], rejected, bool(content))
     note = ""
     if rejected:
-        note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— MVP 先支援 .txt / .md，PDF 解析在後續 #93）"
+        note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— 目前支援 .txt / .md 與有文字層的 PDF）"
     if not readable:
         await cl.Message(content=("我收到檔案了，但這種格式目前還不能處理。" + note)).send()
         return
@@ -321,6 +519,31 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
 @cl.on_message
 async def on_message(msg: cl.Message):
     content = (msg.content or "").strip()
+
+    # Chainlit can retain the selected command on the next message. Once
+    # social_post has shown its project list, resolve the user's selection
+    # before the generic command dispatcher sees it again.
+    if content and cl.user_session.get("social_post_active"):
+        from app.apps.social_post.handler import handle_selection
+        await handle_selection(content)
+        return
+
+    # Chainlit tool commands can carry no text. Dispatch them before the CMS
+    # chat branch, whose empty-content guard would otherwise swallow the tool.
+    # Chainlit keeps the command chip attached to later messages. After a
+    # project is selected, those messages are normal Copilot turns, not a
+    # second social_post launch. Keep the command available for a fresh click.
+    command_is_followup = (
+        msg.command == "social_post"
+        and cl.user_session.get("social_post_completed")
+        and content not in {"社群貼文", "請開始社群貼文製作，不要要求我另外輸入 prompt。"}
+    )
+    if msg.command and not command_is_followup:
+        app = get_by_id(msg.command)
+        if app is not None:
+            logger.info("dispatch tool command → %s", app.id)
+            await app.handle(content, msg)
+            return
 
     # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
     runtime = cl.user_session.get("cms_runtime")
@@ -350,6 +573,18 @@ async def on_message(msg: cl.Message):
             return
         await _run_copilot_emit(runtime, content, content, history)
         return
+
+    # runtime 仍為 None 但這是 SSO 使用者 → CMS 工具全掛。一般對話還能用，但先明講一次，
+    # 免得 LLM 沒工具硬答 CMS 問題（#100：問「你有哪些專案」卻回「我將進行專案建立」）。
+    if _is_sso_user() and not cl.user_session.get("cms_runtime_warned"):
+        cl.user_session.set("cms_runtime_warned", True)
+        await cl.Message(
+            content=(
+                "⚠️ 目前讀不到你的 CMS 資料（登入憑證已失效）——"
+                "專案查詢、SROI、圖表匯出、法規檢核都暫時無法使用。\n\n"
+                "請回 CMS 重新點一次「進 AI 秘書」。在那之前，以下回答**不含**你的專案資料。"
+            )
+        ).send()
 
     # runtime 仍為 None：若使用者上傳了附件（期待副駕），多半是 SSO session 過期 → 明講、別靜默丟
     if msg.elements:
@@ -420,6 +655,12 @@ async def cms_confirm(action: cl.Action):
         await cl.Message(content="好，已取消，沒有送出。").send()
         return
     try:
+        if not await _refresh_sso_runtime():
+            await cl.Message(
+                content="⚠️ 登入授權已過期，這次沒有送出。請回 CMS 重新點一次「進 AI 秘書」後再確認。"
+            ).send()
+            return
+        runtime = cl.user_session.get("cms_runtime") or runtime
         res = await execute_confirmed(runtime, pending["name"], pending["args"])
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS confirm execute failed")
@@ -479,6 +720,79 @@ async def cms_sroi(action: cl.Action):
         logger.exception("SROI estimate failed")
         reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
     await cl.Message(content=reply).send()
+
+
+@cl.action_callback("chart_query")
+async def chart_query(action: cl.Action):
+    element = cl.user_session.get("chart_element")
+    runtime = cl.user_session.get("cms_runtime")
+    payload = action.payload or {}
+    if not element or not runtime or not runtime.is_allowed("dashboard_sdg_data"):
+        if element:
+            element.props["error"] = "目前帳號沒有圖表資料權限。"
+            await element.update()
+        return
+    element.props.update({"loading": True, "error": ""})
+    await element.update()
+    await cl.Message(content="⏳ 正在查詢圖表資料，請稍候…").send()
+    try:
+        result = await runtime.execute("dashboard_sdg_data", {
+            "year": str(payload.get("year") or "2025"),
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+        }, timeout=15)
+        if result.get("status") != "ok":
+            raise RuntimeError(result.get("reason", "查詢失敗"))
+        data = result.get("result", {}).get("data", result.get("result", {}))
+        element.props.update({
+            "loading": False,
+            "items": data.get("budgetValues", data.get("items", [])),
+            "totalBudget": data.get("totalBudget", 0),
+            "totalProjects": data.get("totalProjects", 0),
+            "year": payload.get("year") or "2025",
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("chart query failed")
+        element.props.update({"loading": False, "error": f"查詢失敗：{type(exc).__name__}"})
+    await element.update()
+    if element.props.get("error"):
+        await cl.Message(content="⚠️ 圖表查詢失敗，請稍後再試。").send()
+    else:
+        await cl.Message(content="✅ 圖表資料已更新。").send()
+
+
+@cl.action_callback("chart_export")
+async def chart_export(action: cl.Action):
+    runtime = cl.user_session.get("cms_runtime")
+    payload = action.payload or {}
+    if not runtime or not runtime.is_allowed("chart_export"):
+        await cl.Message(content="⚠️ 目前帳號沒有圖表匯出權限。").send()
+        return
+    await cl.Message(content=f"⏳ 正在產生 {payload.get('format', 'pdf').upper()} 檔案，請稍候…").send()
+    try:
+        result = await runtime.execute("chart_export", {
+            "year": str(payload.get("year") or "2025"),
+            "district": payload.get("district") or "",
+            "sdgs": payload.get("sdgs") or [],
+            "format": payload.get("format") or "pdf",
+        }, timeout=30)
+        if result.get("status") != "ok":
+            raise RuntimeError(result.get("reason", "匯出失敗"))
+        data = result.get("result", {}).get("data", result.get("result", {}))
+        content = base64.b64decode(data["content_base64"])
+        suffix = ".pdf" if data.get("mime_type") == "application/pdf" else ".png"
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as output:
+            output.write(content)
+            path = output.name
+        await cl.Message(
+            content=f"✅ 已匯出 {data.get('filename', 'sdg-chart' + suffix)}。",
+            elements=[cl.File(name=data.get("filename", "sdg-chart" + suffix), path=path)],
+        ).send()
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("chart export failed")
+        await cl.Message(content=f"⚠️ 圖表匯出失敗（{type(exc).__name__}）。").send()
 
 
 @cl.action_callback("cms_attach")

@@ -93,6 +93,15 @@ def discover() -> dict[str, App]:
     return _APPS
 
 
+def menu_apps() -> list[App]:
+    """會出現在工具選單的 app（也給 Action 按鈕用）。"""
+    discover()
+    return [
+        a for a in _APPS.values()
+        if a.show_in_menu and a.enabled and not a.is_default
+    ]
+
+
 # 平台內建 app 的 project — 通用 app（chat / search …）放這，不受啟用矩陣影響
 CORE_PROJECT = "core"
 
@@ -127,6 +136,16 @@ def chainlit_commands(enabled: set[str] | None = None) -> list[dict]:
     enabled（可選）：某登入 project 的啟用矩陣。None = 全開（向後相容）。
     """
     discover()
+    if enabled is None:
+        return [
+            {
+                "id": a.id,
+                "description": a.label,
+                "icon": a.cl_icon,
+                "persistent": True,
+            }
+            for a in menu_apps()
+        ]
     candidates = [
         a for a in _APPS.values()
         if a.show_in_menu and a.enabled and not a.is_default

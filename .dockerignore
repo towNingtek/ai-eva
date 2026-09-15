@@ -1,0 +1,11 @@
+.git
+.github
+.env
+.env.*
+docs
+tests
+data
+init-db
+ops
+*.bak*
+docker-compose*.yml

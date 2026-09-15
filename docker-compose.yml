@@ -7,6 +7,8 @@ services:
       POSTGRES_USER: chainlit
       POSTGRES_PASSWORD: chainlit_local
       POSTGRES_DB: chainlit
+    ports:
+      - "172.17.0.1:5502:5432"   # Phase 8: 只綁 docker0 給 k8s pod 連（勿改 0.0.0.0）
     volumes:
       - ai_eva_pgdata:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d:ro
@@ -30,6 +32,8 @@ services:
         condition: service_healthy
     env_file:
       - .env
+    environment:
+      CMS_SDG_SERVICE_TOKEN: ${CMS_SDG_SERVICE_TOKEN:-}
     ports:
       - "7860:7860"
     volumes:
@@ -84,15 +88,14 @@ services:
     image: curlimages/curl:8.10.1
     container_name: ai-eva-session-scanner
     restart: unless-stopped
-    depends_on:
-      - ai-eva
+    # Phase 8: ai-eva 已進 k8s，改打公網 URL，移除 depends_on 避免 compose up 誤啟舊容器
     environment:
       SESSION_SCAN_TOKEN: ${SESSION_SCAN_TOKEN}
     entrypoint: ["sh", "-c"]
     command:
       - |
         while true; do
-          curl -fsS -X POST http://ai-eva:7860/tasks/scan-timeouts \
+          curl -fsS -X POST https://beta-eva.4impact.cc/tasks/scan-timeouts \
             -H "X-Scan-Token: $$SESSION_SCAN_TOKEN" \
             >/dev/null 2>&1 || true
           sleep 60

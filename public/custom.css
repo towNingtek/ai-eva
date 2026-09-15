@@ -1,1 +1,10 @@
-/* Intentionally empty — Chainlit's native commands replaced our custom + menu. */
+/* AI-Eva 品牌與主題鎖定
+ *
+ * Chainlit 沒有「停用深色主題」的設定，只能把切換鈕藏起來。
+ * 但光藏按鈕不夠 —— 之前切過深色的人，偏好存在 localStorage['vite-ui-theme']，
+ * 會卡在深色而且沒有按鈕可以切回來。強制寫回淺色的部分在 custom.js。
+ */
+
+#theme-toggle {
+  display: none !important;
+}
