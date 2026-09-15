@@ -2,7 +2,8 @@
 App registry: auto-discover apps/*/, expose manifest + dispatcher.
 
 Each app package must define:
-  - meta.py with META dict: {id, label, icon, project?, trigger?, is_default?, show_in_menu?, enabled?}
+  - meta.py with META dict: {id, label, icon, project?, trigger?, is_default?, show_in_menu?,
+                             enabled?, inputs?, outputs?, ai?}
   - handler.py with async handle(payload: str, msg) coroutine
 
 Project namespace:
@@ -10,6 +11,11 @@ Project namespace:
   （虎科 / 縣府 / 機器人部門 / 俊毓個人 …），不是登入帳號。完整命名 = f"{project}.{id}"；
   目前只有 yillkid、id 撞名直接 raise，避免 silent override。
   project 的 profile（LINE 收件人 / 聯絡人）存在 PG projects 表，見 app/projects/registry.py。
+
+啟用矩陣（#127）：
+  per-project 啟用清單存 `projects.metadata.enabled_apps`（JSON list；缺省/未設 = None = 全開，
+  向後相容）。`core`（平台內建）不受清單影響、永遠可用。過濾是純函式 `filter_enabled`，
+  呼叫端（main.py 依登入 project 取 enabled_apps）把 DB 值傳進來，本層不碰 DB。
 """
 import logging
 from importlib import import_module
@@ -36,6 +42,10 @@ class App:
         self.show_in_menu: bool = bool(meta.get("show_in_menu", True))
         self.enabled: bool = bool(meta.get("enabled", True))
         self.description: str = meta.get("description", "")
+        # #127 meta 補 IO schema：查得到就用，沒有就給廉價預設，既有 app 照常 discover/load
+        self.inputs: list = meta.get("inputs", [])
+        self.outputs: list = meta.get("outputs", [])
+        self.ai: bool = bool(meta.get("ai", True))   # 是否屬 AI 功能（#120 工具矩陣要用）
         self.handle: Handler = handle
 
     @property
@@ -83,9 +93,44 @@ def discover() -> dict[str, App]:
     return _APPS
 
 
-def chainlit_commands() -> list[dict]:
-    """CommandDict list for cl.context.emitter.set_commands()."""
+# 平台內建 app 的 project — 通用 app（chat / search …）放這，不受啟用矩陣影響
+CORE_PROJECT = "core"
+
+
+def filter_enabled(apps: list[App], enabled: set[str] | None) -> list[App]:
+    """套用 per-project 啟用矩陣（#127）。
+
+    enabled=None（metadata.enabled_apps 未設）→ 全開，行為等同現狀。
+    enabled=set → 只留 {id / project.id} 在其中，或 project==core（平台內建永遠可用）。
+    純函式：DB 值由呼叫端帶進來，可單元測試。
+    """
+    if enabled is None:
+        return list(apps)
+    return [
+        a for a in apps
+        if a.project == CORE_PROJECT or a.id in enabled or a.full_id in enabled
+    ]
+
+
+def is_enabled_for(app: App, project: str, enabled: set[str] | None) -> bool:
+    """單一 app 對某 project 是否啟用（dispatch guard；core 永遠可用）。"""
+    if app.project == CORE_PROJECT:
+        return True
+    if enabled is None:
+        return True
+    return app.id in enabled or app.full_id in enabled
+
+
+def chainlit_commands(enabled: set[str] | None = None) -> list[dict]:
+    """CommandDict list for cl.context.emitter.set_commands()。
+
+    enabled（可選）：某登入 project 的啟用矩陣。None = 全開（向後相容）。
+    """
     discover()
+    candidates = [
+        a for a in _APPS.values()
+        if a.show_in_menu and a.enabled and not a.is_default
+    ]
     return [
         {
             "id": a.id,
@@ -93,8 +138,7 @@ def chainlit_commands() -> list[dict]:
             "icon": a.cl_icon,
             "persistent": True,
         }
-        for a in _APPS.values()
-        if a.show_in_menu and a.enabled and not a.is_default
+        for a in filter_enabled(candidates, enabled)
     ]
 
 
@@ -108,18 +152,16 @@ def default_app() -> App | None:
     return _DEFAULT
 
 
-# 平台內建 project — 通用 app（chat / search …）放這，全 project 可見
-CORE_PROJECT = "core"
-
-
-def apps_for_project(project: str) -> list[App]:
-    """某個 project 看得到的 app = 自己的 + core 的。
+def apps_for_project(project: str, enabled: set[str] | None = None) -> list[App]:
+    """某個 project 看得到的 app = 自己的 + core 的，再套啟用矩陣。
 
     給未來 project-aware 的 surface 用（機器人 / 多租戶 web）。
     目前 webchat 仍走 chainlit_commands() 顯示全部，不依賴這個。
+    enabled（可選）：該 project 的啟用矩陣；None = 全開。
     """
     discover()
-    return [
+    own = [
         a for a in _APPS.values()
         if a.project == project or a.project == CORE_PROJECT
     ]
+    return filter_enabled(own, enabled)
