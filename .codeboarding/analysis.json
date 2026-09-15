@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "generated_at": "2026-09-15T12:53:33.511011+00:00",
-    "source_tree_hash": "6f6cba8ff7f0cd89cc23ff85bb809701410200f2e5d498abd7e8478efb5ac53f",
+    "generated_at": "2026-09-15T13:59:05.130203+00:00",
+    "source_tree_hash": "fa941107e66688b370b0631bc2e4e199ff5522984ab3ca55dce63e88b8ea1b93",
     "repo_name": ".codeboarding-target",
     "depth_level": 1,
     "depth_cap": 2,
     "file_coverage_summary": {
-      "total_files": 88,
-      "analyzed": 64,
-      "not_analyzed": 24,
+      "total_files": 159,
+      "analyzed": 77,
+      "not_analyzed": 82,
       "not_analyzed_by_reason": {
-        "other": 21,
-        "codeboardingignore": 3
+        "other": 65,
+        "codeboardingignore": 17
       }
     },
     "tree_spec": {
@@ -23,7 +23,7 @@
           "axis": "structural",
           "rung": "frontier",
           "leaf_reason": "",
-          "last_id": 9,
+          "last_id": 10,
           "rules": [
             {
               "id": "1",
@@ -174,6 +174,18 @@
                   "tools"
                 ]
               ]
+            },
+            {
+              "id": "10",
+              "name": "regulations",
+              "origin": "new_scope",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "regulations"
+                ]
+              ]
             }
           ]
         },
@@ -239,11 +251,18 @@
           "leaf_reason": "small: 2 units, at most 7; nothing to un-merge",
           "last_id": 0,
           "rules": []
+        },
+        "10": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 5 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
         }
       }
     }
   },
-  "description": "ai-eva is a multi-surface AI application platform that normalizes user interactions from web, LINE, Discord, and IoT devices into structured envelopes for centralized dispatching. The system couples LLM tool-calling and copilot workflows with dynamic device capability mapping, external data adapters, and modular domain handlers.",
+  "description": "ai-eva is a multi-surface AI application platform that normalizes user interactions from web, LINE, Discord, and IoT devices into structured envelopes for centralized dispatching. The platform integrates LLM copilot workflows, dynamic tool runtime execution, external data source adapters, domain business modules, and a dedicated regulation compliance engine for deterministic legal auditing.",
   "files": {
     "app/surfaces/device.py": {
       "method_keys": [
@@ -322,6 +341,13 @@
       "content_hash": "0a7a350ba5d4426d",
       "module_hash": "9acf84adea537d83"
     },
+    "app/surfaces/push.py": {
+      "method_keys": [
+        "app/surfaces/push.py|app.surfaces.push.push_line"
+      ],
+      "content_hash": "9c3e9c1918ce2f9e",
+      "module_hash": "51e5cfb3ee6b00e2"
+    },
     "app/surfaces/queue_consumer.py": {
       "method_keys": [
         "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._process_message",
@@ -331,6 +357,14 @@
       "content_hash": "a47a7fd5c442a4f0",
       "module_hash": "0cb0e950ff48dc49"
     },
+    "app/surfaces/sdg.py": {
+      "method_keys": [
+        "app/surfaces/sdg.py|app.surfaces.sdg._check_service_token",
+        "app/surfaces/sdg.py|app.surfaces.sdg.generate_sdg_endpoint"
+      ],
+      "content_hash": "a032adeb047640b4",
+      "module_hash": "91ab18fc7f1b0b08"
+    },
     "app/surfaces/sso.py": {
       "method_keys": [
         "app/surfaces/sso.py|app.surfaces.sso._pg_url",
@@ -338,10 +372,11 @@
         "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table",
         "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
         "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+        "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
         "app/surfaces/sso.py|app.surfaces.sso.sso_handoff"
       ],
-      "content_hash": "6a44dfc3bae05fcb",
-      "module_hash": "2358ca03eef28326"
+      "content_hash": "9cca3feec7b5efdb",
+      "module_hash": "02afb304459327a2"
     },
     "app/modules/base.py": {
       "method_keys": [
@@ -411,6 +446,7 @@
         "app/apps/_registry.py|app.apps._registry.App.__init__",
         "app/apps/_registry.py|app.apps._registry.App.full_id",
         "app/apps/_registry.py|app.apps._registry.discover",
+        "app/apps/_registry.py|app.apps._registry.menu_apps",
         "app/apps/_registry.py|app.apps._registry.filter_enabled",
         "app/apps/_registry.py|app.apps._registry.is_enabled_for",
         "app/apps/_registry.py|app.apps._registry.chainlit_commands",
@@ -418,18 +454,20 @@
         "app/apps/_registry.py|app.apps._registry.default_app",
         "app/apps/_registry.py|app.apps._registry.apps_for_project"
       ],
-      "content_hash": "c17b422c8c1e31ac",
-      "module_hash": "680e9253240bb12a"
+      "content_hash": "2a60bb4877f335bd",
+      "module_hash": "f71ad193c7713a02"
     },
     "app/apps/chart_analysis/handler.py": {
       "method_keys": [
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._element",
         "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._fmt",
         "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime",
         "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime._stub_execute",
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._chart_source",
         "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle"
       ],
-      "content_hash": "e7da0c6218d49937",
-      "module_hash": "2ccfeda131525b8b"
+      "content_hash": "64c6757616ecbb03",
+      "module_hash": "123a1817e06a9a23"
     },
     "app/apps/hello_world/handler.py": {
       "method_keys": [
@@ -441,12 +479,49 @@
       "content_hash": "796b70f2fb9f79b0",
       "module_hash": "e67edcf776a0c37d"
     },
+    "app/apps/knowledge_base/handler.py": {
+      "method_keys": [
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._source_label",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._status_text",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._list_table",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._ingest_uploads",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._pending_actions",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_delete",
+        "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.handle"
+      ],
+      "content_hash": "4c6a0f46451865e8",
+      "module_hash": "6e16607fa932b72d"
+    },
     "app/apps/plain_chat/handler.py": {
       "method_keys": [
         "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle"
       ],
       "content_hash": "c152238bf4d578b5",
       "module_hash": "3dc2c26547bd811b"
+    },
+    "app/apps/regulation_check/handler.py": {
+      "method_keys": [
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._unwrap",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._my_projects",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._my_projects.one",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._plan_text",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._pick_project",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle.on_progress",
+        "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle._arts"
+      ],
+      "content_hash": "80617cefe6ac9f44",
+      "module_hash": "ecfd9c430b96cdce"
+    },
+    "app/apps/social_post/handler.py": {
+      "method_keys": [
+        "app/apps/social_post/handler.py|app.apps.social_post.handler._projects",
+        "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
+        "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection"
+      ],
+      "content_hash": "651be27a97c0ce62",
+      "module_hash": "c3480353bdf88144"
     },
     "app/apps/web_search/handler.py": {
       "method_keys": [
@@ -465,12 +540,13 @@
         "app/core/copilot.py|app.core.copilot.run_copilot",
         "app/core/copilot.py|app.core.copilot.execute_confirmed",
         "app/core/copilot.py|app.core.copilot._make_module_ctx",
+        "app/core/copilot.py|app.core.copilot.generate_sdg",
         "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
         "app/core/copilot.py|app.core.copilot._indicators_from_template",
         "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi"
       ],
-      "content_hash": "c43ce304ee733d9f",
-      "module_hash": "f8af434164d49145"
+      "content_hash": "df546baa966101d1",
+      "module_hash": "44a5e4d4186a8a70"
     },
     "app/core/llm.py": {
       "method_keys": [
@@ -527,10 +603,11 @@
         "app/auth/issuers.py|app.auth.issuers._fetch_jwks",
         "app/auth/issuers.py|app.auth.issuers._pubkey_for",
         "app/auth/issuers.py|app.auth.issuers.verify_handoff",
-        "app/auth/issuers.py|app.auth.issuers.fetch_manifest"
+        "app/auth/issuers.py|app.auth.issuers.fetch_manifest",
+        "app/auth/issuers.py|app.auth.issuers.refresh_manifest"
       ],
-      "content_hash": "26c1cd5e364439bd",
-      "module_hash": "c26bcb24b1c11cf9"
+      "content_hash": "59ff26ca35ad1f67",
+      "module_hash": "4add35687fe72f86"
     },
     "app/dispatch.py": {
       "method_keys": [
@@ -554,11 +631,21 @@
         "app/main.py|app.main._current_user_project",
         "app/main.py|app.main._enabled_apps_for",
         "app/main.py|app.main._register_commands",
+        "app/main.py|app.main._app_actions",
+        "app/main.py|app.main._app_actions._label",
+        "app/main.py|app.main.open_app",
         "app/main.py|app.main.on_chat_resume",
+        "app/main.py|app.main._current_chainlit_user",
+        "app/main.py|app.main._is_sso_user",
         "app/main.py|app.main._sso_session_for_current_user",
+        "app/main.py|app.main._attach_refresh_handler",
+        "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
         "app/main.py|app.main._load_sso_runtime",
+        "app/main.py|app.main._refresh_sso_runtime",
         "app/main.py|app.main.on_start",
         "app/main.py|app.main._read_text_file",
+        "app/main.py|app.main._read_pdf_file",
+        "app/main.py|app.main._read_attachment",
         "app/main.py|app.main._frame_file",
         "app/main.py|app.main._emit_copilot",
         "app/main.py|app.main._run_copilot_emit",
@@ -567,10 +654,12 @@
         "app/main.py|app.main.on_message",
         "app/main.py|app.main.cms_confirm",
         "app/main.py|app.main.cms_sroi",
+        "app/main.py|app.main.chart_query",
+        "app/main.py|app.main.chart_export",
         "app/main.py|app.main.cms_attach"
       ],
-      "content_hash": "4a4e9a08851bfcb3",
-      "module_hash": "d0629230f679fd9e"
+      "content_hash": "928c66921e6d7212",
+      "module_hash": "3fb52245c36e6220"
     },
     "app/projects/registry.py": {
       "method_keys": [
@@ -647,15 +736,29 @@
     },
     "public/custom.js": {
       "method_keys": [
-        "public/custom.js|public.custom.<function>",
         "public/custom.js|public.custom.<function>.mount",
         "public/custom.js|public.custom.<function>.remove",
         "public/custom.js|public.custom.<function>.remove.setTimeout() callback",
         "public/custom.js|public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
-        "public/custom.js|public.custom.<function>.setTimeout() callback"
+        "public/custom.js|public.custom.<function>.setTimeout() callback",
+        "public/custom.js|public.custom.<function>.<function>",
+        "public/custom.js|public.custom.<function>.<function>.visibleInput",
+        "public/custom.js|public.custom.<function>.<function>.visibleInput.find() callback",
+        "public/custom.js|public.custom.<function>.<function>.submit",
+        "public/custom.js|public.custom.<function>.<function>.submit.setTimeout() callback",
+        "public/custom.js|public.custom.<function>.<function>.commandLabel",
+        "public/custom.js|public.custom.<function>.<function>.commandLabel.parts",
+        "public/custom.js|public.custom.<function>.<function>.commandLabel.parts.map() callback",
+        "public/custom.js|public.custom.<function>.<function>.start",
+        "public/custom.js|public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback",
+        "public/custom.js|public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback.setTimeout() callback",
+        "public/custom.js|public.custom.<function>",
+        "public/custom.js|public.custom.<function>.forceLight",
+        "public/custom.js|public.custom.<function>.start",
+        "public/custom.js|public.custom.<function>.start.setTimeout() callback"
       ],
-      "content_hash": "55d87ed3d1e4202a",
-      "module_hash": "5a2aad2a1a4f1617"
+      "content_hash": "1acf7e96cddad7ad",
+      "module_hash": "4dcf8dd24700d621"
     },
     "app/nodes/commands.py": {
       "method_keys": [
@@ -699,10 +802,100 @@
         "app/tools/runtime.py|app.tools.runtime.ToolRuntime._to_json_schema",
         "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
         "app/tools/runtime.py|app.tools.runtime.ToolRuntime.is_allowed",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.credential",
         "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute"
       ],
-      "content_hash": "cba6a7bc07b36fc2",
-      "module_hash": "ffe76bccb5c3b43e"
+      "content_hash": "0c4ace99c120ad1a",
+      "module_hash": "76f53f1a359c3d1c"
+    },
+    "app/regulations/ingest.py": {
+      "method_keys": [
+        "app/regulations/ingest.py|app.regulations.ingest._window_split",
+        "app/regulations/ingest.py|app.regulations.ingest.split_articles",
+        "app/regulations/ingest.py|app.regulations.ingest.split_articles.chapter_at",
+        "app/regulations/ingest.py|app.regulations.ingest.detect_version",
+        "app/regulations/ingest.py|app.regulations.ingest.is_no_fulltext",
+        "app/regulations/ingest.py|app.regulations.ingest._batches",
+        "app/regulations/ingest.py|app.regulations.ingest._parse_json_array",
+        "app/regulations/ingest.py|app.regulations.ingest.extract_controls",
+        "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf",
+        "app/regulations/ingest.py|app.regulations.ingest.pdf_to_text",
+        "app/regulations/ingest.py|app.regulations.ingest.main",
+        "app/regulations/ingest.py|app.regulations.ingest.main._load"
+      ],
+      "content_hash": "367a93863ee81327",
+      "module_hash": "734f985a697053ad"
+    },
+    "app/regulations/judge.py": {
+      "method_keys": [
+        "app/regulations/judge.py|app.regulations.judge._normalize_verdict",
+        "app/regulations/judge.py|app.regulations.judge._check_gate",
+        "app/regulations/judge.py|app.regulations.judge._article_key",
+        "app/regulations/judge.py|app.regulations.judge._check_scale",
+        "app/regulations/judge.py|app.regulations.judge._fmt_controls",
+        "app/regulations/judge.py|app.regulations.judge._parse",
+        "app/regulations/judge.py|app.regulations.judge._batches",
+        "app/regulations/judge.py|app.regulations.judge._verify_evidence",
+        "app/regulations/judge.py|app.regulations.judge._judge_batch",
+        "app/regulations/judge.py|app.regulations.judge.run_check",
+        "app/regulations/judge.py|app.regulations.judge.run_check.run_domain",
+        "app/regulations/judge.py|app.regulations.judge.run_check.run_domain.one"
+      ],
+      "content_hash": "0f0864af7973d9c3",
+      "module_hash": "210ac10fc876473f"
+    },
+    "app/regulations/registry.py": {
+      "method_keys": [
+        "app/regulations/registry.py|app.regulations.registry._pg_url",
+        "app/regulations/registry.py|app.regulations.registry._connect",
+        "app/regulations/registry.py|app.regulations.registry.ensure_regulations_tables",
+        "app/regulations/registry.py|app.regulations.registry._load_manifest",
+        "app/regulations/registry.py|app.regulations.registry.verify_corpus",
+        "app/regulations/registry.py|app.regulations.registry.seed_from_corpus",
+        "app/regulations/registry.py|app.regulations.registry.scope_negative_list",
+        "app/regulations/registry.py|app.regulations.registry.corpus_meta",
+        "app/regulations/registry.py|app.regulations.registry.non_judging_regulations",
+        "app/regulations/registry.py|app.regulations.registry.excluded_categories",
+        "app/regulations/registry.py|app.regulations.registry.list_regulations",
+        "app/regulations/registry.py|app.regulations.registry.corpus_stats",
+        "app/regulations/registry.py|app.regulations.registry.add_upload",
+        "app/regulations/registry.py|app.regulations.registry.get_regulation",
+        "app/regulations/registry.py|app.regulations.registry.replace_content",
+        "app/regulations/registry.py|app.regulations.registry.set_version",
+        "app/regulations/registry.py|app.regulations.registry.mark_no_fulltext",
+        "app/regulations/registry.py|app.regulations.registry.name_clashes",
+        "app/regulations/registry.py|app.regulations.registry.activate_regulation",
+        "app/regulations/registry.py|app.regulations.registry.delete_regulation"
+      ],
+      "content_hash": "f3ca36c959780ba5",
+      "module_hash": "133e5af2543060a3"
+    },
+    "app/regulations/report.py": {
+      "method_keys": [
+        "app/regulations/report.py|app.regulations.report._cell",
+        "app/regulations/report.py|app.regulations.report._consolidate",
+        "app/regulations/report.py|app.regulations.report._table",
+        "app/regulations/report.py|app.regulations.report._coverage_sentence",
+        "app/regulations/report.py|app.regulations.report._coverage_appendix",
+        "app/regulations/report.py|app.regulations.report._coverage_appendix.fmt",
+        "app/regulations/report.py|app.regulations.report.build"
+      ],
+      "content_hash": "d0893467eeb50bfe",
+      "module_hash": "eb4c359a511edc1a"
+    },
+    "app/regulations/standard.py": {
+      "method_keys": [
+        "app/regulations/standard.py|app.regulations.standard.load",
+        "app/regulations/standard.py|app.regulations.standard.route",
+        "app/regulations/standard.py|app.regulations.standard.sections",
+        "app/regulations/standard.py|app.regulations.standard.covered_domains",
+        "app/regulations/standard.py|app.regulations.standard.judge_model",
+        "app/regulations/standard.py|app.regulations.standard.applicability_gates",
+        "app/regulations/standard.py|app.regulations.standard.scale_thresholds",
+        "app/regulations/standard.py|app.regulations.standard.scale_thresholds_text"
+      ],
+      "content_hash": "d8c2091f8b7a51b4",
+      "module_hash": "af38d6864d926515"
     }
   },
   "methods_index": {
@@ -1082,6 +1275,14 @@
       "type": "FUNCTION",
       "content_hash": "19c9e7aed2dba945"
     },
+    "app/surfaces/push.py|app.surfaces.push.push_line": {
+      "file_path": "app/surfaces/push.py",
+      "qualified_name": "app.surfaces.push.push_line",
+      "start_line": 27,
+      "end_line": 51,
+      "type": "FUNCTION",
+      "content_hash": "b9333d5d67120524"
+    },
     "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._process_message": {
       "file_path": "app/surfaces/queue_consumer.py",
       "qualified_name": "app.surfaces.queue_consumer._process_message",
@@ -1106,6 +1307,22 @@
       "type": "FUNCTION",
       "content_hash": "1f7f98c003f56aed"
     },
+    "app/surfaces/sdg.py|app.surfaces.sdg._check_service_token": {
+      "file_path": "app/surfaces/sdg.py",
+      "qualified_name": "app.surfaces.sdg._check_service_token",
+      "start_line": 13,
+      "end_line": 18,
+      "type": "FUNCTION",
+      "content_hash": "3f408906214ff066"
+    },
+    "app/surfaces/sdg.py|app.surfaces.sdg.generate_sdg_endpoint": {
+      "file_path": "app/surfaces/sdg.py",
+      "qualified_name": "app.surfaces.sdg.generate_sdg_endpoint",
+      "start_line": 22,
+      "end_line": 39,
+      "type": "FUNCTION",
+      "content_hash": "04b5e90d77303e65"
+    },
     "app/surfaces/sso.py|app.surfaces.sso._pg_url": {
       "file_path": "app/surfaces/sso.py",
       "qualified_name": "app.surfaces.sso._pg_url",
@@ -1126,33 +1343,41 @@
       "file_path": "app/surfaces/sso.py",
       "qualified_name": "app.surfaces.sso.ensure_sso_sessions_table",
       "start_line": 47,
-      "end_line": 67,
+      "end_line": 69,
       "type": "FUNCTION",
-      "content_hash": "37fc21e16f090d50"
+      "content_hash": "4c3bf6d8dae851e9"
     },
     "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session": {
       "file_path": "app/surfaces/sso.py",
       "qualified_name": "app.surfaces.sso.establish_sso_session",
-      "start_line": 70,
-      "end_line": 94,
+      "start_line": 72,
+      "end_line": 98,
       "type": "FUNCTION",
-      "content_hash": "2d47359523f62a88"
+      "content_hash": "0a192f5192641c08"
     },
     "app/surfaces/sso.py|app.surfaces.sso.get_sso_session": {
       "file_path": "app/surfaces/sso.py",
       "qualified_name": "app.surfaces.sso.get_sso_session",
-      "start_line": 97,
-      "end_line": 116,
+      "start_line": 101,
+      "end_line": 123,
       "type": "FUNCTION",
-      "content_hash": "7d5da7d866cd1dd1"
+      "content_hash": "3d3a36e9add0bd13"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso.refresh_sso_session",
+      "start_line": 126,
+      "end_line": 170,
+      "type": "FUNCTION",
+      "content_hash": "0b6289c5ba62f710"
     },
     "app/surfaces/sso.py|app.surfaces.sso.sso_handoff": {
       "file_path": "app/surfaces/sso.py",
       "qualified_name": "app.surfaces.sso.sso_handoff",
-      "start_line": 120,
-      "end_line": 139,
+      "start_line": 174,
+      "end_line": 209,
       "type": "FUNCTION",
-      "content_hash": "9cc6a007c1acce4f"
+      "content_hash": "2107bf7ab3189db9"
     },
     "app/modules/base.py|app.modules.base.ModuleContext": {
       "file_path": "app/modules/base.py",
@@ -1394,85 +1619,109 @@
       "type": "FUNCTION",
       "content_hash": "25f8fe53a67cd1c6"
     },
+    "app/apps/_registry.py|app.apps._registry.menu_apps": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.menu_apps",
+      "start_line": 96,
+      "end_line": 102,
+      "type": "FUNCTION",
+      "content_hash": "51f8dadeaca5eed7"
+    },
     "app/apps/_registry.py|app.apps._registry.filter_enabled": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.filter_enabled",
-      "start_line": 100,
-      "end_line": 112,
+      "start_line": 109,
+      "end_line": 121,
       "type": "FUNCTION",
       "content_hash": "de619714df6a4b41"
     },
     "app/apps/_registry.py|app.apps._registry.is_enabled_for": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.is_enabled_for",
-      "start_line": 115,
-      "end_line": 121,
+      "start_line": 124,
+      "end_line": 130,
       "type": "FUNCTION",
       "content_hash": "23e03c9311647d2a"
     },
     "app/apps/_registry.py|app.apps._registry.chainlit_commands": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.chainlit_commands",
-      "start_line": 124,
-      "end_line": 142,
+      "start_line": 133,
+      "end_line": 161,
       "type": "FUNCTION",
-      "content_hash": "9250193a22a3727d"
+      "content_hash": "df22a8b02854d5fa"
     },
     "app/apps/_registry.py|app.apps._registry.get_by_id": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.get_by_id",
-      "start_line": 145,
-      "end_line": 147,
+      "start_line": 164,
+      "end_line": 166,
       "type": "FUNCTION",
       "content_hash": "f58453bf0643484f"
     },
     "app/apps/_registry.py|app.apps._registry.default_app": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.default_app",
-      "start_line": 150,
-      "end_line": 152,
+      "start_line": 169,
+      "end_line": 171,
       "type": "FUNCTION",
       "content_hash": "605f0f64bf35ba85"
     },
     "app/apps/_registry.py|app.apps._registry.apps_for_project": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.apps_for_project",
-      "start_line": 155,
-      "end_line": 167,
+      "start_line": 174,
+      "end_line": 186,
       "type": "FUNCTION",
       "content_hash": "a01d303d260fa8ee"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._element": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler._element",
+      "start_line": 35,
+      "end_line": 52,
+      "type": "FUNCTION",
+      "content_hash": "12dd6bd7c68526c7"
     },
     "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._fmt": {
       "file_path": "app/apps/chart_analysis/handler.py",
       "qualified_name": "app.apps.chart_analysis.handler._fmt",
-      "start_line": 31,
-      "end_line": 42,
+      "start_line": 55,
+      "end_line": 66,
       "type": "FUNCTION",
       "content_hash": "cdd65fbda224f09e"
     },
     "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime": {
       "file_path": "app/apps/chart_analysis/handler.py",
       "qualified_name": "app.apps.chart_analysis.handler._mock_runtime",
-      "start_line": 45,
-      "end_line": 57,
+      "start_line": 69,
+      "end_line": 81,
       "type": "FUNCTION",
       "content_hash": "b808d50ffea9dfc4"
     },
     "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime._stub_execute": {
       "file_path": "app/apps/chart_analysis/handler.py",
       "qualified_name": "app.apps.chart_analysis.handler._mock_runtime._stub_execute",
-      "start_line": 51,
-      "end_line": 54,
+      "start_line": 75,
+      "end_line": 78,
       "type": "FUNCTION",
       "content_hash": "aa0cff3af836e069"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._chart_source": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler._chart_source",
+      "start_line": 84,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "442a710e60e8e886"
     },
     "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle": {
       "file_path": "app/apps/chart_analysis/handler.py",
       "qualified_name": "app.apps.chart_analysis.handler.handle",
-      "start_line": 60,
-      "end_line": 93,
+      "start_line": 94,
+      "end_line": 124,
       "type": "FUNCTION",
-      "content_hash": "ed2e56d9b218b32d"
+      "content_hash": "7b30bd48df6647db"
     },
     "app/apps/hello_world/handler.py|app.apps.hello_world.handler._icon_for": {
       "file_path": "app/apps/hello_world/handler.py",
@@ -1506,6 +1755,70 @@
       "type": "FUNCTION",
       "content_hash": "f42012a4538b37b9"
     },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._source_label": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler._source_label",
+      "start_line": 18,
+      "end_line": 33,
+      "type": "FUNCTION",
+      "content_hash": "41482cd38fbb9e87"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._status_text": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler._status_text",
+      "start_line": 41,
+      "end_line": 56,
+      "type": "FUNCTION",
+      "content_hash": "66e761bb3a8a9386"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._list_table": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler._list_table",
+      "start_line": 59,
+      "end_line": 69,
+      "type": "FUNCTION",
+      "content_hash": "ad0cb8ceca3f5a33"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._ingest_uploads": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler._ingest_uploads",
+      "start_line": 72,
+      "end_line": 95,
+      "type": "FUNCTION",
+      "content_hash": "25d1f2b1370bd4f7"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._pending_actions": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler._pending_actions",
+      "start_line": 98,
+      "end_line": 105,
+      "type": "FUNCTION",
+      "content_hash": "6346875f5770688e"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler.reg_activate",
+      "start_line": 109,
+      "end_line": 165,
+      "type": "FUNCTION",
+      "content_hash": "79f0d880fd9b4119"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_delete": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler.reg_delete",
+      "start_line": 169,
+      "end_line": 183,
+      "type": "FUNCTION",
+      "content_hash": "29e353d9edf33510"
+    },
+    "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.handle": {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "qualified_name": "app.apps.knowledge_base.handler.handle",
+      "start_line": 186,
+      "end_line": 204,
+      "type": "FUNCTION",
+      "content_hash": "2966d7b2969c4369"
+    },
     "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle": {
       "file_path": "app/apps/plain_chat/handler.py",
       "qualified_name": "app.apps.plain_chat.handler.handle",
@@ -1513,6 +1826,94 @@
       "end_line": 22,
       "type": "FUNCTION",
       "content_hash": "62f32908f1b97c58"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._unwrap": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler._unwrap",
+      "start_line": 30,
+      "end_line": 32,
+      "type": "FUNCTION",
+      "content_hash": "32a12fcc7f357b54"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._my_projects": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler._my_projects",
+      "start_line": 41,
+      "end_line": 71,
+      "type": "FUNCTION",
+      "content_hash": "992789fb7fc79879"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._my_projects.one": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler._my_projects.one",
+      "start_line": 61,
+      "end_line": 67,
+      "type": "FUNCTION",
+      "content_hash": "1597635855f7e118"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._plan_text": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler._plan_text",
+      "start_line": 74,
+      "end_line": 82,
+      "type": "FUNCTION",
+      "content_hash": "0d8a09198a9f4610"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._pick_project": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler._pick_project",
+      "start_line": 85,
+      "end_line": 123,
+      "type": "FUNCTION",
+      "content_hash": "c6dda550ddc698af"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler.handle",
+      "start_line": 126,
+      "end_line": 239,
+      "type": "FUNCTION",
+      "content_hash": "c22341403a76daab"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle.on_progress": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler.handle.on_progress",
+      "start_line": 175,
+      "end_line": 179,
+      "type": "FUNCTION",
+      "content_hash": "65d6ca31feb5de16"
+    },
+    "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle._arts": {
+      "file_path": "app/apps/regulation_check/handler.py",
+      "qualified_name": "app.apps.regulation_check.handler.handle._arts",
+      "start_line": 199,
+      "end_line": 199,
+      "type": "FUNCTION",
+      "content_hash": "cc21636e5f2b044b"
+    },
+    "app/apps/social_post/handler.py|app.apps.social_post.handler._projects": {
+      "file_path": "app/apps/social_post/handler.py",
+      "qualified_name": "app.apps.social_post.handler._projects",
+      "start_line": 21,
+      "end_line": 34,
+      "type": "FUNCTION",
+      "content_hash": "cc51b163725c820b"
+    },
+    "app/apps/social_post/handler.py|app.apps.social_post.handler.handle": {
+      "file_path": "app/apps/social_post/handler.py",
+      "qualified_name": "app.apps.social_post.handler.handle",
+      "start_line": 37,
+      "end_line": 60,
+      "type": "FUNCTION",
+      "content_hash": "a87dd05c881264f4"
+    },
+    "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection": {
+      "file_path": "app/apps/social_post/handler.py",
+      "qualified_name": "app.apps.social_post.handler.handle_selection",
+      "start_line": 63,
+      "end_line": 96,
+      "type": "FUNCTION",
+      "content_hash": "635b8bb04046c48b"
     },
     "app/apps/web_search/handler.py|app.apps.web_search.handler._badge": {
       "file_path": "app/apps/web_search/handler.py",
@@ -1586,27 +1987,35 @@
       "type": "FUNCTION",
       "content_hash": "aaa05cb308190365"
     },
+    "app/core/copilot.py|app.core.copilot.generate_sdg": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot.generate_sdg",
+      "start_line": 177,
+      "end_line": 191,
+      "type": "FUNCTION",
+      "content_hash": "2a23abb225a30aee"
+    },
     "app/core/copilot.py|app.core.copilot.generate_and_save_sdg": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.generate_and_save_sdg",
-      "start_line": 177,
-      "end_line": 183,
+      "start_line": 194,
+      "end_line": 200,
       "type": "FUNCTION",
       "content_hash": "633ff5a8b976790e"
     },
     "app/core/copilot.py|app.core.copilot._indicators_from_template": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._indicators_from_template",
-      "start_line": 186,
-      "end_line": 197,
+      "start_line": 203,
+      "end_line": 214,
       "type": "FUNCTION",
       "content_hash": "7e66ac5f41b5ed27"
     },
     "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.estimate_and_save_sroi",
-      "start_line": 200,
-      "end_line": 211,
+      "start_line": 217,
+      "end_line": 228,
       "type": "FUNCTION",
       "content_hash": "a59c1cc1937d13fb"
     },
@@ -1813,42 +2222,50 @@
     "app/auth/issuers.py|app.auth.issuers._now": {
       "file_path": "app/auth/issuers.py",
       "qualified_name": "app.auth.issuers._now",
-      "start_line": 51,
-      "end_line": 52,
+      "start_line": 72,
+      "end_line": 73,
       "type": "FUNCTION",
       "content_hash": "74fa78d1715b33fa"
     },
     "app/auth/issuers.py|app.auth.issuers._fetch_jwks": {
       "file_path": "app/auth/issuers.py",
       "qualified_name": "app.auth.issuers._fetch_jwks",
-      "start_line": 55,
-      "end_line": 70,
+      "start_line": 76,
+      "end_line": 91,
       "type": "FUNCTION",
       "content_hash": "ef7f18b2fb4180ea"
     },
     "app/auth/issuers.py|app.auth.issuers._pubkey_for": {
       "file_path": "app/auth/issuers.py",
       "qualified_name": "app.auth.issuers._pubkey_for",
-      "start_line": 73,
-      "end_line": 81,
+      "start_line": 94,
+      "end_line": 102,
       "type": "FUNCTION",
       "content_hash": "bc63da19271f107b"
     },
     "app/auth/issuers.py|app.auth.issuers.verify_handoff": {
       "file_path": "app/auth/issuers.py",
       "qualified_name": "app.auth.issuers.verify_handoff",
-      "start_line": 84,
-      "end_line": 118,
+      "start_line": 105,
+      "end_line": 139,
       "type": "FUNCTION",
-      "content_hash": "2192626f994071e3"
+      "content_hash": "0cc4a29d7a2b0dd8"
     },
     "app/auth/issuers.py|app.auth.issuers.fetch_manifest": {
       "file_path": "app/auth/issuers.py",
       "qualified_name": "app.auth.issuers.fetch_manifest",
-      "start_line": 121,
-      "end_line": 137,
+      "start_line": 142,
+      "end_line": 162,
       "type": "FUNCTION",
-      "content_hash": "035e796d8cd3775a"
+      "content_hash": "3ac196d2a8c4ea17"
+    },
+    "app/auth/issuers.py|app.auth.issuers.refresh_manifest": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers.refresh_manifest",
+      "start_line": 165,
+      "end_line": 181,
+      "type": "FUNCTION",
+      "content_hash": "a6e91afe0e461caa"
     },
     "app/dispatch.py|app.dispatch.Envelope": {
       "file_path": "app/dispatch.py",
@@ -1917,160 +2334,256 @@
     "app/main.py|app.main.auth_callback": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.auth_callback",
-      "start_line": 44,
-      "end_line": 47,
+      "start_line": 55,
+      "end_line": 58,
       "type": "FUNCTION",
       "content_hash": "fa12a8219f868031"
     },
     "app/main.py|app.main.sso_header_auth": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.sso_header_auth",
-      "start_line": 54,
-      "end_line": 74,
+      "start_line": 65,
+      "end_line": 85,
       "type": "FUNCTION",
       "content_hash": "70b7f8dc43d99d68"
     },
     "app/main.py|app.main._init_tables": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._init_tables",
-      "start_line": 88,
-      "end_line": 96,
+      "start_line": 100,
+      "end_line": 114,
       "type": "FUNCTION",
-      "content_hash": "ec1889b9133e75d4"
+      "content_hash": "f0c3850a4f1ce5a9"
     },
     "app/main.py|app.main._current_user_project": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._current_user_project",
-      "start_line": 108,
-      "end_line": 113,
+      "start_line": 126,
+      "end_line": 131,
       "type": "FUNCTION",
       "content_hash": "4e24ff2e6f92fe0a"
     },
     "app/main.py|app.main._enabled_apps_for": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._enabled_apps_for",
-      "start_line": 116,
-      "end_line": 120,
+      "start_line": 134,
+      "end_line": 138,
       "type": "FUNCTION",
       "content_hash": "50cad599d443d46d"
     },
     "app/main.py|app.main._register_commands": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._register_commands",
-      "start_line": 123,
-      "end_line": 130,
+      "start_line": 141,
+      "end_line": 148,
       "type": "FUNCTION",
       "content_hash": "2d78ef8285a772ac"
+    },
+    "app/main.py|app.main._app_actions": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._app_actions",
+      "start_line": 151,
+      "end_line": 174,
+      "type": "FUNCTION",
+      "content_hash": "0ccb439c11c494ee"
+    },
+    "app/main.py|app.main._app_actions._label": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._app_actions._label",
+      "start_line": 168,
+      "end_line": 169,
+      "type": "FUNCTION",
+      "content_hash": "02d5add73eeb11be"
+    },
+    "app/main.py|app.main.open_app": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.open_app",
+      "start_line": 178,
+      "end_line": 201,
+      "type": "FUNCTION",
+      "content_hash": "d98df22fdfb7ace7"
     },
     "app/main.py|app.main.on_chat_resume": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_chat_resume",
-      "start_line": 134,
-      "end_line": 138,
+      "start_line": 205,
+      "end_line": 209,
       "type": "FUNCTION",
       "content_hash": "e4229d6e00d8a44a"
+    },
+    "app/main.py|app.main._current_chainlit_user": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._current_chainlit_user",
+      "start_line": 212,
+      "end_line": 222,
+      "type": "FUNCTION",
+      "content_hash": "55f8595961bed684"
+    },
+    "app/main.py|app.main._is_sso_user": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._is_sso_user",
+      "start_line": 225,
+      "end_line": 228,
+      "type": "FUNCTION",
+      "content_hash": "513482d265633d1e"
     },
     "app/main.py|app.main._sso_session_for_current_user": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._sso_session_for_current_user",
-      "start_line": 141,
-      "end_line": 145,
+      "start_line": 231,
+      "end_line": 235,
       "type": "FUNCTION",
-      "content_hash": "b37628be1cb74906"
+      "content_hash": "bf1432f1de07c2ec"
+    },
+    "app/main.py|app.main._attach_refresh_handler": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._attach_refresh_handler",
+      "start_line": 238,
+      "end_line": 250,
+      "type": "FUNCTION",
+      "content_hash": "eec24fa3dc68e17a"
+    },
+    "app/main.py|app.main._attach_refresh_handler._on_unauthorized": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._attach_refresh_handler._on_unauthorized",
+      "start_line": 243,
+      "end_line": 249,
+      "type": "FUNCTION",
+      "content_hash": "e1bebe0d6addbbf4"
     },
     "app/main.py|app.main._load_sso_runtime": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._load_sso_runtime",
-      "start_line": 148,
-      "end_line": 162,
+      "start_line": 253,
+      "end_line": 284,
       "type": "FUNCTION",
-      "content_hash": "5a27562fa078bddb"
+      "content_hash": "f250de82fb56d418"
+    },
+    "app/main.py|app.main._refresh_sso_runtime": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._refresh_sso_runtime",
+      "start_line": 287,
+      "end_line": 309,
+      "type": "FUNCTION",
+      "content_hash": "d410a5311ec43edb"
     },
     "app/main.py|app.main.on_start": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_start",
-      "start_line": 166,
-      "end_line": 188,
+      "start_line": 313,
+      "end_line": 342,
       "type": "FUNCTION",
-      "content_hash": "ce78cb08568e53c7"
+      "content_hash": "645af90d067752f5"
     },
     "app/main.py|app.main._read_text_file": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._read_text_file",
-      "start_line": 208,
-      "end_line": 223,
+      "start_line": 363,
+      "end_line": 378,
       "type": "FUNCTION",
       "content_hash": "fcd4aa7fe052b991"
+    },
+    "app/main.py|app.main._read_pdf_file": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._read_pdf_file",
+      "start_line": 381,
+      "end_line": 412,
+      "type": "FUNCTION",
+      "content_hash": "29cc103fc3220c53"
+    },
+    "app/main.py|app.main._read_attachment": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._read_attachment",
+      "start_line": 415,
+      "end_line": 421,
+      "type": "FUNCTION",
+      "content_hash": "6924ec56da01eaf4"
     },
     "app/main.py|app.main._frame_file": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._frame_file",
-      "start_line": 226,
-      "end_line": 232,
+      "start_line": 424,
+      "end_line": 430,
       "type": "FUNCTION",
       "content_hash": "48e9f5d1a672deef"
     },
     "app/main.py|app.main._emit_copilot": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._emit_copilot",
-      "start_line": 235,
-      "end_line": 247,
+      "start_line": 433,
+      "end_line": 445,
       "type": "FUNCTION",
       "content_hash": "3dc71a2190658b64"
     },
     "app/main.py|app.main._run_copilot_emit": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._run_copilot_emit",
-      "start_line": 250,
-      "end_line": 261,
+      "start_line": 448,
+      "end_line": 459,
       "type": "FUNCTION",
       "content_hash": "dfa60dc025cd715a"
     },
     "app/main.py|app.main._run_with_attachments": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._run_with_attachments",
-      "start_line": 264,
-      "end_line": 279,
+      "start_line": 462,
+      "end_line": 477,
       "type": "FUNCTION",
-      "content_hash": "60323d7e48654d5d"
+      "content_hash": "cb4539ad40d38a36"
     },
     "app/main.py|app.main._handle_cms_attachments": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._handle_cms_attachments",
-      "start_line": 282,
-      "end_line": 318,
+      "start_line": 480,
+      "end_line": 516,
       "type": "FUNCTION",
-      "content_hash": "18e57632f6f151ae"
+      "content_hash": "d28dad52c1bc2015"
     },
     "app/main.py|app.main.on_message": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_message",
-      "start_line": 322,
-      "end_line": 407,
+      "start_line": 520,
+      "end_line": 642,
       "type": "FUNCTION",
-      "content_hash": "d57d0628589cdbcd"
+      "content_hash": "cb3e1b01d24e84df"
     },
     "app/main.py|app.main.cms_confirm": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_confirm",
-      "start_line": 411,
-      "end_line": 456,
+      "start_line": 646,
+      "end_line": 697,
       "type": "FUNCTION",
-      "content_hash": "aca6d89fb775c884"
+      "content_hash": "3a6347fa4f4404da"
     },
     "app/main.py|app.main.cms_sroi": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_sroi",
-      "start_line": 460,
-      "end_line": 481,
+      "start_line": 701,
+      "end_line": 722,
       "type": "FUNCTION",
       "content_hash": "ab8c08f74ba1c715"
+    },
+    "app/main.py|app.main.chart_query": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.chart_query",
+      "start_line": 726,
+      "end_line": 763,
+      "type": "FUNCTION",
+      "content_hash": "74bda02f7d841b58"
+    },
+    "app/main.py|app.main.chart_export": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.chart_export",
+      "start_line": 767,
+      "end_line": 795,
+      "type": "FUNCTION",
+      "content_hash": "7f364795ae7187ad"
     },
     "app/main.py|app.main.cms_attach": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_attach",
-      "start_line": 485,
-      "end_line": 504,
+      "start_line": 799,
+      "end_line": 818,
       "type": "FUNCTION",
       "content_hash": "1796bddad5a69ac9"
     },
@@ -2370,53 +2883,165 @@
       "type": "FUNCTION",
       "content_hash": "7d4c5c2d82613b50"
     },
-    "public/custom.js|public.custom.<function>": {
-      "file_path": "public/custom.js",
-      "qualified_name": "public.custom.<function>",
-      "start_line": 4,
-      "end_line": 47,
-      "type": "FUNCTION",
-      "content_hash": "4f0d16a2081418ba"
-    },
     "public/custom.js|public.custom.<function>.mount": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>.mount",
-      "start_line": 19,
-      "end_line": 23,
+      "start_line": 20,
+      "end_line": 24,
       "type": "FUNCTION",
       "content_hash": "e5f367d08ff4ff68"
     },
     "public/custom.js|public.custom.<function>.remove": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>.remove",
-      "start_line": 24,
-      "end_line": 27,
+      "start_line": 25,
+      "end_line": 28,
       "type": "FUNCTION",
       "content_hash": "c75ed9d12ef27a8f"
     },
     "public/custom.js|public.custom.<function>.remove.setTimeout() callback": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>.remove.setTimeout() callback",
-      "start_line": 26,
-      "end_line": 26,
+      "start_line": 27,
+      "end_line": 27,
       "type": "FUNCTION",
       "content_hash": "1a4c82527746ecdc"
     },
     "public/custom.js|public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
-      "start_line": 40,
-      "end_line": 43,
+      "start_line": 41,
+      "end_line": 44,
       "type": "FUNCTION",
       "content_hash": "677dab5c020258f9"
     },
     "public/custom.js|public.custom.<function>.setTimeout() callback": {
       "file_path": "public/custom.js",
       "qualified_name": "public.custom.<function>.setTimeout() callback",
-      "start_line": 46,
-      "end_line": 46,
+      "start_line": 47,
+      "end_line": 47,
       "type": "FUNCTION",
       "content_hash": "8a232882cf5f76ad"
+    },
+    "public/custom.js|public.custom.<function>.<function>": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>",
+      "start_line": 51,
+      "end_line": 109,
+      "type": "FUNCTION",
+      "content_hash": "6af48173cda3d81b"
+    },
+    "public/custom.js|public.custom.<function>.<function>.visibleInput": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.visibleInput",
+      "start_line": 52,
+      "end_line": 57,
+      "type": "FUNCTION",
+      "content_hash": "637918d0e50e57b4"
+    },
+    "public/custom.js|public.custom.<function>.<function>.visibleInput.find() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.visibleInput.find() callback",
+      "start_line": 53,
+      "end_line": 56,
+      "type": "FUNCTION",
+      "content_hash": "9b1a2968f9411e19"
+    },
+    "public/custom.js|public.custom.<function>.<function>.submit": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.submit",
+      "start_line": 58,
+      "end_line": 79,
+      "type": "FUNCTION",
+      "content_hash": "2dda7f4c98985c6b"
+    },
+    "public/custom.js|public.custom.<function>.<function>.submit.setTimeout() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.submit.setTimeout() callback",
+      "start_line": 69,
+      "end_line": 78,
+      "type": "FUNCTION",
+      "content_hash": "6d1fd5ed8c489e14"
+    },
+    "public/custom.js|public.custom.<function>.<function>.commandLabel": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.commandLabel",
+      "start_line": 82,
+      "end_line": 89,
+      "type": "FUNCTION",
+      "content_hash": "161bee9da4a1481e"
+    },
+    "public/custom.js|public.custom.<function>.<function>.commandLabel.parts": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.commandLabel.parts",
+      "start_line": 83,
+      "end_line": 84,
+      "type": "CLASS",
+      "content_hash": "fa28754a1fdedfdf"
+    },
+    "public/custom.js|public.custom.<function>.<function>.commandLabel.parts.map() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.commandLabel.parts.map() callback",
+      "start_line": 84,
+      "end_line": 84,
+      "type": "FUNCTION",
+      "content_hash": "b314e787e93fc127"
+    },
+    "public/custom.js|public.custom.<function>.<function>.start": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.start",
+      "start_line": 91,
+      "end_line": 106,
+      "type": "FUNCTION",
+      "content_hash": "6ccfb0d072c1854a"
+    },
+    "public/custom.js|public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback",
+      "start_line": 92,
+      "end_line": 105,
+      "type": "FUNCTION",
+      "content_hash": "ba3fc8bbae5a0c31"
+    },
+    "public/custom.js|public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback.setTimeout() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback.setTimeout() callback",
+      "start_line": 103,
+      "end_line": 103,
+      "type": "FUNCTION",
+      "content_hash": "a748c6cee0fc2ebd"
+    },
+    "public/custom.js|public.custom.<function>": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>",
+      "start_line": 118,
+      "end_line": 140,
+      "type": "FUNCTION",
+      "content_hash": "362dca3641a709c1"
+    },
+    "public/custom.js|public.custom.<function>.forceLight": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.forceLight",
+      "start_line": 122,
+      "end_line": 128,
+      "type": "FUNCTION",
+      "content_hash": "c2478c7ff5bad7aa"
+    },
+    "public/custom.js|public.custom.<function>.start": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.start",
+      "start_line": 133,
+      "end_line": 137,
+      "type": "FUNCTION",
+      "content_hash": "fa59f04618b79ef7"
+    },
+    "public/custom.js|public.custom.<function>.start.setTimeout() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.start.setTimeout() callback",
+      "start_line": 136,
+      "end_line": 136,
+      "type": "FUNCTION",
+      "content_hash": "871fb49bcdbbcb49"
     },
     "app/nodes/commands.py|app.nodes.commands._pg_url": {
       "file_path": "app/nodes/commands.py",
@@ -2542,71 +3167,551 @@
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime",
       "start_line": 38,
-      "end_line": 181,
+      "end_line": 205,
       "type": "CLASS",
-      "content_hash": "286f4fb40dc79c7f"
+      "content_hash": "89fdc0e11acbddef"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime.__init__": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime.__init__",
       "start_line": 39,
-      "end_line": 45,
+      "end_line": 49,
       "type": "METHOD",
-      "content_hash": "c1a0580c412e0cdf"
+      "content_hash": "f58aafa79b2c9a6a"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime.load": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime.load",
-      "start_line": 48,
-      "end_line": 58,
+      "start_line": 52,
+      "end_line": 62,
       "type": "METHOD",
       "content_hash": "4d28d5aef7cdf166"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime._needs_confirm": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime._needs_confirm",
-      "start_line": 62,
-      "end_line": 67,
+      "start_line": 66,
+      "end_line": 71,
       "type": "METHOD",
       "content_hash": "a6204bb165514d80"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime._to_json_schema": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime._to_json_schema",
-      "start_line": 70,
-      "end_line": 94,
+      "start_line": 74,
+      "end_line": 98,
       "type": "METHOD",
       "content_hash": "e5e69bd8e8d18c1f"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime.visible_tools",
-      "start_line": 97,
-      "end_line": 109,
+      "start_line": 101,
+      "end_line": 113,
       "type": "METHOD",
       "content_hash": "794857f874e3b036"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime.is_allowed": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime.is_allowed",
-      "start_line": 111,
-      "end_line": 112,
+      "start_line": 115,
+      "end_line": 116,
       "type": "METHOD",
       "content_hash": "be253cdbc5c3ac20"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.credential": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.credential",
+      "start_line": 119,
+      "end_line": 121,
+      "type": "METHOD",
+      "content_hash": "94acc050f7cd8911"
     },
     "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute": {
       "file_path": "app/tools/runtime.py",
       "qualified_name": "app.tools.runtime.ToolRuntime.execute",
-      "start_line": 115,
-      "end_line": 181,
+      "start_line": 124,
+      "end_line": 205,
       "type": "METHOD",
-      "content_hash": "82fc5ce0bb66f566"
+      "content_hash": "2e27a72c3d88eee5"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest._window_split": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest._window_split",
+      "start_line": 113,
+      "end_line": 134,
+      "type": "FUNCTION",
+      "content_hash": "a422e228e8d67b4e"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.split_articles": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.split_articles",
+      "start_line": 137,
+      "end_line": 172,
+      "type": "FUNCTION",
+      "content_hash": "62c696d3517d3f75"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.split_articles.chapter_at": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.split_articles.chapter_at",
+      "start_line": 151,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "cb87a7c868798694"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.detect_version": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.detect_version",
+      "start_line": 175,
+      "end_line": 177,
+      "type": "FUNCTION",
+      "content_hash": "905976fbabbbfe86"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.is_no_fulltext": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.is_no_fulltext",
+      "start_line": 180,
+      "end_line": 183,
+      "type": "FUNCTION",
+      "content_hash": "1d04e4fb07860579"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest._batches": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest._batches",
+      "start_line": 186,
+      "end_line": 196,
+      "type": "FUNCTION",
+      "content_hash": "226e2632a2011cfc"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest._parse_json_array": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest._parse_json_array",
+      "start_line": 199,
+      "end_line": 210,
+      "type": "FUNCTION",
+      "content_hash": "b30ab5d2d4709903"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.extract_controls": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.extract_controls",
+      "start_line": 213,
+      "end_line": 231,
+      "type": "FUNCTION",
+      "content_hash": "8e70cffd19207dd5"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.ingest_uploaded_pdf",
+      "start_line": 235,
+      "end_line": 266,
+      "type": "FUNCTION",
+      "content_hash": "ce7a4e88dbd9d620"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.pdf_to_text": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.pdf_to_text",
+      "start_line": 269,
+      "end_line": 297,
+      "type": "FUNCTION",
+      "content_hash": "e74de89cb153d3f7"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.main": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.main",
+      "start_line": 300,
+      "end_line": 405,
+      "type": "FUNCTION",
+      "content_hash": "803cadcbc3efd165"
+    },
+    "app/regulations/ingest.py|app.regulations.ingest.main._load": {
+      "file_path": "app/regulations/ingest.py",
+      "qualified_name": "app.regulations.ingest.main._load",
+      "start_line": 334,
+      "end_line": 335,
+      "type": "FUNCTION",
+      "content_hash": "8a1e9e60ab80b292"
+    },
+    "app/regulations/judge.py|app.regulations.judge._normalize_verdict": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._normalize_verdict",
+      "start_line": 46,
+      "end_line": 59,
+      "type": "FUNCTION",
+      "content_hash": "a45d2888b453ce83"
+    },
+    "app/regulations/judge.py|app.regulations.judge._check_gate": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._check_gate",
+      "start_line": 138,
+      "end_line": 159,
+      "type": "FUNCTION",
+      "content_hash": "99bc94a1e172e6cf"
+    },
+    "app/regulations/judge.py|app.regulations.judge._article_key": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._article_key",
+      "start_line": 181,
+      "end_line": 184,
+      "type": "FUNCTION",
+      "content_hash": "593598df0712601e"
+    },
+    "app/regulations/judge.py|app.regulations.judge._check_scale": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._check_scale",
+      "start_line": 187,
+      "end_line": 208,
+      "type": "FUNCTION",
+      "content_hash": "e9c38fbac6f9412c"
+    },
+    "app/regulations/judge.py|app.regulations.judge._fmt_controls": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._fmt_controls",
+      "start_line": 211,
+      "end_line": 221,
+      "type": "FUNCTION",
+      "content_hash": "a4704fb3ba26697e"
+    },
+    "app/regulations/judge.py|app.regulations.judge._parse": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._parse",
+      "start_line": 224,
+      "end_line": 235,
+      "type": "FUNCTION",
+      "content_hash": "4bfb715aefe3300d"
+    },
+    "app/regulations/judge.py|app.regulations.judge._batches": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._batches",
+      "start_line": 238,
+      "end_line": 239,
+      "type": "FUNCTION",
+      "content_hash": "a3e60b21acd277d9"
+    },
+    "app/regulations/judge.py|app.regulations.judge._verify_evidence": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._verify_evidence",
+      "start_line": 242,
+      "end_line": 254,
+      "type": "FUNCTION",
+      "content_hash": "8af8dd6900a887cc"
+    },
+    "app/regulations/judge.py|app.regulations.judge._judge_batch": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge._judge_batch",
+      "start_line": 257,
+      "end_line": 293,
+      "type": "FUNCTION",
+      "content_hash": "bbfa18535416db45"
+    },
+    "app/regulations/judge.py|app.regulations.judge.run_check": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge.run_check",
+      "start_line": 296,
+      "end_line": 426,
+      "type": "FUNCTION",
+      "content_hash": "c5f75872749bc425"
+    },
+    "app/regulations/judge.py|app.regulations.judge.run_check.run_domain": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge.run_check.run_domain",
+      "start_line": 359,
+      "end_line": 378,
+      "type": "FUNCTION",
+      "content_hash": "583d4c961c6753ba"
+    },
+    "app/regulations/judge.py|app.regulations.judge.run_check.run_domain.one": {
+      "file_path": "app/regulations/judge.py",
+      "qualified_name": "app.regulations.judge.run_check.run_domain.one",
+      "start_line": 360,
+      "end_line": 370,
+      "type": "FUNCTION",
+      "content_hash": "268bd7ff64d08249"
+    },
+    "app/regulations/registry.py|app.regulations.registry._pg_url": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry._pg_url",
+      "start_line": 70,
+      "end_line": 71,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/regulations/registry.py|app.regulations.registry._connect": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry._connect",
+      "start_line": 74,
+      "end_line": 75,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/regulations/registry.py|app.regulations.registry.ensure_regulations_tables": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.ensure_regulations_tables",
+      "start_line": 78,
+      "end_line": 149,
+      "type": "FUNCTION",
+      "content_hash": "085b0d70b001cc27"
+    },
+    "app/regulations/registry.py|app.regulations.registry._load_manifest": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry._load_manifest",
+      "start_line": 153,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "4549c7d8ab24ac06"
+    },
+    "app/regulations/registry.py|app.regulations.registry.verify_corpus": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.verify_corpus",
+      "start_line": 160,
+      "end_line": 178,
+      "type": "FUNCTION",
+      "content_hash": "c7efb4c341211d59"
+    },
+    "app/regulations/registry.py|app.regulations.registry.seed_from_corpus": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.seed_from_corpus",
+      "start_line": 181,
+      "end_line": 276,
+      "type": "FUNCTION",
+      "content_hash": "4990c4d4429b333d"
+    },
+    "app/regulations/registry.py|app.regulations.registry.scope_negative_list": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.scope_negative_list",
+      "start_line": 280,
+      "end_line": 303,
+      "type": "FUNCTION",
+      "content_hash": "56b7bf3173f1ce98"
+    },
+    "app/regulations/registry.py|app.regulations.registry.corpus_meta": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.corpus_meta",
+      "start_line": 306,
+      "end_line": 314,
+      "type": "FUNCTION",
+      "content_hash": "8646bac5a08157f6"
+    },
+    "app/regulations/registry.py|app.regulations.registry.non_judging_regulations": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.non_judging_regulations",
+      "start_line": 317,
+      "end_line": 329,
+      "type": "FUNCTION",
+      "content_hash": "5da1f079ea7ad89f"
+    },
+    "app/regulations/registry.py|app.regulations.registry.excluded_categories": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.excluded_categories",
+      "start_line": 332,
+      "end_line": 345,
+      "type": "FUNCTION",
+      "content_hash": "a073ef7fdcc351c4"
+    },
+    "app/regulations/registry.py|app.regulations.registry.list_regulations": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.list_regulations",
+      "start_line": 348,
+      "end_line": 366,
+      "type": "FUNCTION",
+      "content_hash": "a16fb4eaf863d670"
+    },
+    "app/regulations/registry.py|app.regulations.registry.corpus_stats": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.corpus_stats",
+      "start_line": 369,
+      "end_line": 406,
+      "type": "FUNCTION",
+      "content_hash": "770f26b6565cdb83"
+    },
+    "app/regulations/registry.py|app.regulations.registry.add_upload": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.add_upload",
+      "start_line": 409,
+      "end_line": 449,
+      "type": "FUNCTION",
+      "content_hash": "ff1dea23a5cc8ae1"
+    },
+    "app/regulations/registry.py|app.regulations.registry.get_regulation": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.get_regulation",
+      "start_line": 452,
+      "end_line": 460,
+      "type": "FUNCTION",
+      "content_hash": "e0e571a47d63d937"
+    },
+    "app/regulations/registry.py|app.regulations.registry.replace_content": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.replace_content",
+      "start_line": 463,
+      "end_line": 493,
+      "type": "FUNCTION",
+      "content_hash": "82fbf3dc078c4613"
+    },
+    "app/regulations/registry.py|app.regulations.registry.set_version": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.set_version",
+      "start_line": 496,
+      "end_line": 505,
+      "type": "FUNCTION",
+      "content_hash": "10a46c548781bb54"
+    },
+    "app/regulations/registry.py|app.regulations.registry.mark_no_fulltext": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.mark_no_fulltext",
+      "start_line": 508,
+      "end_line": 515,
+      "type": "FUNCTION",
+      "content_hash": "629908f24b3ba309"
+    },
+    "app/regulations/registry.py|app.regulations.registry.name_clashes": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.name_clashes",
+      "start_line": 518,
+      "end_line": 531,
+      "type": "FUNCTION",
+      "content_hash": "8ccf7e5915d8a0da"
+    },
+    "app/regulations/registry.py|app.regulations.registry.activate_regulation": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.activate_regulation",
+      "start_line": 534,
+      "end_line": 546,
+      "type": "FUNCTION",
+      "content_hash": "b785e41eea2b0c60"
+    },
+    "app/regulations/registry.py|app.regulations.registry.delete_regulation": {
+      "file_path": "app/regulations/registry.py",
+      "qualified_name": "app.regulations.registry.delete_regulation",
+      "start_line": 549,
+      "end_line": 559,
+      "type": "FUNCTION",
+      "content_hash": "b2fc9ac0b9a29cc9"
+    },
+    "app/regulations/report.py|app.regulations.report._cell": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._cell",
+      "start_line": 34,
+      "end_line": 37,
+      "type": "FUNCTION",
+      "content_hash": "57f57f3c33af6aec"
+    },
+    "app/regulations/report.py|app.regulations.report._consolidate": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._consolidate",
+      "start_line": 40,
+      "end_line": 60,
+      "type": "FUNCTION",
+      "content_hash": "4aca5b10569f898c"
+    },
+    "app/regulations/report.py|app.regulations.report._table": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._table",
+      "start_line": 63,
+      "end_line": 79,
+      "type": "FUNCTION",
+      "content_hash": "52bcdfdc849e6eb9"
+    },
+    "app/regulations/report.py|app.regulations.report._coverage_sentence": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._coverage_sentence",
+      "start_line": 82,
+      "end_line": 104,
+      "type": "FUNCTION",
+      "content_hash": "56891860b15225fd"
+    },
+    "app/regulations/report.py|app.regulations.report._coverage_appendix": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._coverage_appendix",
+      "start_line": 107,
+      "end_line": 125,
+      "type": "FUNCTION",
+      "content_hash": "42392a6d0d618b1a"
+    },
+    "app/regulations/report.py|app.regulations.report._coverage_appendix.fmt": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report._coverage_appendix.fmt",
+      "start_line": 120,
+      "end_line": 122,
+      "type": "FUNCTION",
+      "content_hash": "9827adcfd0c89eb3"
+    },
+    "app/regulations/report.py|app.regulations.report.build": {
+      "file_path": "app/regulations/report.py",
+      "qualified_name": "app.regulations.report.build",
+      "start_line": 128,
+      "end_line": 266,
+      "type": "FUNCTION",
+      "content_hash": "c2db0f1cbd7f97e4"
+    },
+    "app/regulations/standard.py|app.regulations.standard.load": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.load",
+      "start_line": 21,
+      "end_line": 25,
+      "type": "FUNCTION",
+      "content_hash": "7de19fb22bccae66"
+    },
+    "app/regulations/standard.py|app.regulations.standard.route": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.route",
+      "start_line": 28,
+      "end_line": 40,
+      "type": "FUNCTION",
+      "content_hash": "d20ed1bd5a3b4e4b"
+    },
+    "app/regulations/standard.py|app.regulations.standard.sections": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.sections",
+      "start_line": 43,
+      "end_line": 44,
+      "type": "FUNCTION",
+      "content_hash": "4cce9b6fd0ef0f6a"
+    },
+    "app/regulations/standard.py|app.regulations.standard.covered_domains": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.covered_domains",
+      "start_line": 47,
+      "end_line": 48,
+      "type": "FUNCTION",
+      "content_hash": "cf5f4afbbfe2f406"
+    },
+    "app/regulations/standard.py|app.regulations.standard.judge_model": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.judge_model",
+      "start_line": 51,
+      "end_line": 54,
+      "type": "FUNCTION",
+      "content_hash": "a79d77f3e107a674"
+    },
+    "app/regulations/standard.py|app.regulations.standard.applicability_gates": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.applicability_gates",
+      "start_line": 57,
+      "end_line": 59,
+      "type": "FUNCTION",
+      "content_hash": "c946529c5258d186"
+    },
+    "app/regulations/standard.py|app.regulations.standard.scale_thresholds": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.scale_thresholds",
+      "start_line": 62,
+      "end_line": 68,
+      "type": "FUNCTION",
+      "content_hash": "54d03cc96f301ba0"
+    },
+    "app/regulations/standard.py|app.regulations.standard.scale_thresholds_text": {
+      "file_path": "app/regulations/standard.py",
+      "qualified_name": "app.regulations.standard.scale_thresholds_text",
+      "start_line": 71,
+      "end_line": 77,
+      "type": "FUNCTION",
+      "content_hash": "a254800a41a0f04a"
     }
   },
   "components": [
     {
       "name": "Interaction Surfaces",
-      "description": "Exposes external interaction surfaces including LINE messaging, Discord voice, device HTTP endpoints, queue listeners, and SSO handoffs.",
+      "description": "Exposes external interaction surfaces including LINE messaging, Discord voice, device endpoints, push notifications, and SSO handoffs.",
       "key_entities": [
         {
           "qualified_name": "app.surfaces.device.device_intent",
@@ -2621,10 +3726,16 @@
           "reference_end_line": 71
         },
         {
+          "qualified_name": "app.surfaces.push.push_line",
+          "reference_file": "app/surfaces/push.py",
+          "reference_start_line": 27,
+          "reference_end_line": 51
+        },
+        {
           "qualified_name": "app.surfaces.sso.establish_sso_session",
           "reference_file": "app/surfaces/sso.py",
-          "reference_start_line": 70,
-          "reference_end_line": 94
+          "reference_start_line": 72,
+          "reference_end_line": 98
         }
       ],
       "source_cluster_ids": [
@@ -2710,11 +3821,24 @@
           ]
         },
         {
+          "file_path": "app/surfaces/push.py",
+          "methods": [
+            "app.surfaces.push.push_line"
+          ]
+        },
+        {
           "file_path": "app/surfaces/queue_consumer.py",
           "methods": [
             "app.surfaces.queue_consumer._process_message",
             "app.surfaces.queue_consumer._consume_loop",
             "app.surfaces.queue_consumer.start_in_background"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/sdg.py",
+          "methods": [
+            "app.surfaces.sdg._check_service_token",
+            "app.surfaces.sdg.generate_sdg_endpoint"
           ]
         },
         {
@@ -2725,6 +3849,7 @@
             "app.surfaces.sso.ensure_sso_sessions_table",
             "app.surfaces.sso.establish_sso_session",
             "app.surfaces.sso.get_sso_session",
+            "app.surfaces.sso.refresh_sso_session",
             "app.surfaces.sso.sso_handoff"
           ]
         }
@@ -2824,19 +3949,31 @@
     },
     {
       "name": "Chat Applications",
-      "description": "Implements distinct chat application modes and exposes registry metadata for user-facing interactive workflows.",
+      "description": "Implements domain-specific interactive chat applications and exposes command registries for user-facing workflows.",
       "key_entities": [
         {
           "qualified_name": "app.apps._registry.chainlit_commands",
           "reference_file": "app/apps/_registry.py",
-          "reference_start_line": 124,
-          "reference_end_line": 142
+          "reference_start_line": 133,
+          "reference_end_line": 161
         },
         {
           "qualified_name": "app.apps._registry.get_by_id",
           "reference_file": "app/apps/_registry.py",
-          "reference_start_line": 145,
-          "reference_end_line": 147
+          "reference_start_line": 164,
+          "reference_end_line": 166
+        },
+        {
+          "qualified_name": "app.apps.knowledge_base.handler.handle",
+          "reference_file": "app/apps/knowledge_base/handler.py",
+          "reference_start_line": 186,
+          "reference_end_line": 204
+        },
+        {
+          "qualified_name": "app.apps.regulation_check.handler.handle",
+          "reference_file": "app/apps/regulation_check/handler.py",
+          "reference_start_line": 126,
+          "reference_end_line": 239
         }
       ],
       "source_cluster_ids": [
@@ -2854,6 +3991,7 @@
             "app.apps._registry.App.__init__",
             "app.apps._registry.App.full_id",
             "app.apps._registry.discover",
+            "app.apps._registry.menu_apps",
             "app.apps._registry.filter_enabled",
             "app.apps._registry.is_enabled_for",
             "app.apps._registry.chainlit_commands",
@@ -2865,9 +4003,11 @@
         {
           "file_path": "app/apps/chart_analysis/handler.py",
           "methods": [
+            "app.apps.chart_analysis.handler._element",
             "app.apps.chart_analysis.handler._fmt",
             "app.apps.chart_analysis.handler._mock_runtime",
             "app.apps.chart_analysis.handler._mock_runtime._stub_execute",
+            "app.apps.chart_analysis.handler._chart_source",
             "app.apps.chart_analysis.handler.handle"
           ]
         },
@@ -2881,9 +4021,43 @@
           ]
         },
         {
+          "file_path": "app/apps/knowledge_base/handler.py",
+          "methods": [
+            "app.apps.knowledge_base.handler._source_label",
+            "app.apps.knowledge_base.handler._status_text",
+            "app.apps.knowledge_base.handler._list_table",
+            "app.apps.knowledge_base.handler._ingest_uploads",
+            "app.apps.knowledge_base.handler._pending_actions",
+            "app.apps.knowledge_base.handler.reg_activate",
+            "app.apps.knowledge_base.handler.reg_delete",
+            "app.apps.knowledge_base.handler.handle"
+          ]
+        },
+        {
           "file_path": "app/apps/plain_chat/handler.py",
           "methods": [
             "app.apps.plain_chat.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/apps/regulation_check/handler.py",
+          "methods": [
+            "app.apps.regulation_check.handler._unwrap",
+            "app.apps.regulation_check.handler._my_projects",
+            "app.apps.regulation_check.handler._my_projects.one",
+            "app.apps.regulation_check.handler._plan_text",
+            "app.apps.regulation_check.handler._pick_project",
+            "app.apps.regulation_check.handler.handle",
+            "app.apps.regulation_check.handler.handle.on_progress",
+            "app.apps.regulation_check.handler.handle._arts"
+          ]
+        },
+        {
+          "file_path": "app/apps/social_post/handler.py",
+          "methods": [
+            "app.apps.social_post.handler._projects",
+            "app.apps.social_post.handler.handle",
+            "app.apps.social_post.handler.handle_selection"
           ]
         },
         {
@@ -2901,7 +4075,7 @@
     },
     {
       "name": "Core AI Services",
-      "description": "Provides foundational AI orchestration, model generation, opencode sessions, search, and local storage capabilities.",
+      "description": "Provides foundational AI model invocation, copilot execution, interactive session orchestration, and search utilities.",
       "key_entities": [
         {
           "qualified_name": "app.core.copilot.run_copilot",
@@ -2940,6 +4114,7 @@
             "app.core.copilot.run_copilot",
             "app.core.copilot.execute_confirmed",
             "app.core.copilot._make_module_ctx",
+            "app.core.copilot.generate_sdg",
             "app.core.copilot.generate_and_save_sdg",
             "app.core.copilot._indicators_from_template",
             "app.core.copilot.estimate_and_save_sroi"
@@ -2998,7 +4173,7 @@
     },
     {
       "name": "Application Host and Dispatch",
-      "description": "Orchestrates the application lifecycle, normalizes multi-channel messages into envelopes, and coordinates project-scoped dispatching.",
+      "description": "Coordinates system initialization, authentication manifests, conversational envelope dispatching, and project routing.",
       "key_entities": [
         {
           "qualified_name": "app.dispatch.Envelope",
@@ -3007,22 +4182,22 @@
           "reference_end_line": 43
         },
         {
-          "qualified_name": "app.dispatch.handle_device_intent",
-          "reference_file": "app/dispatch.py",
-          "reference_start_line": 91,
-          "reference_end_line": 113
-        },
-        {
           "qualified_name": "app.dispatch.converse",
           "reference_file": "app/dispatch.py",
           "reference_start_line": 132,
           "reference_end_line": 165
         },
         {
+          "qualified_name": "app.dispatch.handle_device_intent",
+          "reference_file": "app/dispatch.py",
+          "reference_start_line": 91,
+          "reference_end_line": 113
+        },
+        {
           "qualified_name": "app.main._init_tables",
           "reference_file": "app/main.py",
-          "reference_start_line": 88,
-          "reference_end_line": 96
+          "reference_start_line": 100,
+          "reference_end_line": 114
         }
       ],
       "source_cluster_ids": [
@@ -3039,7 +4214,8 @@
             "app.auth.issuers._fetch_jwks",
             "app.auth.issuers._pubkey_for",
             "app.auth.issuers.verify_handoff",
-            "app.auth.issuers.fetch_manifest"
+            "app.auth.issuers.fetch_manifest",
+            "app.auth.issuers.refresh_manifest"
           ]
         },
         {
@@ -3064,11 +4240,21 @@
             "app.main._current_user_project",
             "app.main._enabled_apps_for",
             "app.main._register_commands",
+            "app.main._app_actions",
+            "app.main._app_actions._label",
+            "app.main.open_app",
             "app.main.on_chat_resume",
+            "app.main._current_chainlit_user",
+            "app.main._is_sso_user",
             "app.main._sso_session_for_current_user",
+            "app.main._attach_refresh_handler",
+            "app.main._attach_refresh_handler._on_unauthorized",
             "app.main._load_sso_runtime",
+            "app.main._refresh_sso_runtime",
             "app.main.on_start",
             "app.main._read_text_file",
+            "app.main._read_pdf_file",
+            "app.main._read_attachment",
             "app.main._frame_file",
             "app.main._emit_copilot",
             "app.main._run_copilot_emit",
@@ -3077,6 +4263,8 @@
             "app.main.on_message",
             "app.main.cms_confirm",
             "app.main.cms_sroi",
+            "app.main.chart_query",
+            "app.main.chart_export",
             "app.main.cms_attach"
           ]
         },
@@ -3172,7 +4360,7 @@
     },
     {
       "name": "Build Tooling and Static Assets",
-      "description": "Houses architecture diagram generation scripts and browser static assets.",
+      "description": "Maintains architecture diagram build scripts and browser client asset scripts.",
       "key_entities": [
         {
           "qualified_name": "arch.build.build_mermaid",
@@ -3208,12 +4396,26 @@
         {
           "file_path": "public/custom.js",
           "methods": [
-            "public.custom.<function>",
             "public.custom.<function>.mount",
             "public.custom.<function>.remove",
             "public.custom.<function>.remove.setTimeout() callback",
             "public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
-            "public.custom.<function>.setTimeout() callback"
+            "public.custom.<function>.setTimeout() callback",
+            "public.custom.<function>.<function>",
+            "public.custom.<function>.<function>.visibleInput",
+            "public.custom.<function>.<function>.visibleInput.find() callback",
+            "public.custom.<function>.<function>.submit",
+            "public.custom.<function>.<function>.submit.setTimeout() callback",
+            "public.custom.<function>.<function>.commandLabel",
+            "public.custom.<function>.<function>.commandLabel.parts",
+            "public.custom.<function>.<function>.commandLabel.parts.map() callback",
+            "public.custom.<function>.<function>.start",
+            "public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback",
+            "public.custom.<function>.<function>.start.document.addEventListener(\"click\") callback.setTimeout() callback",
+            "public.custom.<function>",
+            "public.custom.<function>.forceLight",
+            "public.custom.<function>.start",
+            "public.custom.<function>.start.setTimeout() callback"
           ]
         }
       ],
@@ -3281,7 +4483,7 @@
     },
     {
       "name": "Tool Runtime and Registry",
-      "description": "Maintains tool schemas mapped to device capabilities and executes dynamic tool runtime invocations.",
+      "description": "Maintains capability-to-tool schemas and executes dynamic tool runtime invocations.",
       "key_entities": [
         {
           "qualified_name": "app.tools.registry.tools_for_capabilities",
@@ -3293,7 +4495,7 @@
           "qualified_name": "app.tools.runtime.ToolRuntime",
           "reference_file": "app/tools/runtime.py",
           "reference_start_line": 38,
-          "reference_end_line": 181
+          "reference_end_line": 205
         }
       ],
       "source_cluster_ids": [
@@ -3318,6 +4520,7 @@
             "app.tools.runtime.ToolRuntime._to_json_schema",
             "app.tools.runtime.ToolRuntime.visible_tools",
             "app.tools.runtime.ToolRuntime.is_allowed",
+            "app.tools.runtime.ToolRuntime.credential",
             "app.tools.runtime.ToolRuntime.execute"
           ]
         }
@@ -3326,11 +4529,138 @@
       "can_expand": false,
       "components": [],
       "components_relations": []
+    },
+    {
+      "name": "Regulation Compliance Engine",
+      "description": "Ingests legal regulation corpora, maintains negative lists in persistent storage, and runs compliance evaluations against project proposals.",
+      "key_entities": [
+        {
+          "qualified_name": "app.regulations.ingest.ingest_uploaded_pdf",
+          "reference_file": "app/regulations/ingest.py",
+          "reference_start_line": 235,
+          "reference_end_line": 266
+        },
+        {
+          "qualified_name": "app.regulations.judge.run_check",
+          "reference_file": "app/regulations/judge.py",
+          "reference_start_line": 296,
+          "reference_end_line": 426
+        },
+        {
+          "qualified_name": "app.regulations.registry.ensure_regulations_tables",
+          "reference_file": "app/regulations/registry.py",
+          "reference_start_line": 78,
+          "reference_end_line": 149
+        },
+        {
+          "qualified_name": "app.regulations.registry.seed_from_corpus",
+          "reference_file": "app/regulations/registry.py",
+          "reference_start_line": 181,
+          "reference_end_line": 276
+        }
+      ],
+      "source_cluster_ids": [
+        "29",
+        "30",
+        "31",
+        "32",
+        "33"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/regulations/ingest.py",
+          "methods": [
+            "app.regulations.ingest._window_split",
+            "app.regulations.ingest.split_articles",
+            "app.regulations.ingest.split_articles.chapter_at",
+            "app.regulations.ingest.detect_version",
+            "app.regulations.ingest.is_no_fulltext",
+            "app.regulations.ingest._batches",
+            "app.regulations.ingest._parse_json_array",
+            "app.regulations.ingest.extract_controls",
+            "app.regulations.ingest.ingest_uploaded_pdf",
+            "app.regulations.ingest.pdf_to_text",
+            "app.regulations.ingest.main",
+            "app.regulations.ingest.main._load"
+          ]
+        },
+        {
+          "file_path": "app/regulations/judge.py",
+          "methods": [
+            "app.regulations.judge._normalize_verdict",
+            "app.regulations.judge._check_gate",
+            "app.regulations.judge._article_key",
+            "app.regulations.judge._check_scale",
+            "app.regulations.judge._fmt_controls",
+            "app.regulations.judge._parse",
+            "app.regulations.judge._batches",
+            "app.regulations.judge._verify_evidence",
+            "app.regulations.judge._judge_batch",
+            "app.regulations.judge.run_check",
+            "app.regulations.judge.run_check.run_domain",
+            "app.regulations.judge.run_check.run_domain.one"
+          ]
+        },
+        {
+          "file_path": "app/regulations/registry.py",
+          "methods": [
+            "app.regulations.registry._pg_url",
+            "app.regulations.registry._connect",
+            "app.regulations.registry.ensure_regulations_tables",
+            "app.regulations.registry._load_manifest",
+            "app.regulations.registry.verify_corpus",
+            "app.regulations.registry.seed_from_corpus",
+            "app.regulations.registry.scope_negative_list",
+            "app.regulations.registry.corpus_meta",
+            "app.regulations.registry.non_judging_regulations",
+            "app.regulations.registry.excluded_categories",
+            "app.regulations.registry.list_regulations",
+            "app.regulations.registry.corpus_stats",
+            "app.regulations.registry.add_upload",
+            "app.regulations.registry.get_regulation",
+            "app.regulations.registry.replace_content",
+            "app.regulations.registry.set_version",
+            "app.regulations.registry.mark_no_fulltext",
+            "app.regulations.registry.name_clashes",
+            "app.regulations.registry.activate_regulation",
+            "app.regulations.registry.delete_regulation"
+          ]
+        },
+        {
+          "file_path": "app/regulations/report.py",
+          "methods": [
+            "app.regulations.report._cell",
+            "app.regulations.report._consolidate",
+            "app.regulations.report._table",
+            "app.regulations.report._coverage_sentence",
+            "app.regulations.report._coverage_appendix",
+            "app.regulations.report._coverage_appendix.fmt",
+            "app.regulations.report.build"
+          ]
+        },
+        {
+          "file_path": "app/regulations/standard.py",
+          "methods": [
+            "app.regulations.standard.load",
+            "app.regulations.standard.route",
+            "app.regulations.standard.sections",
+            "app.regulations.standard.covered_domains",
+            "app.regulations.standard.judge_model",
+            "app.regulations.standard.applicability_gates",
+            "app.regulations.standard.scale_thresholds",
+            "app.regulations.standard.scale_thresholds_text"
+          ]
+        }
+      ],
+      "component_id": "10",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
     }
   ],
   "components_relations": [
     {
-      "relation": "invokes sandbox sessions in",
+      "relation": "creates sessions in",
       "src_name": "Interaction Surfaces",
       "dst_name": "Core AI Services",
       "evidence": "",
@@ -3344,7 +4674,7 @@
               "column": 77
             }
           ],
-          "description": "Surface chat handlers create sessions and execute sandboxed operations in OpenCode."
+          "description": "Discord voice surface initializes opencode session in core services"
         }
       ],
       "src_id": "1",
@@ -3439,11 +4769,22 @@
             }
           ],
           "description": ""
+        },
+        {
+          "source": "app/surfaces/sdg.py|app.surfaces.sdg.generate_sdg_endpoint",
+          "target": "app/core/copilot.py|app.core.copilot.generate_sdg",
+          "call_sites": [
+            {
+              "line": 29,
+              "column": 22
+            }
+          ],
+          "description": ""
         }
       ]
     },
     {
-      "relation": "dispatches user envelopes to",
+      "relation": "dispatches requests to",
       "src_name": "Interaction Surfaces",
       "dst_name": "Application Host and Dispatch",
       "evidence": "",
@@ -3457,7 +4798,7 @@
               "column": 20
             }
           ],
-          "description": "Device and LINE surfaces package messages into envelopes and route them through the dispatcher."
+          "description": "Device surface constructs envelope and dispatches intents to application dispatch"
         }
       ],
       "src_id": "1",
@@ -3513,7 +4854,7 @@
           "target": "app/auth/issuers.py|app.auth.issuers.fetch_manifest",
           "call_sites": [
             {
-              "line": 76,
+              "line": 78,
               "column": 24
             }
           ],
@@ -3524,8 +4865,19 @@
           "target": "app/auth/issuers.py|app.auth.issuers.verify_handoff",
           "call_sites": [
             {
-              "line": 75,
+              "line": 77,
               "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "target": "app/auth/issuers.py|app.auth.issuers.refresh_manifest",
+          "call_sites": [
+            {
+              "line": 139,
+              "column": 32
             }
           ],
           "description": ""
@@ -3612,7 +4964,7 @@
       ]
     },
     {
-      "relation": "initializes tool runtime from",
+      "relation": "inspects tools via",
       "src_name": "Interaction Surfaces",
       "dst_name": "Tool Runtime and Registry",
       "evidence": "",
@@ -3622,11 +4974,11 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
-              "line": 77,
+              "line": 81,
               "column": 45
             }
           ],
-          "description": "SSO sessions initialize and inspect the tool runtime for visible tool definitions."
+          "description": "SSO surface inspects visible tools via the tool runtime"
         }
       ],
       "src_id": "1",
@@ -3638,7 +4990,7 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
-              "line": 77,
+              "line": 81,
               "column": 45
             }
           ],
@@ -3649,7 +5001,7 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
           "call_sites": [
             {
-              "line": 77,
+              "line": 81,
               "column": 67
             }
           ],
@@ -3660,8 +5012,96 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
-              "line": 116,
-              "column": 46
+              "line": 123,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 154,
+              "column": 32
+            },
+            {
+              "line": 169,
+              "column": 32
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "evaluates compliance using",
+      "src_name": "Regulation Compliance Engine",
+      "dst_name": "Core AI Services",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/regulations/judge.py|app.regulations.judge.run_check",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 327,
+              "column": 15
+            },
+            {
+              "line": 331,
+              "column": 15
+            }
+          ],
+          "description": "Regulation judge invokes LLM factory to evaluate compliance"
+        }
+      ],
+      "src_id": "10",
+      "dst_id": "4",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/regulations/judge.py|app.regulations.judge.run_check",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 327,
+              "column": 15
+            },
+            {
+              "line": 331,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 257,
+              "column": 15
+            },
+            {
+              "line": 259,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/regulations/ingest.py|app.regulations.ingest.main",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 323,
+              "column": 15
+            },
+            {
+              "line": 327,
+              "column": 15
             }
           ],
           "description": ""
@@ -3819,6 +5259,230 @@
       ]
     },
     {
+      "relation": "pushes notifications via",
+      "src_name": "Chat Applications",
+      "dst_name": "Interaction Surfaces",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/surfaces/push.py|app.surfaces.push.push_line",
+          "call_sites": [
+            {
+              "line": 233,
+              "column": 20
+            }
+          ],
+          "description": "Regulation check workflow pushes alert messages through LINE surface"
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "1",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/surfaces/push.py|app.surfaces.push.push_line",
+          "call_sites": [
+            {
+              "line": 233,
+              "column": 20
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "queries and ingests regulations in",
+      "src_name": "Chat Applications",
+      "dst_name": "Regulation Compliance Engine",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.handle",
+          "target": "app/regulations/registry.py|app.regulations.registry.list_regulations",
+          "call_sites": [
+            {
+              "line": 194,
+              "column": 30
+            }
+          ],
+          "description": "Knowledge base application lists regulations and queries corpus metrics"
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "10",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._ingest_uploads",
+          "target": "app/regulations/registry.py|app.regulations.registry.add_upload",
+          "call_sites": [
+            {
+              "line": 90,
+              "column": 33
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler._list_table",
+          "target": "app/regulations/registry.py|app.regulations.registry.list_regulations",
+          "call_sites": [
+            {
+              "line": 60,
+              "column": 27
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.handle",
+          "target": "app/regulations/registry.py|app.regulations.registry.corpus_stats",
+          "call_sites": [
+            {
+              "line": 188,
+              "column": 28
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.handle",
+          "target": "app/regulations/registry.py|app.regulations.registry.list_regulations",
+          "call_sites": [
+            {
+              "line": 194,
+              "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf",
+          "call_sites": [
+            {
+              "line": 131,
+              "column": 31
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.activate_regulation",
+          "call_sites": [
+            {
+              "line": 148,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.get_regulation",
+          "call_sites": [
+            {
+              "line": 116,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.mark_no_fulltext",
+          "call_sites": [
+            {
+              "line": 136,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.name_clashes",
+          "call_sites": [
+            {
+              "line": 153,
+              "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.replace_content",
+          "call_sites": [
+            {
+              "line": 144,
+              "column": 20
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/registry.py|app.regulations.registry.set_version",
+          "call_sites": [
+            {
+              "line": 147,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_delete",
+          "target": "app/regulations/registry.py|app.regulations.registry.delete_regulation",
+          "call_sites": [
+            {
+              "line": 181,
+              "column": 20
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_delete",
+          "target": "app/regulations/registry.py|app.regulations.registry.get_regulation",
+          "call_sites": [
+            {
+              "line": 171,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/regulations/judge.py|app.regulations.judge.run_check",
+          "call_sites": [
+            {
+              "line": 185,
+              "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/regulations/report.py|app.regulations.report.build",
+          "call_sites": [
+            {
+              "line": 192,
+              "column": 17
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
       "relation": "executes modules through",
       "src_name": "Chat Applications",
       "dst_name": "Domain Modules",
@@ -3829,7 +5493,7 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 84,
+              "line": 115,
               "column": 21
             }
           ],
@@ -3845,7 +5509,7 @@
           "target": "app/modules/base.py|app.modules.base.ModuleContext",
           "call_sites": [
             {
-              "line": 80,
+              "line": 111,
               "column": 15
             }
           ],
@@ -3856,7 +5520,7 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 84,
+              "line": 115,
               "column": 21
             }
           ],
@@ -3865,21 +5529,21 @@
       ]
     },
     {
-      "relation": "invokes models and search from",
+      "relation": "orchestrates LLM flows via",
       "src_name": "Chat Applications",
       "dst_name": "Core AI Services",
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
             {
-              "line": 17,
+              "line": 47,
               "column": 24
             }
           ],
-          "description": "Interactive chat applications invoke language models and web search services."
+          "description": "Social post application executes AI workflows via copilot runner"
         }
       ],
       "src_id": "3",
@@ -3929,29 +5593,86 @@
             }
           ],
           "description": ""
+        },
+        {
+          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 47,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 88,
+              "column": 20
+            }
+          ],
+          "description": ""
         }
       ]
     },
     {
-      "relation": "instantiates data sources from",
+      "relation": "retrieves project context from",
+      "src_name": "Chat Applications",
+      "dst_name": "Application Host and Dispatch",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/projects/registry.py|app.projects.registry.get_project",
+          "call_sites": [
+            {
+              "line": 230,
+              "column": 38
+            }
+          ],
+          "description": "Regulation check fetches project configuration from registry"
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "5",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler.handle",
+          "target": "app/projects/registry.py|app.projects.registry.get_project",
+          "call_sites": [
+            {
+              "line": 230,
+              "column": 38
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "queries data via",
       "src_name": "Chat Applications",
       "dst_name": "Data Source Adapters",
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._chart_source",
           "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
           "call_sites": [
             {
-              "line": 73,
+              "line": 89,
               "column": 20
             },
             {
-              "line": 75,
-              "column": 24
+              "line": 90,
+              "column": 16
             }
           ],
-          "description": "Applications instantiate data source adapters to supply contextual records."
+          "description": "Chart analysis configures data sources using CMS data source adapter"
         }
       ],
       "src_id": "3",
@@ -3959,27 +5680,27 @@
       "is_static": true,
       "all_edges": [
         {
-          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._chart_source",
           "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
           "call_sites": [
             {
-              "line": 73,
+              "line": 89,
               "column": 20
             },
             {
-              "line": 75,
-              "column": 24
+              "line": 90,
+              "column": 16
             }
           ],
           "description": ""
         },
         {
-          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._chart_source",
           "target": "app/adapters/stub.py|app.adapters.stub.StubDataSource",
           "call_sites": [
             {
-              "line": 77,
-              "column": 20
+              "line": 91,
+              "column": 12
             }
           ],
           "description": ""
@@ -3997,7 +5718,7 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
           "call_sites": [
             {
-              "line": 56,
+              "line": 80,
               "column": 8
             }
           ],
@@ -4013,7 +5734,7 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
-              "line": 49,
+              "line": 73,
               "column": 10
             }
           ],
@@ -4024,7 +5745,7 @@
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
           "call_sites": [
             {
-              "line": 56,
+              "line": 80,
               "column": 8
             }
           ],
@@ -4043,11 +5764,11 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 179,
+              "line": 196,
               "column": 38
             },
             {
-              "line": 182,
+              "line": 199,
               "column": 17
             }
           ],
@@ -4074,11 +5795,11 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 207,
+              "line": 224,
               "column": 38
             },
             {
-              "line": 210,
+              "line": 227,
               "column": 17
             }
           ],
@@ -4089,11 +5810,11 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 179,
+              "line": 196,
               "column": 38
             },
             {
-              "line": 182,
+              "line": 199,
               "column": 17
             }
           ],
@@ -4137,7 +5858,7 @@
       ]
     },
     {
-      "relation": "initializes database tables in",
+      "relation": "initializes storage for",
       "src_name": "Application Host and Dispatch",
       "dst_name": "Interaction Surfaces",
       "evidence": "",
@@ -4147,11 +5868,11 @@
           "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
           "call_sites": [
             {
-              "line": 92,
+              "line": 104,
               "column": 24
             }
           ],
-          "description": "Application startup initializes surface-specific database tables."
+          "description": "Host initialization ensures surface tables exist in database"
         }
       ],
       "src_id": "5",
@@ -4159,45 +5880,12 @@
       "is_static": true,
       "all_edges": [
         {
-          "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "source": "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
             {
-              "line": 96,
-              "column": 25
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
-          "call_sites": [
-            {
-              "line": 92,
-              "column": 24
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
-          "call_sites": [
-            {
-              "line": 95,
-              "column": 25
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
-          "call_sites": [
-            {
-              "line": 93,
-              "column": 24
+              "line": 244,
+              "column": 39
             }
           ],
           "description": ""
@@ -4207,8 +5895,30 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table",
           "call_sites": [
             {
-              "line": 94,
+              "line": 106,
               "column": 23
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._load_sso_runtime",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "call_sites": [
+            {
+              "line": 263,
+              "column": 39
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._refresh_sso_runtime",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "call_sites": [
+            {
+              "line": 299,
+              "column": 39
             }
           ],
           "description": ""
@@ -4218,7 +5928,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
           "call_sites": [
             {
-              "line": 145,
+              "line": 235,
               "column": 30
             }
           ],
@@ -4229,8 +5939,52 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
           "call_sites": [
             {
-              "line": 62,
+              "line": 73,
               "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "call_sites": [
+            {
+              "line": 108,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+          "call_sites": [
+            {
+              "line": 104,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
+          "call_sites": [
+            {
+              "line": 107,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
+          "call_sites": [
+            {
+              "line": 105,
+              "column": 24
             }
           ],
           "description": ""
@@ -4238,21 +5992,67 @@
       ]
     },
     {
-      "relation": "resolves applications from",
+      "relation": "seeds corpus tables in",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Regulation Compliance Engine",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/regulations/registry.py|app.regulations.registry.seed_from_corpus",
+          "call_sites": [
+            {
+              "line": 112,
+              "column": 41
+            }
+          ],
+          "description": "Host initialization seeds persistent regulation tables from corpus"
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "10",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/regulations/registry.py|app.regulations.registry.ensure_regulations_tables",
+          "call_sites": [
+            {
+              "line": 111,
+              "column": 32
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/regulations/registry.py|app.regulations.registry.seed_from_corpus",
+          "call_sites": [
+            {
+              "line": 112,
+              "column": 41
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "registers and routes",
       "src_name": "Application Host and Dispatch",
       "dst_name": "Chat Applications",
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/main.py|app.main.on_message",
-          "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
+          "source": "app/main.py|app.main._register_commands",
+          "target": "app/apps/_registry.py|app.apps._registry.chainlit_commands",
           "call_sites": [
             {
-              "line": 388,
-              "column": 11
+              "line": 145,
+              "column": 12
             }
           ],
-          "description": "Main message loop resolves and activates enabled chat applications."
+          "description": "Host registers Chainlit commands from the application registry"
         }
       ],
       "src_id": "5",
@@ -4260,11 +6060,37 @@
       "is_static": true,
       "all_edges": [
         {
+          "source": "app/main.py|app.main._app_actions",
+          "target": "app/apps/_registry.py|app.apps._registry.filter_enabled",
+          "call_sites": [
+            {
+              "line": 164,
+              "column": 54
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._app_actions",
+          "target": "app/apps/_registry.py|app.apps._registry.menu_apps",
+          "call_sites": [
+            {
+              "line": 164,
+              "column": 18
+            },
+            {
+              "line": 164,
+              "column": 69
+            }
+          ],
+          "description": ""
+        },
+        {
           "source": "app/main.py|app.main._register_commands",
           "target": "app/apps/_registry.py|app.apps._registry.chainlit_commands",
           "call_sites": [
             {
-              "line": 127,
+              "line": 145,
               "column": 12
             }
           ],
@@ -4275,7 +6101,7 @@
           "target": "app/apps/_registry.py|app.apps._registry.App.full_id",
           "call_sites": [
             {
-              "line": 400,
+              "line": 635,
               "column": 80
             }
           ],
@@ -4286,7 +6112,7 @@
           "target": "app/apps/_registry.py|app.apps._registry.default_app",
           "call_sites": [
             {
-              "line": 390,
+              "line": 625,
               "column": 15
             }
           ],
@@ -4297,7 +6123,11 @@
           "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
           "call_sites": [
             {
-              "line": 388,
+              "line": 542,
+              "column": 15
+            },
+            {
+              "line": 623,
               "column": 11
             }
           ],
@@ -4308,7 +6138,44 @@
           "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
           "call_sites": [
             {
-              "line": 399,
+              "line": 634,
+              "column": 12
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection",
+          "call_sites": [
+            {
+              "line": 527,
+              "column": 50
+            },
+            {
+              "line": 528,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.open_app",
+          "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
+          "call_sites": [
+            {
+              "line": 181,
+              "column": 11
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.open_app",
+          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
+          "call_sites": [
+            {
+              "line": 191,
               "column": 12
             }
           ],
@@ -4365,7 +6232,7 @@
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
             {
-              "line": 253,
+              "line": 451,
               "column": 24
             }
           ],
@@ -4376,7 +6243,7 @@
           "target": "app/core/copilot.py|app.core.copilot.execute_confirmed",
           "call_sites": [
             {
-              "line": 423,
+              "line": 664,
               "column": 21
             }
           ],
@@ -4387,7 +6254,7 @@
           "target": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
           "call_sites": [
             {
-              "line": 436,
+              "line": 677,
               "column": 29
             }
           ],
@@ -4398,7 +6265,7 @@
           "target": "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi",
           "call_sites": [
             {
-              "line": 477,
+              "line": 718,
               "column": 23
             }
           ],
@@ -4466,7 +6333,7 @@
           "target": "app/nodes/commands.py|app.nodes.commands.ensure_commands_table",
           "call_sites": [
             {
-              "line": 91,
+              "line": 103,
               "column": 25
             }
           ],
@@ -4477,7 +6344,7 @@
           "target": "app/nodes/registry.py|app.nodes.registry.ensure_nodes_table",
           "call_sites": [
             {
-              "line": 90,
+              "line": 102,
               "column": 25
             }
           ],
@@ -4488,7 +6355,7 @@
           "target": "app/nodes/commands.py|app.nodes.commands.enqueue_command",
           "call_sites": [
             {
-              "line": 382,
+              "line": 617,
               "column": 41
             }
           ],
@@ -4502,6 +6369,17 @@
       "dst_name": "Tool Runtime and Registry",
       "evidence": "",
       "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/tools/registry.py|app.tools.registry.tools_for_capabilities",
+          "call_sites": [
+            {
+              "line": 71,
+              "column": 13
+            }
+          ],
+          "description": "Dispatch maps selected capabilities to tool schemas from tool registry"
+        },
         {
           "source": "app/dispatch.py|app.dispatch.converse",
           "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",

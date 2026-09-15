@@ -1,7 +1,7 @@
 {
   "repository_name": ".codeboarding-target",
-  "timestamp": "2026-09-15T12:52:51.242842+00:00",
-  "overall_score": 0.9020408163265307,
+  "timestamp": "2026-09-15T13:58:29.575619+00:00",
+  "overall_score": 0.9141274238227147,
   "check_summaries": [
     {
       "check_name": "function_size",
@@ -10,22 +10,11 @@
         "javascript"
       ],
       "check_type": "standard",
-      "total_entities_checked": 4,
+      "total_entities_checked": 14,
       "findings_count": 0,
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "javascript"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [],
-      "packages_checked": 1,
-      "packages_in_cycles": 0
     },
     {
       "check_name": "unused_code_diagnostics",
@@ -47,24 +36,11 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 217,
+      "total_entities_checked": 316,
       "findings_count": 0,
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "python"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [
-        "app.surfaces -> app -> app.surfaces"
-      ],
-      "packages_checked": 20,
-      "packages_in_cycles": 2
     },
     {
       "check_name": "unused_code_diagnostics",
@@ -73,9 +49,9 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 24,
-      "findings_count": 24,
-      "warning_count": 9,
+      "total_entities_checked": 31,
+      "findings_count": 31,
+      "warning_count": 10,
       "score": 0.0,
       "finding_groups": [
         {
@@ -83,20 +59,6 @@
           "threshold": 0,
           "description": "Variables declared but never used",
           "entities": [
-            {
-              "entity_name": "[unused_variable] \"device_surface\" is not accessed",
-              "file_path": "app/main.py",
-              "line_start": 24,
-              "line_end": 24,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"thread\" is not accessed",
-              "file_path": "app/main.py",
-              "line_start": 134,
-              "line_end": 134,
-              "metric_value": 0.0
-            },
             {
               "entity_name": "[unused_variable] \"Any\" is not accessed",
               "file_path": "app/adapters/cms.py",
@@ -109,48 +71,6 @@
               "file_path": "app/adapters/stub.py",
               "line_start": 10,
               "line_end": 10,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"project\" is not accessed",
-              "file_path": "app/apps/_registry.py",
-              "line_start": 115,
-              "line_end": 115,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"QuerySpec\" is not accessed",
-              "file_path": "app/apps/chart_analysis/handler.py",
-              "line_start": 10,
-              "line_end": 10,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"get_by_id\" is not accessed",
-              "file_path": "app/apps/chart_analysis/handler.py",
-              "line_start": 14,
-              "line_end": 14,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"args\" is not accessed",
-              "file_path": "app/apps/chart_analysis/handler.py",
-              "line_start": 51,
-              "line_end": 51,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"_parse_json_obj\" is not accessed",
-              "file_path": "app/core/copilot.py",
-              "line_start": 81,
-              "line_end": 81,
-              "metric_value": 0.0
-            },
-            {
-              "entity_name": "[unused_variable] \"_indicators_from_template\" is not accessed",
-              "file_path": "app/core/copilot.py",
-              "line_start": 186,
-              "line_end": 186,
               "metric_value": 0.0
             },
             {
@@ -175,10 +95,108 @@
               "metric_value": 0.0
             },
             {
-              "entity_name": "[unused_variable] \"request\" is not accessed",
-              "file_path": "app/surfaces/sso.py",
-              "line_start": 120,
-              "line_end": 120,
+              "entity_name": "[unused_variable] \"device_surface\" is not accessed",
+              "file_path": "app/main.py",
+              "line_start": 34,
+              "line_end": 34,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"sdg_surface\" is not accessed",
+              "file_path": "app/main.py",
+              "line_start": 36,
+              "line_end": 36,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"thread\" is not accessed",
+              "file_path": "app/main.py",
+              "line_start": 205,
+              "line_end": 205,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"project\" is not accessed",
+              "file_path": "app/apps/_registry.py",
+              "line_start": 124,
+              "line_end": 124,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"payload\" is not accessed",
+              "file_path": "app/apps/social_post/handler.py",
+              "line_start": 37,
+              "line_end": 37,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"_indicators_from_template\" is not accessed",
+              "file_path": "app/core/copilot.py",
+              "line_start": 203,
+              "line_end": 203,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"reason\" is not accessed",
+              "file_path": "app/regulations/registry.py",
+              "line_start": 508,
+              "line_end": 508,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"QuerySpec\" is not accessed",
+              "file_path": "app/apps/chart_analysis/handler.py",
+              "line_start": 14,
+              "line_end": 14,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"get_by_id\" is not accessed",
+              "file_path": "app/apps/chart_analysis/handler.py",
+              "line_start": 18,
+              "line_end": 18,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"args\" is not accessed",
+              "file_path": "app/apps/chart_analysis/handler.py",
+              "line_start": 75,
+              "line_end": 75,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"payload\" is not accessed",
+              "file_path": "app/apps/knowledge_base/handler.py",
+              "line_start": 186,
+              "line_end": 186,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"Path\" is not accessed",
+              "file_path": "app/apps/regulation_check/handler.py",
+              "line_start": 13,
+              "line_end": 13,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"attempt\" is not accessed",
+              "file_path": "app/apps/regulation_check/handler.py",
+              "line_start": 100,
+              "line_end": 100,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"payload\" is not accessed",
+              "file_path": "app/apps/regulation_check/handler.py",
+              "line_start": 126,
+              "line_end": 126,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_variable] \"j\" is not accessed",
+              "file_path": "app/regulations/ingest.py",
+              "line_start": 167,
+              "line_end": 167,
               "metric_value": 0.0
             },
             {
@@ -196,13 +214,6 @@
           "description": "Unused import statements that should be removed",
           "entities": [
             {
-              "entity_name": "[unused_import] Import \"device_surface\" is not accessed",
-              "file_path": "app/main.py",
-              "line_start": 24,
-              "line_end": 24,
-              "metric_value": 0.0
-            },
-            {
               "entity_name": "[unused_import] Import \"Any\" is not accessed",
               "file_path": "app/adapters/cms.py",
               "line_start": 11,
@@ -217,24 +228,45 @@
               "metric_value": 0.0
             },
             {
-              "entity_name": "[unused_import] Import \"QuerySpec\" is not accessed",
-              "file_path": "app/apps/chart_analysis/handler.py",
-              "line_start": 10,
-              "line_end": 10,
+              "entity_name": "[unused_import] Import \"Optional\" is not accessed",
+              "file_path": "app/modules/registry.py",
+              "line_start": 15,
+              "line_end": 15,
               "metric_value": 0.0
             },
             {
-              "entity_name": "[unused_import] Import \"get_by_id\" is not accessed",
+              "entity_name": "[unused_import] Import \"device_surface\" is not accessed",
+              "file_path": "app/main.py",
+              "line_start": 34,
+              "line_end": 34,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_import] Import \"sdg_surface\" is not accessed",
+              "file_path": "app/main.py",
+              "line_start": 36,
+              "line_end": 36,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_import] Import \"QuerySpec\" is not accessed",
               "file_path": "app/apps/chart_analysis/handler.py",
               "line_start": 14,
               "line_end": 14,
               "metric_value": 0.0
             },
             {
-              "entity_name": "[unused_import] Import \"Optional\" is not accessed",
-              "file_path": "app/modules/registry.py",
-              "line_start": 15,
-              "line_end": 15,
+              "entity_name": "[unused_import] Import \"get_by_id\" is not accessed",
+              "file_path": "app/apps/chart_analysis/handler.py",
+              "line_start": 18,
+              "line_end": 18,
+              "metric_value": 0.0
+            },
+            {
+              "entity_name": "[unused_import] Import \"Path\" is not accessed",
+              "file_path": "app/apps/regulation_check/handler.py",
+              "line_start": 13,
+              "line_end": 13,
               "metric_value": 0.0
             },
             {
@@ -252,17 +284,10 @@
           "description": "Functions/methods defined but never called",
           "entities": [
             {
-              "entity_name": "[unused_function] Function \"_parse_json_obj\" is not accessed",
-              "file_path": "app/core/copilot.py",
-              "line_start": 81,
-              "line_end": 81,
-              "metric_value": 0.0
-            },
-            {
               "entity_name": "[unused_function] Function \"_indicators_from_template\" is not accessed",
               "file_path": "app/core/copilot.py",
-              "line_start": 186,
-              "line_end": 186,
+              "line_start": 203,
+              "line_end": 203,
               "metric_value": 0.0
             }
           ]
@@ -272,22 +297,22 @@
   ],
   "file_summaries": [
     {
+      "file_path": "app/main.py",
+      "total_findings": 5,
+      "warning_findings": 2,
+      "composite_risk_score": 60.0
+    },
+    {
       "file_path": "app/apps/chart_analysis/handler.py",
       "total_findings": 5,
       "warning_findings": 2,
       "composite_risk_score": 60.0
     },
     {
-      "file_path": "app/core/copilot.py",
+      "file_path": "app/apps/regulation_check/handler.py",
       "total_findings": 4,
-      "warning_findings": 2,
-      "composite_risk_score": 50.0
-    },
-    {
-      "file_path": "app/main.py",
-      "total_findings": 3,
       "warning_findings": 1,
-      "composite_risk_score": 35.0
+      "composite_risk_score": 45.0
     },
     {
       "file_path": "app/adapters/cms.py",
@@ -303,6 +328,12 @@
     },
     {
       "file_path": "app/modules/registry.py",
+      "total_findings": 2,
+      "warning_findings": 1,
+      "composite_risk_score": 25.0
+    },
+    {
+      "file_path": "app/core/copilot.py",
       "total_findings": 2,
       "warning_findings": 1,
       "composite_risk_score": 25.0
@@ -326,7 +357,25 @@
       "composite_risk_score": 10.0
     },
     {
-      "file_path": "app/surfaces/sso.py",
+      "file_path": "app/apps/social_post/handler.py",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    },
+    {
+      "file_path": "app/regulations/registry.py",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    },
+    {
+      "file_path": "app/apps/knowledge_base/handler.py",
+      "total_findings": 1,
+      "warning_findings": 0,
+      "composite_risk_score": 10.0
+    },
+    {
+      "file_path": "app/regulations/ingest.py",
       "total_findings": 1,
       "warning_findings": 0,
       "composite_risk_score": 10.0
