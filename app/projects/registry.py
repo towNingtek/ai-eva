@@ -133,3 +133,141 @@ async def list_projects() -> list[dict]:
         return [dict(r) for r in rows]
     finally:
         await conn.close()
+
+
+# ── #127 啟用矩陣 ─────────────────────────────────────────────────
+# metadata.enabled_apps 格式：JSON list of app id（或 full_id "<project>.<id>"）。
+# 未設 / None = 全開（向後相容）。core 平台內建 app 不受此清單影響。
+# metadata.app_flags 格式：{"<app_id>": {"matchmaking": "not-implemented"}}（#120 媒合標記）
+
+
+def normalize_enabled_apps(raw) -> set[str] | None:
+    """把 metadata.enabled_apps 正規化：list→set；空/None→None(=全開)；壞型別→None。"""
+    if raw is None or raw == "":
+        return None
+    if isinstance(raw, (list, set)):
+        ok = {str(x).strip() for x in raw if str(x).strip()}
+        return ok or None
+    if isinstance(raw, dict):
+        # asyncpg JSONB 常以 list 存在；偷塞 dict 視為 {id: true} 表
+        ok = {str(k).strip() for k, v in raw.items() if v and str(k).strip()}
+        return ok or None
+    return None
+
+
+def normalize_app_flags(raw) -> dict:
+    """把 metadata.app_flags 正規化成 {"app_id": {"matchmaking": ...}}；壞型別→{}. """
+    if not isinstance(raw, dict):
+        return {}
+    out = {}
+    for k, v in raw.items():
+        if isinstance(v, dict):
+            out[str(k)] = {str(fk): fv for fk, fv in v.items()}
+        elif v:  # 簡單標記 {"web_search": "not-implemented"} 也接受
+            out[str(k)] = {"matchmaking": str(v)}
+    return out
+
+
+async def get_enabled_apps(project_id: str) -> set[str] | None:
+    """回該 project 啟用矩陣（None = 全開）。DB 未設/無誤回 None，不擋任何 app。"""
+    if not _DATABASE_URL or not project_id:
+        return None
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow(
+            "SELECT metadata->>'enabled_apps' AS a FROM projects WHERE id = $1",
+            project_id,
+        )
+        if not row or row["a"] is None:
+            return None
+        import json as _json
+        try:
+            return normalize_enabled_apps(_json.loads(row["a"]))
+        except ValueError:
+            return None
+    finally:
+        await conn.close()
+
+
+async def get_app_flags(project_id: str) -> dict:
+    """回該 project 的 app 標記（#120 媒合標記等）。"""
+    if not _DATABASE_URL or not project_id:
+        return {}
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow(
+            "SELECT metadata->>'app_flags' AS a FROM projects WHERE id = $1",
+            project_id,
+        )
+        if not row or row["a"] is None:
+            return {}
+        import json as _json
+        try:
+            return normalize_app_flags(_json.loads(row["a"]))
+        except ValueError:
+            return {}
+    finally:
+        await conn.close()
+
+
+async def set_enabled_apps(project_id: str, apps: list[str] | None) -> None:
+    """設定啟用矩陣（None = 清除 → 回全開）。背後只是 metadata.enabled_apps 的 upsert。"""
+    if not _DATABASE_URL:
+        return
+    conn = await _connect()
+    try:
+        await conn.execute(
+            """
+            UPDATE projects SET metadata = jsonb_set(
+                COALESCE(metadata, '{}'::jsonb),
+                '{enabled_apps}',
+                ($1)::jsonb
+            ) WHERE id = $2
+            """,
+            "null" if apps is None else __import__("json").dumps(apps, ensure_ascii=False),
+            project_id,
+        )
+    finally:
+        await conn.close()
+
+
+async def get_enabled_modules(project_id: str) -> set[str] | None:
+    """回該 project 的啟用 module 清單（#129；同一 metadata 模式，None = 全開）。"""
+    if not _DATABASE_URL or not project_id:
+        return None
+    conn = await _connect()
+    try:
+        row = await conn.fetchrow(
+            "SELECT metadata->>'enabled_modules' AS a FROM projects WHERE id = $1",
+            project_id,
+        )
+        if not row or row["a"] is None:
+            return None
+        import json as _json
+        try:
+            return normalize_enabled_apps(_json.loads(row["a"]))
+        except ValueError:
+            return None
+    finally:
+        await conn.close()
+
+
+async def set_enabled_modules(project_id: str, modules: list[str] | None) -> None:
+    """設定啟用 module 清單（None = 清除 → 回全開）。"""
+    if not _DATABASE_URL:
+        return
+    conn = await _connect()
+    try:
+        await conn.execute(
+            """
+            UPDATE projects SET metadata = jsonb_set(
+                COALESCE(metadata, '{}'::jsonb),
+                '{enabled_modules}',
+                ($1)::jsonb
+            ) WHERE id = $2
+            """,
+            "null" if modules is None else __import__("json").dumps(modules, ensure_ascii=False),
+            project_id,
+        )
+    finally:
+        await conn.close()
