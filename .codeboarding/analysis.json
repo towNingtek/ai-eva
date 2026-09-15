@@ -1,0 +1,4603 @@
+{
+  "metadata": {
+    "generated_at": "2026-09-15T12:53:33.511011+00:00",
+    "source_tree_hash": "6f6cba8ff7f0cd89cc23ff85bb809701410200f2e5d498abd7e8478efb5ac53f",
+    "repo_name": ".codeboarding-target",
+    "depth_level": 1,
+    "depth_cap": 2,
+    "file_coverage_summary": {
+      "total_files": 88,
+      "analyzed": 64,
+      "not_analyzed": 24,
+      "not_analyzed_by_reason": {
+        "other": 21,
+        "codeboardingignore": 3
+      }
+    },
+    "tree_spec": {
+      "version": 3,
+      "grouper": "affinity",
+      "machinery": [],
+      "scopes": {
+        "root": {
+          "axis": "structural",
+          "rung": "frontier",
+          "leaf_reason": "",
+          "last_id": 9,
+          "rules": [
+            {
+              "id": "1",
+              "name": "surfaces",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "surfaces"
+                ]
+              ],
+              "terms": [
+                "surface"
+              ]
+            },
+            {
+              "id": "2",
+              "name": "Loose files in app.modules",
+              "origin": "grouped",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "modules",
+                  "sustainability"
+                ]
+              ],
+              "terms": [
+                "sustainability"
+              ],
+              "fallback_prefixes": [
+                [
+                  "app",
+                  "modules"
+                ]
+              ],
+              "parts": [
+                {
+                  "id": "",
+                  "name": "Loose files in app.modules",
+                  "origin": "loose",
+                  "kind": "component",
+                  "fallback_prefixes": [
+                    [
+                      "app",
+                      "modules"
+                    ]
+                  ]
+                },
+                {
+                  "id": "",
+                  "name": "sustainability",
+                  "origin": "box",
+                  "kind": "component",
+                  "prefixes": [
+                    [
+                      "app",
+                      "modules",
+                      "sustainability"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "3",
+              "name": "apps",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "apps"
+                ]
+              ]
+            },
+            {
+              "id": "4",
+              "name": "core",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "core"
+                ]
+              ]
+            },
+            {
+              "id": "5",
+              "name": "Loose files in app",
+              "origin": "loose",
+              "kind": "component",
+              "fallback_prefixes": [
+                [
+                  "app"
+                ]
+              ]
+            },
+            {
+              "id": "6",
+              "name": "adapters",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "adapters"
+                ]
+              ],
+              "terms": [
+                "adapter"
+              ]
+            },
+            {
+              "id": "7",
+              "name": "Loose files",
+              "origin": "loose",
+              "kind": "component",
+              "fallback_prefixes": [
+                []
+              ]
+            },
+            {
+              "id": "8",
+              "name": "nodes",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "nodes"
+                ]
+              ],
+              "terms": [
+                "node"
+              ]
+            },
+            {
+              "id": "9",
+              "name": "tools",
+              "origin": "box",
+              "kind": "component",
+              "prefixes": [
+                [
+                  "app",
+                  "tools"
+                ]
+              ]
+            }
+          ]
+        },
+        "1": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 7 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "2": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 6 units, at most 7; un-merge failed the guard",
+          "last_id": 0,
+          "rules": []
+        },
+        "3": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 5 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "4": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 5 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "5": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 4 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "6": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 4 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "7": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 2 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "8": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 2 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        },
+        "9": {
+          "axis": "",
+          "rung": "leaf",
+          "leaf_reason": "small: 2 units, at most 7; nothing to un-merge",
+          "last_id": 0,
+          "rules": []
+        }
+      }
+    }
+  },
+  "description": "ai-eva is a multi-surface AI application platform that normalizes user interactions from web, LINE, Discord, and IoT devices into structured envelopes for centralized dispatching. The system couples LLM tool-calling and copilot workflows with dynamic device capability mapping, external data adapters, and modular domain handlers.",
+  "files": {
+    "app/surfaces/device.py": {
+      "method_keys": [
+        "app/surfaces/device.py|app.surfaces.device._check_token",
+        "app/surfaces/device.py|app.surfaces.device.device_register",
+        "app/surfaces/device.py|app.surfaces.device.device_intent",
+        "app/surfaces/device.py|app.surfaces.device.device_poll",
+        "app/surfaces/device.py|app.surfaces.device.device_result",
+        "app/surfaces/device.py|app.surfaces.device.device_img"
+      ],
+      "content_hash": "8d448e721f4a5766",
+      "module_hash": "4d650913dfd4850d"
+    },
+    "app/surfaces/discord_voice.py": {
+      "method_keys": [
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice._pg_url",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice._get_session_id",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice._store_mapping",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice._touch_mapping",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
+        "app/surfaces/discord_voice.py|app.surfaces.discord_voice.discord_voice_chat"
+      ],
+      "content_hash": "dba3f272050e2d76",
+      "module_hash": "c8243441cc1c115b"
+    },
+    "app/surfaces/line.py": {
+      "method_keys": [
+        "app/surfaces/line.py|app.surfaces.line._pg_url",
+        "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+        "app/surfaces/line.py|app.surfaces.line._save_follow",
+        "app/surfaces/line.py|app.surfaces.line._mark_unfollow",
+        "app/surfaces/line.py|app.surfaces.line._line_reply",
+        "app/surfaces/line.py|app.surfaces.line.push_to_user",
+        "app/surfaces/line.py|app.surfaces.line.push_images_to_user",
+        "app/surfaces/line.py|app.surfaces.line._download_line_image",
+        "app/surfaces/line.py|app.surfaces.line._transcribe_line_audio",
+        "app/surfaces/line.py|app.surfaces.line._verify_signature",
+        "app/surfaces/line.py|app.surfaces.line.scan_timeouts_endpoint",
+        "app/surfaces/line.py|app.surfaces.line.line_webhook",
+        "app/surfaces/line.py|app.surfaces.line._session_key",
+        "app/surfaces/line.py|app.surfaces.line._push_target",
+        "app/surfaces/line.py|app.surfaces.line._handle_event"
+      ],
+      "content_hash": "9069eb3bc48385a1",
+      "module_hash": "fedd81a10362fd49"
+    },
+    "app/surfaces/line_opencode.py": {
+      "method_keys": [
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._pg_url",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._get_mapping_row",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._store_mapping",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._update_mapping",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._touch_mapping",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode._get_display_name",
+        "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat"
+      ],
+      "content_hash": "3456b99c11932a68",
+      "module_hash": "9b6c31acff807299"
+    },
+    "app/surfaces/line_session.py": {
+      "method_keys": [
+        "app/surfaces/line_session.py|app.surfaces.line_session._pg_url",
+        "app/surfaces/line_session.py|app.surfaces.line_session._connect",
+        "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
+        "app/surfaces/line_session.py|app.surfaces.line_session.get_active_session",
+        "app/surfaces/line_session.py|app.surfaces.line_session.start_session",
+        "app/surfaces/line_session.py|app.surfaces.line_session.end_session",
+        "app/surfaces/line_session.py|app.surfaces.line_session._add_message",
+        "app/surfaces/line_session.py|app.surfaces.line_session._recent_messages",
+        "app/surfaces/line_session.py|app.surfaces.line_session.chat",
+        "app/surfaces/line_session.py|app.surfaces.line_session.scan_timeouts",
+        "app/surfaces/line_session.py|app.surfaces.line_session.is_end_keyword"
+      ],
+      "content_hash": "0a7a350ba5d4426d",
+      "module_hash": "9acf84adea537d83"
+    },
+    "app/surfaces/queue_consumer.py": {
+      "method_keys": [
+        "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._process_message",
+        "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._consume_loop",
+        "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer.start_in_background"
+      ],
+      "content_hash": "a47a7fd5c442a4f0",
+      "module_hash": "0cb0e950ff48dc49"
+    },
+    "app/surfaces/sso.py": {
+      "method_keys": [
+        "app/surfaces/sso.py|app.surfaces.sso._pg_url",
+        "app/surfaces/sso.py|app.surfaces.sso._connect",
+        "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table",
+        "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+        "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+        "app/surfaces/sso.py|app.surfaces.sso.sso_handoff"
+      ],
+      "content_hash": "6a44dfc3bae05fcb",
+      "module_hash": "2358ca03eef28326"
+    },
+    "app/modules/base.py": {
+      "method_keys": [
+        "app/modules/base.py|app.modules.base.ModuleContext",
+        "app/modules/base.py|app.modules.base.ModuleContext.llm",
+        "app/modules/base.py|app.modules.base.result"
+      ],
+      "content_hash": "ee13aeda5fce912a",
+      "module_hash": "14750a01ff1fa8db"
+    },
+    "app/modules/chart/handler.py": {
+      "method_keys": [
+        "app/modules/chart/handler.py|app.modules.chart.handler._run_query",
+        "app/modules/chart/handler.py|app.modules.chart.handler.handle"
+      ],
+      "content_hash": "399dd4dc62798b66",
+      "module_hash": "39d723336383e8d8"
+    },
+    "app/modules/project_management/handler.py": {
+      "method_keys": [
+        "app/modules/project_management/handler.py|app.modules.project_management.handler._list",
+        "app/modules/project_management/handler.py|app.modules.project_management.handler._create",
+        "app/modules/project_management/handler.py|app.modules.project_management.handler.handle"
+      ],
+      "content_hash": "3d9c9d95c63a7538",
+      "module_hash": "68896b27c11b22d7"
+    },
+    "app/modules/registry.py": {
+      "method_keys": [
+        "app/modules/registry.py|app.modules.registry.Module",
+        "app/modules/registry.py|app.modules.registry.Module.__init__",
+        "app/modules/registry.py|app.modules.registry.Module.handle",
+        "app/modules/registry.py|app.modules.registry.Module.supports",
+        "app/modules/registry.py|app.modules.registry.discover",
+        "app/modules/registry.py|app.modules.registry.discover._iter_meta_dirs",
+        "app/modules/registry.py|app.modules.registry.modules_for_project",
+        "app/modules/registry.py|app.modules.registry.get_by_id",
+        "app/modules/registry.py|app.modules.registry.invoke"
+      ],
+      "content_hash": "c57ae9d362245168",
+      "module_hash": "7e5f2cc07a2f6981"
+    },
+    "app/modules/sustainability/sdg/handler.py": {
+      "method_keys": [
+        "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._parse_json_obj",
+        "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._generate",
+        "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler.handle"
+      ],
+      "content_hash": "c80029a2e68e5485",
+      "module_hash": "6985c5ec4dd6edb0"
+    },
+    "app/modules/sustainability/sroi/handler.py": {
+      "method_keys": [
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._unwrap",
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._indicators_from_template",
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._indicators_from_sroi",
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._parse_json_obj",
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._estimate",
+        "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler.handle"
+      ],
+      "content_hash": "fb7fc57918308dc9",
+      "module_hash": "57d4e13feb0679cc"
+    },
+    "app/apps/_registry.py": {
+      "method_keys": [
+        "app/apps/_registry.py|app.apps._registry.App",
+        "app/apps/_registry.py|app.apps._registry.App.__init__",
+        "app/apps/_registry.py|app.apps._registry.App.full_id",
+        "app/apps/_registry.py|app.apps._registry.discover",
+        "app/apps/_registry.py|app.apps._registry.filter_enabled",
+        "app/apps/_registry.py|app.apps._registry.is_enabled_for",
+        "app/apps/_registry.py|app.apps._registry.chainlit_commands",
+        "app/apps/_registry.py|app.apps._registry.get_by_id",
+        "app/apps/_registry.py|app.apps._registry.default_app",
+        "app/apps/_registry.py|app.apps._registry.apps_for_project"
+      ],
+      "content_hash": "c17b422c8c1e31ac",
+      "module_hash": "680e9253240bb12a"
+    },
+    "app/apps/chart_analysis/handler.py": {
+      "method_keys": [
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._fmt",
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime",
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime._stub_execute",
+        "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle"
+      ],
+      "content_hash": "e7da0c6218d49937",
+      "module_hash": "2ccfeda131525b8b"
+    },
+    "app/apps/hello_world/handler.py": {
+      "method_keys": [
+        "app/apps/hello_world/handler.py|app.apps.hello_world.handler._icon_for",
+        "app/apps/hello_world/handler.py|app.apps.hello_world.handler._list_aliases",
+        "app/apps/hello_world/handler.py|app.apps.hello_world.handler._stream_one",
+        "app/apps/hello_world/handler.py|app.apps.hello_world.handler.handle"
+      ],
+      "content_hash": "796b70f2fb9f79b0",
+      "module_hash": "e67edcf776a0c37d"
+    },
+    "app/apps/plain_chat/handler.py": {
+      "method_keys": [
+        "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle"
+      ],
+      "content_hash": "c152238bf4d578b5",
+      "module_hash": "3dc2c26547bd811b"
+    },
+    "app/apps/web_search/handler.py": {
+      "method_keys": [
+        "app/apps/web_search/handler.py|app.apps.web_search.handler._badge",
+        "app/apps/web_search/handler.py|app.apps.web_search.handler.handle"
+      ],
+      "content_hash": "34dc30036d06ecea",
+      "module_hash": "4c67d19099186478"
+    },
+    "app/core/copilot.py": {
+      "method_keys": [
+        "app/core/copilot.py|app.core.copilot._confirm_question",
+        "app/core/copilot.py|app.core.copilot._inner",
+        "app/core/copilot.py|app.core.copilot._fmt_result",
+        "app/core/copilot.py|app.core.copilot._parse_json_obj",
+        "app/core/copilot.py|app.core.copilot.run_copilot",
+        "app/core/copilot.py|app.core.copilot.execute_confirmed",
+        "app/core/copilot.py|app.core.copilot._make_module_ctx",
+        "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
+        "app/core/copilot.py|app.core.copilot._indicators_from_template",
+        "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi"
+      ],
+      "content_hash": "c43ce304ee733d9f",
+      "module_hash": "f8af434164d49145"
+    },
+    "app/core/llm.py": {
+      "method_keys": [
+        "app/core/llm.py|app.core.llm.make_llm"
+      ],
+      "content_hash": "a1bb263370f28c93",
+      "module_hash": "58b8483f168fa71a"
+    },
+    "app/core/opencode.py": {
+      "method_keys": [
+        "app/core/opencode.py|app.core.opencode.is_enabled",
+        "app/core/opencode.py|app.core.opencode.is_vision_model",
+        "app/core/opencode.py|app.core.opencode._auth",
+        "app/core/opencode.py|app.core.opencode._default_model_ref",
+        "app/core/opencode.py|app.core.opencode._message_model_ref",
+        "app/core/opencode.py|app.core.opencode._extract_reply",
+        "app/core/opencode.py|app.core.opencode._image_url",
+        "app/core/opencode.py|app.core.opencode._send_body",
+        "app/core/opencode.py|app.core.opencode.create_session",
+        "app/core/opencode.py|app.core.opencode.get_session_model",
+        "app/core/opencode.py|app.core.opencode.send_message"
+      ],
+      "content_hash": "60cd2641dd5f802b",
+      "module_hash": "619c3699d16c89ca"
+    },
+    "app/core/search.py": {
+      "method_keys": [
+        "app/core/search.py|app.core.search.SearchHit",
+        "app/core/search.py|app.core.search.SearchOutcome",
+        "app/core/search.py|app.core.search._tavily",
+        "app/core/search.py|app.core.search._ddg_sync",
+        "app/core/search.py|app.core.search._ddg",
+        "app/core/search.py|app.core.search.search",
+        "app/core/search.py|app.core.search.is_configured"
+      ],
+      "content_hash": "8426a59052b5c166",
+      "module_hash": "83228719f32b7f4b"
+    },
+    "app/core/storage.py": {
+      "method_keys": [
+        "app/core/storage.py|app.core.storage.LocalStorageClient",
+        "app/core/storage.py|app.core.storage.LocalStorageClient.__init__",
+        "app/core/storage.py|app.core.storage.LocalStorageClient.upload_file",
+        "app/core/storage.py|app.core.storage.LocalStorageClient.delete_file",
+        "app/core/storage.py|app.core.storage.LocalStorageClient.get_read_url",
+        "app/core/storage.py|app.core.storage.LocalStorageClient.close"
+      ],
+      "content_hash": "18e89d1bc453a6ac",
+      "module_hash": "cb721575aa1d8590"
+    },
+    "app/auth/issuers.py": {
+      "method_keys": [
+        "app/auth/issuers.py|app.auth.issuers._now",
+        "app/auth/issuers.py|app.auth.issuers._fetch_jwks",
+        "app/auth/issuers.py|app.auth.issuers._pubkey_for",
+        "app/auth/issuers.py|app.auth.issuers.verify_handoff",
+        "app/auth/issuers.py|app.auth.issuers.fetch_manifest"
+      ],
+      "content_hash": "26c1cd5e364439bd",
+      "module_hash": "c26bcb24b1c11cf9"
+    },
+    "app/dispatch.py": {
+      "method_keys": [
+        "app/dispatch.py|app.dispatch.Envelope",
+        "app/dispatch.py|app.dispatch._json_list",
+        "app/dispatch.py|app.dispatch._json_obj",
+        "app/dispatch.py|app.dispatch._select_capabilities",
+        "app/dispatch.py|app.dispatch.handle_device_intent",
+        "app/dispatch.py|app.dispatch._picked_to_commands",
+        "app/dispatch.py|app.dispatch.converse",
+        "app/dispatch.py|app.dispatch._expand"
+      ],
+      "content_hash": "03adc3aa0a3dc7f8",
+      "module_hash": "cb9ad3478bddcbe9"
+    },
+    "app/main.py": {
+      "method_keys": [
+        "app/main.py|app.main.auth_callback",
+        "app/main.py|app.main.sso_header_auth",
+        "app/main.py|app.main._init_tables",
+        "app/main.py|app.main._current_user_project",
+        "app/main.py|app.main._enabled_apps_for",
+        "app/main.py|app.main._register_commands",
+        "app/main.py|app.main.on_chat_resume",
+        "app/main.py|app.main._sso_session_for_current_user",
+        "app/main.py|app.main._load_sso_runtime",
+        "app/main.py|app.main.on_start",
+        "app/main.py|app.main._read_text_file",
+        "app/main.py|app.main._frame_file",
+        "app/main.py|app.main._emit_copilot",
+        "app/main.py|app.main._run_copilot_emit",
+        "app/main.py|app.main._run_with_attachments",
+        "app/main.py|app.main._handle_cms_attachments",
+        "app/main.py|app.main.on_message",
+        "app/main.py|app.main.cms_confirm",
+        "app/main.py|app.main.cms_sroi",
+        "app/main.py|app.main.cms_attach"
+      ],
+      "content_hash": "4a4e9a08851bfcb3",
+      "module_hash": "d0629230f679fd9e"
+    },
+    "app/projects/registry.py": {
+      "method_keys": [
+        "app/projects/registry.py|app.projects.registry._pg_url",
+        "app/projects/registry.py|app.projects.registry._connect",
+        "app/projects/registry.py|app.projects.registry.ensure_projects_table",
+        "app/projects/registry.py|app.projects.registry.get_project",
+        "app/projects/registry.py|app.projects.registry.get_litellm_key",
+        "app/projects/registry.py|app.projects.registry.list_projects",
+        "app/projects/registry.py|app.projects.registry.normalize_enabled_apps",
+        "app/projects/registry.py|app.projects.registry.normalize_app_flags",
+        "app/projects/registry.py|app.projects.registry.get_enabled_apps",
+        "app/projects/registry.py|app.projects.registry.get_app_flags",
+        "app/projects/registry.py|app.projects.registry.set_enabled_apps",
+        "app/projects/registry.py|app.projects.registry.get_enabled_modules",
+        "app/projects/registry.py|app.projects.registry.set_enabled_modules"
+      ],
+      "content_hash": "d131daa6c6994edb",
+      "module_hash": "ca815ab1d184f640"
+    },
+    "app/adapters/base.py": {
+      "method_keys": [
+        "app/adapters/base.py|app.adapters.base.QuerySpec",
+        "app/adapters/base.py|app.adapters.base.AdapterResult",
+        "app/adapters/base.py|app.adapters.base.DataSource",
+        "app/adapters/base.py|app.adapters.base.DataSource.__init__",
+        "app/adapters/base.py|app.adapters.base.DataSource.query",
+        "app/adapters/base.py|app.adapters.base.unwrap_cms"
+      ],
+      "content_hash": "59f50221e0e912a6",
+      "module_hash": "38daadfdf96149cb"
+    },
+    "app/adapters/cms.py": {
+      "method_keys": [
+        "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
+        "app/adapters/cms.py|app.adapters.cms.CMSDataSource.__init__",
+        "app/adapters/cms.py|app.adapters.cms.CMSDataSource.bind",
+        "app/adapters/cms.py|app.adapters.cms.CMSDataSource.query"
+      ],
+      "content_hash": "10c98163bed12532",
+      "module_hash": "91a1f2ab51ac3cf0"
+    },
+    "app/adapters/registry.py": {
+      "method_keys": [
+        "app/adapters/registry.py|app.adapters.registry.register",
+        "app/adapters/registry.py|app.adapters.registry.get_adapter_cls",
+        "app/adapters/registry.py|app.adapters.registry.create"
+      ],
+      "content_hash": "93dbc46289eb3673",
+      "module_hash": "702b0bbab699367d"
+    },
+    "app/adapters/stub.py": {
+      "method_keys": [
+        "app/adapters/stub.py|app.adapters.stub.StubDataSource",
+        "app/adapters/stub.py|app.adapters.stub.StubDataSource.__init__",
+        "app/adapters/stub.py|app.adapters.stub.StubDataSource.query"
+      ],
+      "content_hash": "01b24a1e9d62f871",
+      "module_hash": "750b7effb75e3ad7"
+    },
+    "arch/build.py": {
+      "method_keys": [
+        "arch/build.py|arch.build.esc_label",
+        "arch/build.py|arch.build.esc_html",
+        "arch/build.py|arch.build.file_ref",
+        "arch/build.py|arch.build.collect",
+        "arch/build.py|arch.build.collect.claim",
+        "arch/build.py|arch.build.build_mermaid",
+        "arch/build.py|arch.build.build_component_rows",
+        "arch/build.py|arch.build.main"
+      ],
+      "content_hash": "6f647392d03891a5",
+      "module_hash": "25151c6c7d62d44d"
+    },
+    "public/custom.js": {
+      "method_keys": [
+        "public/custom.js|public.custom.<function>",
+        "public/custom.js|public.custom.<function>.mount",
+        "public/custom.js|public.custom.<function>.remove",
+        "public/custom.js|public.custom.<function>.remove.setTimeout() callback",
+        "public/custom.js|public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
+        "public/custom.js|public.custom.<function>.setTimeout() callback"
+      ],
+      "content_hash": "55d87ed3d1e4202a",
+      "module_hash": "5a2aad2a1a4f1617"
+    },
+    "app/nodes/commands.py": {
+      "method_keys": [
+        "app/nodes/commands.py|app.nodes.commands._pg_url",
+        "app/nodes/commands.py|app.nodes.commands._connect",
+        "app/nodes/commands.py|app.nodes.commands.ensure_commands_table",
+        "app/nodes/commands.py|app.nodes.commands.enqueue_command",
+        "app/nodes/commands.py|app.nodes.commands.pull_pending"
+      ],
+      "content_hash": "c2c78290354f1345",
+      "module_hash": "fad94332c96e3041"
+    },
+    "app/nodes/registry.py": {
+      "method_keys": [
+        "app/nodes/registry.py|app.nodes.registry._pg_url",
+        "app/nodes/registry.py|app.nodes.registry._connect",
+        "app/nodes/registry.py|app.nodes.registry.ensure_nodes_table",
+        "app/nodes/registry.py|app.nodes.registry.register_node",
+        "app/nodes/registry.py|app.nodes.registry.touch_node",
+        "app/nodes/registry.py|app.nodes.registry.get_node",
+        "app/nodes/registry.py|app.nodes.registry.list_nodes",
+        "app/nodes/registry.py|app.nodes.registry.nodes_with_capability"
+      ],
+      "content_hash": "1796c91e5d8717ba",
+      "module_hash": "6481d4e131ab7122"
+    },
+    "app/tools/registry.py": {
+      "method_keys": [
+        "app/tools/registry.py|app.tools.registry.tools_for_capabilities",
+        "app/tools/registry.py|app.tools.registry.capability_for_tool"
+      ],
+      "content_hash": "15628df98033b00f",
+      "module_hash": "1315d48c106cc7c0"
+    },
+    "app/tools/runtime.py": {
+      "method_keys": [
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.__init__",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.load",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime._needs_confirm",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime._to_json_schema",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.is_allowed",
+        "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute"
+      ],
+      "content_hash": "cba6a7bc07b36fc2",
+      "module_hash": "ffe76bccb5c3b43e"
+    }
+  },
+  "methods_index": {
+    "app/surfaces/device.py|app.surfaces.device._check_token": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device._check_token",
+      "start_line": 44,
+      "end_line": 48,
+      "type": "FUNCTION",
+      "content_hash": "4474e1d95f41d9b7"
+    },
+    "app/surfaces/device.py|app.surfaces.device.device_register": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device.device_register",
+      "start_line": 52,
+      "end_line": 70,
+      "type": "FUNCTION",
+      "content_hash": "0794cff73403499b"
+    },
+    "app/surfaces/device.py|app.surfaces.device.device_intent": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device.device_intent",
+      "start_line": 74,
+      "end_line": 90,
+      "type": "FUNCTION",
+      "content_hash": "5e0ff2d86e9da844"
+    },
+    "app/surfaces/device.py|app.surfaces.device.device_poll": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device.device_poll",
+      "start_line": 94,
+      "end_line": 108,
+      "type": "FUNCTION",
+      "content_hash": "cd7c9b85b26bac82"
+    },
+    "app/surfaces/device.py|app.surfaces.device.device_result": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device.device_result",
+      "start_line": 112,
+      "end_line": 150,
+      "type": "FUNCTION",
+      "content_hash": "4e9d7fa7889aa397"
+    },
+    "app/surfaces/device.py|app.surfaces.device.device_img": {
+      "file_path": "app/surfaces/device.py",
+      "qualified_name": "app.surfaces.device.device_img",
+      "start_line": 154,
+      "end_line": 160,
+      "type": "FUNCTION",
+      "content_hash": "4880dfb88b1938c1"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice._pg_url": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice._pg_url",
+      "start_line": 36,
+      "end_line": 37,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice.ensure_discord_voice_table",
+      "start_line": 40,
+      "end_line": 56,
+      "type": "FUNCTION",
+      "content_hash": "b849965e85af5c0d"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice._get_session_id": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice._get_session_id",
+      "start_line": 59,
+      "end_line": 71,
+      "type": "FUNCTION",
+      "content_hash": "64e89ae26f816ebd"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice._store_mapping": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice._store_mapping",
+      "start_line": 74,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "d975fcaffbb6b284"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice._touch_mapping": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice._touch_mapping",
+      "start_line": 94,
+      "end_line": 105,
+      "type": "FUNCTION",
+      "content_hash": "328a133f338e781e"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice.chat",
+      "start_line": 108,
+      "end_line": 127,
+      "type": "FUNCTION",
+      "content_hash": "b71bd834651801af"
+    },
+    "app/surfaces/discord_voice.py|app.surfaces.discord_voice.discord_voice_chat": {
+      "file_path": "app/surfaces/discord_voice.py",
+      "qualified_name": "app.surfaces.discord_voice.discord_voice_chat",
+      "start_line": 131,
+      "end_line": 155,
+      "type": "FUNCTION",
+      "content_hash": "5975728db133f74f"
+    },
+    "app/surfaces/line.py|app.surfaces.line._pg_url": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._pg_url",
+      "start_line": 47,
+      "end_line": 49,
+      "type": "FUNCTION",
+      "content_hash": "bcc8fe0ef3fe71b6"
+    },
+    "app/surfaces/line.py|app.surfaces.line.ensure_line_table": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line.ensure_line_table",
+      "start_line": 52,
+      "end_line": 71,
+      "type": "FUNCTION",
+      "content_hash": "3f81d70ff6b32692"
+    },
+    "app/surfaces/line.py|app.surfaces.line._save_follow": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._save_follow",
+      "start_line": 74,
+      "end_line": 90,
+      "type": "FUNCTION",
+      "content_hash": "1c20d39fd990c41f"
+    },
+    "app/surfaces/line.py|app.surfaces.line._mark_unfollow": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._mark_unfollow",
+      "start_line": 93,
+      "end_line": 103,
+      "type": "FUNCTION",
+      "content_hash": "2e190a933dd73a89"
+    },
+    "app/surfaces/line.py|app.surfaces.line._line_reply": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._line_reply",
+      "start_line": 106,
+      "end_line": 117,
+      "type": "FUNCTION",
+      "content_hash": "d753babf61cd67a3"
+    },
+    "app/surfaces/line.py|app.surfaces.line.push_to_user": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line.push_to_user",
+      "start_line": 120,
+      "end_line": 133,
+      "type": "FUNCTION",
+      "content_hash": "70bd95433f76d782"
+    },
+    "app/surfaces/line.py|app.surfaces.line.push_images_to_user": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line.push_images_to_user",
+      "start_line": 136,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "dc2a8e93de4508b5"
+    },
+    "app/surfaces/line.py|app.surfaces.line._download_line_image": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._download_line_image",
+      "start_line": 160,
+      "end_line": 184,
+      "type": "FUNCTION",
+      "content_hash": "e375c3b692e77dc4"
+    },
+    "app/surfaces/line.py|app.surfaces.line._transcribe_line_audio": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._transcribe_line_audio",
+      "start_line": 187,
+      "end_line": 221,
+      "type": "FUNCTION",
+      "content_hash": "436ace5370c9c898"
+    },
+    "app/surfaces/line.py|app.surfaces.line._verify_signature": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._verify_signature",
+      "start_line": 224,
+      "end_line": 230,
+      "type": "FUNCTION",
+      "content_hash": "203ced6ff4adb234"
+    },
+    "app/surfaces/line.py|app.surfaces.line.scan_timeouts_endpoint": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line.scan_timeouts_endpoint",
+      "start_line": 234,
+      "end_line": 249,
+      "type": "FUNCTION",
+      "content_hash": "2af23e62bcc60ec4"
+    },
+    "app/surfaces/line.py|app.surfaces.line.line_webhook": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line.line_webhook",
+      "start_line": 253,
+      "end_line": 271,
+      "type": "FUNCTION",
+      "content_hash": "b7218b5fd3708f79"
+    },
+    "app/surfaces/line.py|app.surfaces.line._session_key": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._session_key",
+      "start_line": 274,
+      "end_line": 281,
+      "type": "FUNCTION",
+      "content_hash": "ccff5bff2dac577a"
+    },
+    "app/surfaces/line.py|app.surfaces.line._push_target": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._push_target",
+      "start_line": 284,
+      "end_line": 288,
+      "type": "FUNCTION",
+      "content_hash": "f15f31ecb310de3b"
+    },
+    "app/surfaces/line.py|app.surfaces.line._handle_event": {
+      "file_path": "app/surfaces/line.py",
+      "qualified_name": "app.surfaces.line._handle_event",
+      "start_line": 291,
+      "end_line": 380,
+      "type": "FUNCTION",
+      "content_hash": "738dc305ffa89b49"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._pg_url": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._pg_url",
+      "start_line": 33,
+      "end_line": 34,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode.ensure_line_opencode_table",
+      "start_line": 37,
+      "end_line": 61,
+      "type": "FUNCTION",
+      "content_hash": "0b8f6e1c285fcb7c"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._get_mapping_row": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._get_mapping_row",
+      "start_line": 64,
+      "end_line": 77,
+      "type": "FUNCTION",
+      "content_hash": "3d0da9f01e4596ca"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._store_mapping": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._store_mapping",
+      "start_line": 80,
+      "end_line": 103,
+      "type": "FUNCTION",
+      "content_hash": "8551c574ea1c4e5b"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._update_mapping": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._update_mapping",
+      "start_line": 106,
+      "end_line": 130,
+      "type": "FUNCTION",
+      "content_hash": "7fc3185eede623c5"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._touch_mapping": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._touch_mapping",
+      "start_line": 133,
+      "end_line": 144,
+      "type": "FUNCTION",
+      "content_hash": "9286d05620198c24"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode._get_display_name": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode._get_display_name",
+      "start_line": 147,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "a42f4bbd1945c663"
+    },
+    "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat": {
+      "file_path": "app/surfaces/line_opencode.py",
+      "qualified_name": "app.surfaces.line_opencode.chat",
+      "start_line": 160,
+      "end_line": 223,
+      "type": "FUNCTION",
+      "content_hash": "4110468bac17b772"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session._pg_url": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session._pg_url",
+      "start_line": 65,
+      "end_line": 66,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session._connect": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session._connect",
+      "start_line": 69,
+      "end_line": 70,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.ensure_session_tables",
+      "start_line": 73,
+      "end_line": 105,
+      "type": "FUNCTION",
+      "content_hash": "d0c6462c1b2aaa62"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.get_active_session": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.get_active_session",
+      "start_line": 108,
+      "end_line": 121,
+      "type": "FUNCTION",
+      "content_hash": "0ca0a1ee251e2686"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.start_session": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.start_session",
+      "start_line": 124,
+      "end_line": 139,
+      "type": "FUNCTION",
+      "content_hash": "e061f69a5d64a2c9"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.end_session": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.end_session",
+      "start_line": 142,
+      "end_line": 151,
+      "type": "FUNCTION",
+      "content_hash": "287179096056716a"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session._add_message": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session._add_message",
+      "start_line": 154,
+      "end_line": 166,
+      "type": "FUNCTION",
+      "content_hash": "20082459d89edd97"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session._recent_messages": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session._recent_messages",
+      "start_line": 169,
+      "end_line": 179,
+      "type": "FUNCTION",
+      "content_hash": "0d73a340d8033974"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.chat": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.chat",
+      "start_line": 182,
+      "end_line": 234,
+      "type": "FUNCTION",
+      "content_hash": "13f3c411e74e508e"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.scan_timeouts": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.scan_timeouts",
+      "start_line": 237,
+      "end_line": 256,
+      "type": "FUNCTION",
+      "content_hash": "09661b734580e9bb"
+    },
+    "app/surfaces/line_session.py|app.surfaces.line_session.is_end_keyword": {
+      "file_path": "app/surfaces/line_session.py",
+      "qualified_name": "app.surfaces.line_session.is_end_keyword",
+      "start_line": 274,
+      "end_line": 275,
+      "type": "FUNCTION",
+      "content_hash": "19c9e7aed2dba945"
+    },
+    "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._process_message": {
+      "file_path": "app/surfaces/queue_consumer.py",
+      "qualified_name": "app.surfaces.queue_consumer._process_message",
+      "start_line": 27,
+      "end_line": 45,
+      "type": "FUNCTION",
+      "content_hash": "c80c2175b3b23104"
+    },
+    "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer._consume_loop": {
+      "file_path": "app/surfaces/queue_consumer.py",
+      "qualified_name": "app.surfaces.queue_consumer._consume_loop",
+      "start_line": 48,
+      "end_line": 69,
+      "type": "FUNCTION",
+      "content_hash": "6bd97cb83cd35dd7"
+    },
+    "app/surfaces/queue_consumer.py|app.surfaces.queue_consumer.start_in_background": {
+      "file_path": "app/surfaces/queue_consumer.py",
+      "qualified_name": "app.surfaces.queue_consumer.start_in_background",
+      "start_line": 72,
+      "end_line": 78,
+      "type": "FUNCTION",
+      "content_hash": "1f7f98c003f56aed"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso._pg_url": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso._pg_url",
+      "start_line": 39,
+      "end_line": 40,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso._connect": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso._connect",
+      "start_line": 43,
+      "end_line": 44,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso.ensure_sso_sessions_table",
+      "start_line": 47,
+      "end_line": 67,
+      "type": "FUNCTION",
+      "content_hash": "37fc21e16f090d50"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso.establish_sso_session",
+      "start_line": 70,
+      "end_line": 94,
+      "type": "FUNCTION",
+      "content_hash": "2d47359523f62a88"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso.get_sso_session": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso.get_sso_session",
+      "start_line": 97,
+      "end_line": 116,
+      "type": "FUNCTION",
+      "content_hash": "7d5da7d866cd1dd1"
+    },
+    "app/surfaces/sso.py|app.surfaces.sso.sso_handoff": {
+      "file_path": "app/surfaces/sso.py",
+      "qualified_name": "app.surfaces.sso.sso_handoff",
+      "start_line": 120,
+      "end_line": 139,
+      "type": "FUNCTION",
+      "content_hash": "9cc6a007c1acce4f"
+    },
+    "app/modules/base.py|app.modules.base.ModuleContext": {
+      "file_path": "app/modules/base.py",
+      "qualified_name": "app.modules.base.ModuleContext",
+      "start_line": 20,
+      "end_line": 36,
+      "type": "CLASS",
+      "content_hash": "b8c4e362aaa2eaa1"
+    },
+    "app/modules/base.py|app.modules.base.ModuleContext.llm": {
+      "file_path": "app/modules/base.py",
+      "qualified_name": "app.modules.base.ModuleContext.llm",
+      "start_line": 32,
+      "end_line": 36,
+      "type": "METHOD",
+      "content_hash": "c48f82b290593e84"
+    },
+    "app/modules/base.py|app.modules.base.result": {
+      "file_path": "app/modules/base.py",
+      "qualified_name": "app.modules.base.result",
+      "start_line": 39,
+      "end_line": 41,
+      "type": "FUNCTION",
+      "content_hash": "c3bb93219c97a171"
+    },
+    "app/modules/chart/handler.py|app.modules.chart.handler._run_query": {
+      "file_path": "app/modules/chart/handler.py",
+      "qualified_name": "app.modules.chart.handler._run_query",
+      "start_line": 19,
+      "end_line": 33,
+      "type": "FUNCTION",
+      "content_hash": "d20f9d1730c021ee"
+    },
+    "app/modules/chart/handler.py|app.modules.chart.handler.handle": {
+      "file_path": "app/modules/chart/handler.py",
+      "qualified_name": "app.modules.chart.handler.handle",
+      "start_line": 36,
+      "end_line": 40,
+      "type": "FUNCTION",
+      "content_hash": "838ae12fdc9673e7"
+    },
+    "app/modules/project_management/handler.py|app.modules.project_management.handler._list": {
+      "file_path": "app/modules/project_management/handler.py",
+      "qualified_name": "app.modules.project_management.handler._list",
+      "start_line": 17,
+      "end_line": 21,
+      "type": "FUNCTION",
+      "content_hash": "04d4218274afa744"
+    },
+    "app/modules/project_management/handler.py|app.modules.project_management.handler._create": {
+      "file_path": "app/modules/project_management/handler.py",
+      "qualified_name": "app.modules.project_management.handler._create",
+      "start_line": 24,
+      "end_line": 36,
+      "type": "FUNCTION",
+      "content_hash": "588a784df404053c"
+    },
+    "app/modules/project_management/handler.py|app.modules.project_management.handler.handle": {
+      "file_path": "app/modules/project_management/handler.py",
+      "qualified_name": "app.modules.project_management.handler.handle",
+      "start_line": 39,
+      "end_line": 45,
+      "type": "FUNCTION",
+      "content_hash": "f7afeecd600d09ff"
+    },
+    "app/modules/registry.py|app.modules.registry.Module": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.Module",
+      "start_line": 22,
+      "end_line": 40,
+      "type": "CLASS",
+      "content_hash": "6f3197a3870eef0b"
+    },
+    "app/modules/registry.py|app.modules.registry.Module.__init__": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.Module.__init__",
+      "start_line": 25,
+      "end_line": 32,
+      "type": "METHOD",
+      "content_hash": "5900c5a41cbfa3d0"
+    },
+    "app/modules/registry.py|app.modules.registry.Module.handle": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.Module.handle",
+      "start_line": 34,
+      "end_line": 35,
+      "type": "METHOD",
+      "content_hash": "74110c840a788b80"
+    },
+    "app/modules/registry.py|app.modules.registry.Module.supports": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.Module.supports",
+      "start_line": 37,
+      "end_line": 40,
+      "type": "METHOD",
+      "content_hash": "29e86b62004857c1"
+    },
+    "app/modules/registry.py|app.modules.registry.discover": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.discover",
+      "start_line": 46,
+      "end_line": 75,
+      "type": "FUNCTION",
+      "content_hash": "59ad3364753dbca1"
+    },
+    "app/modules/registry.py|app.modules.registry.discover._iter_meta_dirs": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.discover._iter_meta_dirs",
+      "start_line": 53,
+      "end_line": 58,
+      "type": "FUNCTION",
+      "content_hash": "771135f971b65b35"
+    },
+    "app/modules/registry.py|app.modules.registry.modules_for_project": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.modules_for_project",
+      "start_line": 81,
+      "end_line": 92,
+      "type": "FUNCTION",
+      "content_hash": "c6b3c11367d53707"
+    },
+    "app/modules/registry.py|app.modules.registry.get_by_id": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.get_by_id",
+      "start_line": 95,
+      "end_line": 97,
+      "type": "FUNCTION",
+      "content_hash": "647356636f94baf8"
+    },
+    "app/modules/registry.py|app.modules.registry.invoke": {
+      "file_path": "app/modules/registry.py",
+      "qualified_name": "app.modules.registry.invoke",
+      "start_line": 100,
+      "end_line": 107,
+      "type": "FUNCTION",
+      "content_hash": "875ecb619d0949ae"
+    },
+    "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._parse_json_obj": {
+      "file_path": "app/modules/sustainability/sdg/handler.py",
+      "qualified_name": "app.modules.sustainability.sdg.handler._parse_json_obj",
+      "start_line": 24,
+      "end_line": 33,
+      "type": "FUNCTION",
+      "content_hash": "91ad2b89cc36b2d0"
+    },
+    "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._generate": {
+      "file_path": "app/modules/sustainability/sdg/handler.py",
+      "qualified_name": "app.modules.sustainability.sdg.handler._generate",
+      "start_line": 36,
+      "end_line": 64,
+      "type": "FUNCTION",
+      "content_hash": "76ccdae333356315"
+    },
+    "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler.handle": {
+      "file_path": "app/modules/sustainability/sdg/handler.py",
+      "qualified_name": "app.modules.sustainability.sdg.handler.handle",
+      "start_line": 67,
+      "end_line": 71,
+      "type": "FUNCTION",
+      "content_hash": "3dd6b2b959833db9"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._unwrap": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler._unwrap",
+      "start_line": 24,
+      "end_line": 27,
+      "type": "FUNCTION",
+      "content_hash": "4aeb3809286039b2"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._indicators_from_template": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler._indicators_from_template",
+      "start_line": 30,
+      "end_line": 37,
+      "type": "FUNCTION",
+      "content_hash": "db708f8cece84fb9"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._indicators_from_sroi": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler._indicators_from_sroi",
+      "start_line": 40,
+      "end_line": 57,
+      "type": "FUNCTION",
+      "content_hash": "41a65e211648b670"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._parse_json_obj": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler._parse_json_obj",
+      "start_line": 60,
+      "end_line": 69,
+      "type": "FUNCTION",
+      "content_hash": "91ad2b89cc36b2d0"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._estimate": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler._estimate",
+      "start_line": 72,
+      "end_line": 124,
+      "type": "FUNCTION",
+      "content_hash": "740312242f4e9d62"
+    },
+    "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler.handle": {
+      "file_path": "app/modules/sustainability/sroi/handler.py",
+      "qualified_name": "app.modules.sustainability.sroi.handler.handle",
+      "start_line": 127,
+      "end_line": 131,
+      "type": "FUNCTION",
+      "content_hash": "fddfe78b49a0ac95"
+    },
+    "app/apps/_registry.py|app.apps._registry.App": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.App",
+      "start_line": 32,
+      "end_line": 53,
+      "type": "CLASS",
+      "content_hash": "7d699be2cb63173d"
+    },
+    "app/apps/_registry.py|app.apps._registry.App.__init__": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.App.__init__",
+      "start_line": 33,
+      "end_line": 49,
+      "type": "METHOD",
+      "content_hash": "be3e864fa1e938f3"
+    },
+    "app/apps/_registry.py|app.apps._registry.App.full_id": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.App.full_id",
+      "start_line": 52,
+      "end_line": 53,
+      "type": "METHOD",
+      "content_hash": "36ae08b4a3997cc4"
+    },
+    "app/apps/_registry.py|app.apps._registry.discover": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.discover",
+      "start_line": 60,
+      "end_line": 93,
+      "type": "FUNCTION",
+      "content_hash": "25f8fe53a67cd1c6"
+    },
+    "app/apps/_registry.py|app.apps._registry.filter_enabled": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.filter_enabled",
+      "start_line": 100,
+      "end_line": 112,
+      "type": "FUNCTION",
+      "content_hash": "de619714df6a4b41"
+    },
+    "app/apps/_registry.py|app.apps._registry.is_enabled_for": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.is_enabled_for",
+      "start_line": 115,
+      "end_line": 121,
+      "type": "FUNCTION",
+      "content_hash": "23e03c9311647d2a"
+    },
+    "app/apps/_registry.py|app.apps._registry.chainlit_commands": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.chainlit_commands",
+      "start_line": 124,
+      "end_line": 142,
+      "type": "FUNCTION",
+      "content_hash": "9250193a22a3727d"
+    },
+    "app/apps/_registry.py|app.apps._registry.get_by_id": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.get_by_id",
+      "start_line": 145,
+      "end_line": 147,
+      "type": "FUNCTION",
+      "content_hash": "f58453bf0643484f"
+    },
+    "app/apps/_registry.py|app.apps._registry.default_app": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.default_app",
+      "start_line": 150,
+      "end_line": 152,
+      "type": "FUNCTION",
+      "content_hash": "605f0f64bf35ba85"
+    },
+    "app/apps/_registry.py|app.apps._registry.apps_for_project": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.apps_for_project",
+      "start_line": 155,
+      "end_line": 167,
+      "type": "FUNCTION",
+      "content_hash": "a01d303d260fa8ee"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._fmt": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler._fmt",
+      "start_line": 31,
+      "end_line": 42,
+      "type": "FUNCTION",
+      "content_hash": "cdd65fbda224f09e"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler._mock_runtime",
+      "start_line": 45,
+      "end_line": 57,
+      "type": "FUNCTION",
+      "content_hash": "b808d50ffea9dfc4"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime._stub_execute": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler._mock_runtime._stub_execute",
+      "start_line": 51,
+      "end_line": 54,
+      "type": "FUNCTION",
+      "content_hash": "aa0cff3af836e069"
+    },
+    "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle": {
+      "file_path": "app/apps/chart_analysis/handler.py",
+      "qualified_name": "app.apps.chart_analysis.handler.handle",
+      "start_line": 60,
+      "end_line": 93,
+      "type": "FUNCTION",
+      "content_hash": "ed2e56d9b218b32d"
+    },
+    "app/apps/hello_world/handler.py|app.apps.hello_world.handler._icon_for": {
+      "file_path": "app/apps/hello_world/handler.py",
+      "qualified_name": "app.apps.hello_world.handler._icon_for",
+      "start_line": 24,
+      "end_line": 35,
+      "type": "FUNCTION",
+      "content_hash": "f1bb4b8476e21253"
+    },
+    "app/apps/hello_world/handler.py|app.apps.hello_world.handler._list_aliases": {
+      "file_path": "app/apps/hello_world/handler.py",
+      "qualified_name": "app.apps.hello_world.handler._list_aliases",
+      "start_line": 38,
+      "end_line": 48,
+      "type": "FUNCTION",
+      "content_hash": "e5f0d9aacacf9d2a"
+    },
+    "app/apps/hello_world/handler.py|app.apps.hello_world.handler._stream_one": {
+      "file_path": "app/apps/hello_world/handler.py",
+      "qualified_name": "app.apps.hello_world.handler._stream_one",
+      "start_line": 51,
+      "end_line": 62,
+      "type": "FUNCTION",
+      "content_hash": "6de82f577ef3011b"
+    },
+    "app/apps/hello_world/handler.py|app.apps.hello_world.handler.handle": {
+      "file_path": "app/apps/hello_world/handler.py",
+      "qualified_name": "app.apps.hello_world.handler.handle",
+      "start_line": 65,
+      "end_line": 84,
+      "type": "FUNCTION",
+      "content_hash": "f42012a4538b37b9"
+    },
+    "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle": {
+      "file_path": "app/apps/plain_chat/handler.py",
+      "qualified_name": "app.apps.plain_chat.handler.handle",
+      "start_line": 10,
+      "end_line": 22,
+      "type": "FUNCTION",
+      "content_hash": "62f32908f1b97c58"
+    },
+    "app/apps/web_search/handler.py|app.apps.web_search.handler._badge": {
+      "file_path": "app/apps/web_search/handler.py",
+      "qualified_name": "app.apps.web_search.handler._badge",
+      "start_line": 15,
+      "end_line": 20,
+      "type": "FUNCTION",
+      "content_hash": "676eccd157ef7e8c"
+    },
+    "app/apps/web_search/handler.py|app.apps.web_search.handler.handle": {
+      "file_path": "app/apps/web_search/handler.py",
+      "qualified_name": "app.apps.web_search.handler.handle",
+      "start_line": 23,
+      "end_line": 67,
+      "type": "FUNCTION",
+      "content_hash": "74e8d33617d7ddf6"
+    },
+    "app/core/copilot.py|app.core.copilot._confirm_question": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._confirm_question",
+      "start_line": 50,
+      "end_line": 55,
+      "type": "FUNCTION",
+      "content_hash": "92e13e77f9479c01"
+    },
+    "app/core/copilot.py|app.core.copilot._inner": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._inner",
+      "start_line": 58,
+      "end_line": 62,
+      "type": "FUNCTION",
+      "content_hash": "f6e794afd00e457f"
+    },
+    "app/core/copilot.py|app.core.copilot._fmt_result": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._fmt_result",
+      "start_line": 65,
+      "end_line": 78,
+      "type": "FUNCTION",
+      "content_hash": "bb0898cb6cc5327a"
+    },
+    "app/core/copilot.py|app.core.copilot._parse_json_obj": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._parse_json_obj",
+      "start_line": 81,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "e2f15fc7ab8f2977"
+    },
+    "app/core/copilot.py|app.core.copilot.run_copilot": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot.run_copilot",
+      "start_line": 94,
+      "end_line": 143,
+      "type": "FUNCTION",
+      "content_hash": "e3afbad20fd81ac9"
+    },
+    "app/core/copilot.py|app.core.copilot.execute_confirmed": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot.execute_confirmed",
+      "start_line": 146,
+      "end_line": 156,
+      "type": "FUNCTION",
+      "content_hash": "bf98c48616ed8488"
+    },
+    "app/core/copilot.py|app.core.copilot._make_module_ctx": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._make_module_ctx",
+      "start_line": 165,
+      "end_line": 174,
+      "type": "FUNCTION",
+      "content_hash": "aaa05cb308190365"
+    },
+    "app/core/copilot.py|app.core.copilot.generate_and_save_sdg": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot.generate_and_save_sdg",
+      "start_line": 177,
+      "end_line": 183,
+      "type": "FUNCTION",
+      "content_hash": "633ff5a8b976790e"
+    },
+    "app/core/copilot.py|app.core.copilot._indicators_from_template": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot._indicators_from_template",
+      "start_line": 186,
+      "end_line": 197,
+      "type": "FUNCTION",
+      "content_hash": "7e66ac5f41b5ed27"
+    },
+    "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi": {
+      "file_path": "app/core/copilot.py",
+      "qualified_name": "app.core.copilot.estimate_and_save_sroi",
+      "start_line": 200,
+      "end_line": 211,
+      "type": "FUNCTION",
+      "content_hash": "a59c1cc1937d13fb"
+    },
+    "app/core/llm.py|app.core.llm.make_llm": {
+      "file_path": "app/core/llm.py",
+      "qualified_name": "app.core.llm.make_llm",
+      "start_line": 16,
+      "end_line": 39,
+      "type": "FUNCTION",
+      "content_hash": "6088240749adf6b2"
+    },
+    "app/core/opencode.py|app.core.opencode.is_enabled": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode.is_enabled",
+      "start_line": 50,
+      "end_line": 51,
+      "type": "FUNCTION",
+      "content_hash": "16dbea0f4c121aa9"
+    },
+    "app/core/opencode.py|app.core.opencode.is_vision_model": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode.is_vision_model",
+      "start_line": 54,
+      "end_line": 55,
+      "type": "FUNCTION",
+      "content_hash": "7180470afb976353"
+    },
+    "app/core/opencode.py|app.core.opencode._auth": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._auth",
+      "start_line": 58,
+      "end_line": 61,
+      "type": "FUNCTION",
+      "content_hash": "feebbf0f8e663345"
+    },
+    "app/core/opencode.py|app.core.opencode._default_model_ref": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._default_model_ref",
+      "start_line": 64,
+      "end_line": 67,
+      "type": "FUNCTION",
+      "content_hash": "daad584334d9ec98"
+    },
+    "app/core/opencode.py|app.core.opencode._message_model_ref": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._message_model_ref",
+      "start_line": 70,
+      "end_line": 73,
+      "type": "FUNCTION",
+      "content_hash": "23c6e7c64eb85621"
+    },
+    "app/core/opencode.py|app.core.opencode._extract_reply": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._extract_reply",
+      "start_line": 76,
+      "end_line": 83,
+      "type": "FUNCTION",
+      "content_hash": "ac6128696f1803e5"
+    },
+    "app/core/opencode.py|app.core.opencode._image_url": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._image_url",
+      "start_line": 86,
+      "end_line": 89,
+      "type": "FUNCTION",
+      "content_hash": "ad0ba21b7bd027bd"
+    },
+    "app/core/opencode.py|app.core.opencode._send_body": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode._send_body",
+      "start_line": 92,
+      "end_line": 120,
+      "type": "FUNCTION",
+      "content_hash": "e0db9691870d992a"
+    },
+    "app/core/opencode.py|app.core.opencode.create_session": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode.create_session",
+      "start_line": 123,
+      "end_line": 141,
+      "type": "FUNCTION",
+      "content_hash": "aca1da2709d7c2cb"
+    },
+    "app/core/opencode.py|app.core.opencode.get_session_model": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode.get_session_model",
+      "start_line": 144,
+      "end_line": 155,
+      "type": "FUNCTION",
+      "content_hash": "17fe2fb81d16592a"
+    },
+    "app/core/opencode.py|app.core.opencode.send_message": {
+      "file_path": "app/core/opencode.py",
+      "qualified_name": "app.core.opencode.send_message",
+      "start_line": 158,
+      "end_line": 178,
+      "type": "FUNCTION",
+      "content_hash": "8470bbd3400e83ef"
+    },
+    "app/core/search.py|app.core.search.SearchHit": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search.SearchHit",
+      "start_line": 20,
+      "end_line": 23,
+      "type": "CLASS",
+      "content_hash": "3f1d6f69b0c04002"
+    },
+    "app/core/search.py|app.core.search.SearchOutcome": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search.SearchOutcome",
+      "start_line": 27,
+      "end_line": 30,
+      "type": "CLASS",
+      "content_hash": "28c41900748bd1a2"
+    },
+    "app/core/search.py|app.core.search._tavily": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search._tavily",
+      "start_line": 33,
+      "end_line": 54,
+      "type": "FUNCTION",
+      "content_hash": "5bf1a5897afe2787"
+    },
+    "app/core/search.py|app.core.search._ddg_sync": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search._ddg_sync",
+      "start_line": 57,
+      "end_line": 70,
+      "type": "FUNCTION",
+      "content_hash": "0b3dbb3d40cbc54a"
+    },
+    "app/core/search.py|app.core.search._ddg": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search._ddg",
+      "start_line": 73,
+      "end_line": 74,
+      "type": "FUNCTION",
+      "content_hash": "01fa5e1dbddc5f23"
+    },
+    "app/core/search.py|app.core.search.search": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search.search",
+      "start_line": 77,
+      "end_line": 112,
+      "type": "FUNCTION",
+      "content_hash": "159f778bd50f82e9"
+    },
+    "app/core/search.py|app.core.search.is_configured": {
+      "file_path": "app/core/search.py",
+      "qualified_name": "app.core.search.is_configured",
+      "start_line": 115,
+      "end_line": 117,
+      "type": "FUNCTION",
+      "content_hash": "7bc569f42941844a"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient",
+      "start_line": 18,
+      "end_line": 53,
+      "type": "CLASS",
+      "content_hash": "870dae39472c8cff"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient.__init__": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient.__init__",
+      "start_line": 19,
+      "end_line": 22,
+      "type": "METHOD",
+      "content_hash": "a044d7b4922c06b1"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient.upload_file": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient.upload_file",
+      "start_line": 24,
+      "end_line": 40,
+      "type": "METHOD",
+      "content_hash": "fae7784a1874fda9"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient.delete_file": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient.delete_file",
+      "start_line": 42,
+      "end_line": 47,
+      "type": "METHOD",
+      "content_hash": "0246cf3cb161d1e8"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient.get_read_url": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient.get_read_url",
+      "start_line": 49,
+      "end_line": 50,
+      "type": "METHOD",
+      "content_hash": "4ee87b994eeed137"
+    },
+    "app/core/storage.py|app.core.storage.LocalStorageClient.close": {
+      "file_path": "app/core/storage.py",
+      "qualified_name": "app.core.storage.LocalStorageClient.close",
+      "start_line": 52,
+      "end_line": 53,
+      "type": "METHOD",
+      "content_hash": "f87791e062255dbf"
+    },
+    "app/auth/issuers.py|app.auth.issuers._now": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers._now",
+      "start_line": 51,
+      "end_line": 52,
+      "type": "FUNCTION",
+      "content_hash": "74fa78d1715b33fa"
+    },
+    "app/auth/issuers.py|app.auth.issuers._fetch_jwks": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers._fetch_jwks",
+      "start_line": 55,
+      "end_line": 70,
+      "type": "FUNCTION",
+      "content_hash": "ef7f18b2fb4180ea"
+    },
+    "app/auth/issuers.py|app.auth.issuers._pubkey_for": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers._pubkey_for",
+      "start_line": 73,
+      "end_line": 81,
+      "type": "FUNCTION",
+      "content_hash": "bc63da19271f107b"
+    },
+    "app/auth/issuers.py|app.auth.issuers.verify_handoff": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers.verify_handoff",
+      "start_line": 84,
+      "end_line": 118,
+      "type": "FUNCTION",
+      "content_hash": "2192626f994071e3"
+    },
+    "app/auth/issuers.py|app.auth.issuers.fetch_manifest": {
+      "file_path": "app/auth/issuers.py",
+      "qualified_name": "app.auth.issuers.fetch_manifest",
+      "start_line": 121,
+      "end_line": 137,
+      "type": "FUNCTION",
+      "content_hash": "035e796d8cd3775a"
+    },
+    "app/dispatch.py|app.dispatch.Envelope": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch.Envelope",
+      "start_line": 37,
+      "end_line": 43,
+      "type": "CLASS",
+      "content_hash": "ef9df719c3dbd169"
+    },
+    "app/dispatch.py|app.dispatch._json_list": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch._json_list",
+      "start_line": 46,
+      "end_line": 53,
+      "type": "FUNCTION",
+      "content_hash": "feac328e51c87949"
+    },
+    "app/dispatch.py|app.dispatch._json_obj": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch._json_obj",
+      "start_line": 56,
+      "end_line": 62,
+      "type": "FUNCTION",
+      "content_hash": "ab12a6e45ca0d21e"
+    },
+    "app/dispatch.py|app.dispatch._select_capabilities": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch._select_capabilities",
+      "start_line": 65,
+      "end_line": 88,
+      "type": "FUNCTION",
+      "content_hash": "2ef1cda8f986f2f4"
+    },
+    "app/dispatch.py|app.dispatch.handle_device_intent": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch.handle_device_intent",
+      "start_line": 91,
+      "end_line": 113,
+      "type": "FUNCTION",
+      "content_hash": "a9d050b35761caaa"
+    },
+    "app/dispatch.py|app.dispatch._picked_to_commands": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch._picked_to_commands",
+      "start_line": 116,
+      "end_line": 125,
+      "type": "FUNCTION",
+      "content_hash": "01333cd2821fc95c"
+    },
+    "app/dispatch.py|app.dispatch.converse": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch.converse",
+      "start_line": 132,
+      "end_line": 165,
+      "type": "FUNCTION",
+      "content_hash": "05cc58fc7a4bbeaa"
+    },
+    "app/dispatch.py|app.dispatch._expand": {
+      "file_path": "app/dispatch.py",
+      "qualified_name": "app.dispatch._expand",
+      "start_line": 168,
+      "end_line": 185,
+      "type": "FUNCTION",
+      "content_hash": "8848e7f20015ec1a"
+    },
+    "app/main.py|app.main.auth_callback": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.auth_callback",
+      "start_line": 44,
+      "end_line": 47,
+      "type": "FUNCTION",
+      "content_hash": "fa12a8219f868031"
+    },
+    "app/main.py|app.main.sso_header_auth": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.sso_header_auth",
+      "start_line": 54,
+      "end_line": 74,
+      "type": "FUNCTION",
+      "content_hash": "70b7f8dc43d99d68"
+    },
+    "app/main.py|app.main._init_tables": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._init_tables",
+      "start_line": 88,
+      "end_line": 96,
+      "type": "FUNCTION",
+      "content_hash": "ec1889b9133e75d4"
+    },
+    "app/main.py|app.main._current_user_project": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._current_user_project",
+      "start_line": 108,
+      "end_line": 113,
+      "type": "FUNCTION",
+      "content_hash": "4e24ff2e6f92fe0a"
+    },
+    "app/main.py|app.main._enabled_apps_for": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._enabled_apps_for",
+      "start_line": 116,
+      "end_line": 120,
+      "type": "FUNCTION",
+      "content_hash": "50cad599d443d46d"
+    },
+    "app/main.py|app.main._register_commands": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._register_commands",
+      "start_line": 123,
+      "end_line": 130,
+      "type": "FUNCTION",
+      "content_hash": "2d78ef8285a772ac"
+    },
+    "app/main.py|app.main.on_chat_resume": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.on_chat_resume",
+      "start_line": 134,
+      "end_line": 138,
+      "type": "FUNCTION",
+      "content_hash": "e4229d6e00d8a44a"
+    },
+    "app/main.py|app.main._sso_session_for_current_user": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._sso_session_for_current_user",
+      "start_line": 141,
+      "end_line": 145,
+      "type": "FUNCTION",
+      "content_hash": "b37628be1cb74906"
+    },
+    "app/main.py|app.main._load_sso_runtime": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._load_sso_runtime",
+      "start_line": 148,
+      "end_line": 162,
+      "type": "FUNCTION",
+      "content_hash": "5a27562fa078bddb"
+    },
+    "app/main.py|app.main.on_start": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.on_start",
+      "start_line": 166,
+      "end_line": 188,
+      "type": "FUNCTION",
+      "content_hash": "ce78cb08568e53c7"
+    },
+    "app/main.py|app.main._read_text_file": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._read_text_file",
+      "start_line": 208,
+      "end_line": 223,
+      "type": "FUNCTION",
+      "content_hash": "fcd4aa7fe052b991"
+    },
+    "app/main.py|app.main._frame_file": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._frame_file",
+      "start_line": 226,
+      "end_line": 232,
+      "type": "FUNCTION",
+      "content_hash": "48e9f5d1a672deef"
+    },
+    "app/main.py|app.main._emit_copilot": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._emit_copilot",
+      "start_line": 235,
+      "end_line": 247,
+      "type": "FUNCTION",
+      "content_hash": "3dc71a2190658b64"
+    },
+    "app/main.py|app.main._run_copilot_emit": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._run_copilot_emit",
+      "start_line": 250,
+      "end_line": 261,
+      "type": "FUNCTION",
+      "content_hash": "dfa60dc025cd715a"
+    },
+    "app/main.py|app.main._run_with_attachments": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._run_with_attachments",
+      "start_line": 264,
+      "end_line": 279,
+      "type": "FUNCTION",
+      "content_hash": "60323d7e48654d5d"
+    },
+    "app/main.py|app.main._handle_cms_attachments": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._handle_cms_attachments",
+      "start_line": 282,
+      "end_line": 318,
+      "type": "FUNCTION",
+      "content_hash": "18e57632f6f151ae"
+    },
+    "app/main.py|app.main.on_message": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.on_message",
+      "start_line": 322,
+      "end_line": 407,
+      "type": "FUNCTION",
+      "content_hash": "d57d0628589cdbcd"
+    },
+    "app/main.py|app.main.cms_confirm": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.cms_confirm",
+      "start_line": 411,
+      "end_line": 456,
+      "type": "FUNCTION",
+      "content_hash": "aca6d89fb775c884"
+    },
+    "app/main.py|app.main.cms_sroi": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.cms_sroi",
+      "start_line": 460,
+      "end_line": 481,
+      "type": "FUNCTION",
+      "content_hash": "ab8c08f74ba1c715"
+    },
+    "app/main.py|app.main.cms_attach": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main.cms_attach",
+      "start_line": 485,
+      "end_line": 504,
+      "type": "FUNCTION",
+      "content_hash": "1796bddad5a69ac9"
+    },
+    "app/projects/registry.py|app.projects.registry._pg_url": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry._pg_url",
+      "start_line": 35,
+      "end_line": 36,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/projects/registry.py|app.projects.registry._connect": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry._connect",
+      "start_line": 39,
+      "end_line": 40,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/projects/registry.py|app.projects.registry.ensure_projects_table": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.ensure_projects_table",
+      "start_line": 61,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "50ec6418a9e30204"
+    },
+    "app/projects/registry.py|app.projects.registry.get_project": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.get_project",
+      "start_line": 94,
+      "end_line": 105,
+      "type": "FUNCTION",
+      "content_hash": "99f79aee6b2e789d"
+    },
+    "app/projects/registry.py|app.projects.registry.get_litellm_key": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.get_litellm_key",
+      "start_line": 108,
+      "end_line": 124,
+      "type": "FUNCTION",
+      "content_hash": "6ef28a3d30912edc"
+    },
+    "app/projects/registry.py|app.projects.registry.list_projects": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.list_projects",
+      "start_line": 127,
+      "end_line": 135,
+      "type": "FUNCTION",
+      "content_hash": "24031717882bacd2"
+    },
+    "app/projects/registry.py|app.projects.registry.normalize_enabled_apps": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.normalize_enabled_apps",
+      "start_line": 144,
+      "end_line": 155,
+      "type": "FUNCTION",
+      "content_hash": "1e7a343b14d2c467"
+    },
+    "app/projects/registry.py|app.projects.registry.normalize_app_flags": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.normalize_app_flags",
+      "start_line": 158,
+      "end_line": 168,
+      "type": "FUNCTION",
+      "content_hash": "884f4d4eef2e0371"
+    },
+    "app/projects/registry.py|app.projects.registry.get_enabled_apps": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.get_enabled_apps",
+      "start_line": 171,
+      "end_line": 189,
+      "type": "FUNCTION",
+      "content_hash": "c8f737b28160e56b"
+    },
+    "app/projects/registry.py|app.projects.registry.get_app_flags": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.get_app_flags",
+      "start_line": 192,
+      "end_line": 210,
+      "type": "FUNCTION",
+      "content_hash": "62f97ac3d51b0197"
+    },
+    "app/projects/registry.py|app.projects.registry.set_enabled_apps": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.set_enabled_apps",
+      "start_line": 213,
+      "end_line": 231,
+      "type": "FUNCTION",
+      "content_hash": "48311bfc07dd75d6"
+    },
+    "app/projects/registry.py|app.projects.registry.get_enabled_modules": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.get_enabled_modules",
+      "start_line": 234,
+      "end_line": 252,
+      "type": "FUNCTION",
+      "content_hash": "9db36401b024a88f"
+    },
+    "app/projects/registry.py|app.projects.registry.set_enabled_modules": {
+      "file_path": "app/projects/registry.py",
+      "qualified_name": "app.projects.registry.set_enabled_modules",
+      "start_line": 255,
+      "end_line": 273,
+      "type": "FUNCTION",
+      "content_hash": "1645b07fbc4967e4"
+    },
+    "app/adapters/base.py|app.adapters.base.QuerySpec": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.QuerySpec",
+      "start_line": 13,
+      "end_line": 26,
+      "type": "CLASS",
+      "content_hash": "5d9a7c7a167f431e"
+    },
+    "app/adapters/base.py|app.adapters.base.AdapterResult": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.AdapterResult",
+      "start_line": 30,
+      "end_line": 44,
+      "type": "CLASS",
+      "content_hash": "fc7f3089613fd7ab"
+    },
+    "app/adapters/base.py|app.adapters.base.DataSource": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.DataSource",
+      "start_line": 48,
+      "end_line": 57,
+      "type": "CLASS",
+      "content_hash": "9599fb460db67e94"
+    },
+    "app/adapters/base.py|app.adapters.base.DataSource.__init__": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.DataSource.__init__",
+      "start_line": 53,
+      "end_line": 53,
+      "type": "METHOD",
+      "content_hash": "b4d00df37fca2b14"
+    },
+    "app/adapters/base.py|app.adapters.base.DataSource.query": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.DataSource.query",
+      "start_line": 55,
+      "end_line": 57,
+      "type": "METHOD",
+      "content_hash": "7f0080121bc0768a"
+    },
+    "app/adapters/base.py|app.adapters.base.unwrap_cms": {
+      "file_path": "app/adapters/base.py",
+      "qualified_name": "app.adapters.base.unwrap_cms",
+      "start_line": 60,
+      "end_line": 65,
+      "type": "FUNCTION",
+      "content_hash": "55f5abdbd801dfae"
+    },
+    "app/adapters/cms.py|app.adapters.cms.CMSDataSource": {
+      "file_path": "app/adapters/cms.py",
+      "qualified_name": "app.adapters.cms.CMSDataSource",
+      "start_line": 24,
+      "end_line": 57,
+      "type": "CLASS",
+      "content_hash": "4b359e301f096fdb"
+    },
+    "app/adapters/cms.py|app.adapters.cms.CMSDataSource.__init__": {
+      "file_path": "app/adapters/cms.py",
+      "qualified_name": "app.adapters.cms.CMSDataSource.__init__",
+      "start_line": 27,
+      "end_line": 29,
+      "type": "METHOD",
+      "content_hash": "cca530df8b58695a"
+    },
+    "app/adapters/cms.py|app.adapters.cms.CMSDataSource.bind": {
+      "file_path": "app/adapters/cms.py",
+      "qualified_name": "app.adapters.cms.CMSDataSource.bind",
+      "start_line": 31,
+      "end_line": 33,
+      "type": "METHOD",
+      "content_hash": "cd982a901229b0a3"
+    },
+    "app/adapters/cms.py|app.adapters.cms.CMSDataSource.query": {
+      "file_path": "app/adapters/cms.py",
+      "qualified_name": "app.adapters.cms.CMSDataSource.query",
+      "start_line": 35,
+      "end_line": 57,
+      "type": "METHOD",
+      "content_hash": "e6e9f87f8620581c"
+    },
+    "app/adapters/registry.py|app.adapters.registry.register": {
+      "file_path": "app/adapters/registry.py",
+      "qualified_name": "app.adapters.registry.register",
+      "start_line": 19,
+      "end_line": 20,
+      "type": "FUNCTION",
+      "content_hash": "270133730ee26b34"
+    },
+    "app/adapters/registry.py|app.adapters.registry.get_adapter_cls": {
+      "file_path": "app/adapters/registry.py",
+      "qualified_name": "app.adapters.registry.get_adapter_cls",
+      "start_line": 23,
+      "end_line": 24,
+      "type": "FUNCTION",
+      "content_hash": "8b92086d0fa0fc62"
+    },
+    "app/adapters/registry.py|app.adapters.registry.create": {
+      "file_path": "app/adapters/registry.py",
+      "qualified_name": "app.adapters.registry.create",
+      "start_line": 27,
+      "end_line": 32,
+      "type": "FUNCTION",
+      "content_hash": "b386d9948779309c"
+    },
+    "app/adapters/stub.py|app.adapters.stub.StubDataSource": {
+      "file_path": "app/adapters/stub.py",
+      "qualified_name": "app.adapters.stub.StubDataSource",
+      "start_line": 15,
+      "end_line": 36,
+      "type": "CLASS",
+      "content_hash": "9debd64380686e29"
+    },
+    "app/adapters/stub.py|app.adapters.stub.StubDataSource.__init__": {
+      "file_path": "app/adapters/stub.py",
+      "qualified_name": "app.adapters.stub.StubDataSource.__init__",
+      "start_line": 18,
+      "end_line": 21,
+      "type": "METHOD",
+      "content_hash": "06665bb077d2a175"
+    },
+    "app/adapters/stub.py|app.adapters.stub.StubDataSource.query": {
+      "file_path": "app/adapters/stub.py",
+      "qualified_name": "app.adapters.stub.StubDataSource.query",
+      "start_line": 23,
+      "end_line": 36,
+      "type": "METHOD",
+      "content_hash": "5f673d4c422d4a08"
+    },
+    "arch/build.py|arch.build.esc_label": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.esc_label",
+      "start_line": 74,
+      "end_line": 78,
+      "type": "FUNCTION",
+      "content_hash": "a8c84f1ce144c6e0"
+    },
+    "arch/build.py|arch.build.esc_html": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.esc_html",
+      "start_line": 81,
+      "end_line": 83,
+      "type": "FUNCTION",
+      "content_hash": "bf54cc8104c42d2a"
+    },
+    "arch/build.py|arch.build.file_ref": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.file_ref",
+      "start_line": 86,
+      "end_line": 91,
+      "type": "FUNCTION",
+      "content_hash": "2a6d55fff23a807c"
+    },
+    "arch/build.py|arch.build.collect": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.collect",
+      "start_line": 94,
+      "end_line": 157,
+      "type": "FUNCTION",
+      "content_hash": "c4e5664a11aed5f6"
+    },
+    "arch/build.py|arch.build.collect.claim": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.collect.claim",
+      "start_line": 105,
+      "end_line": 112,
+      "type": "FUNCTION",
+      "content_hash": "490081eb0224a058"
+    },
+    "arch/build.py|arch.build.build_mermaid": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.build_mermaid",
+      "start_line": 160,
+      "end_line": 204,
+      "type": "FUNCTION",
+      "content_hash": "fd1a8ee4f6dcac6c"
+    },
+    "arch/build.py|arch.build.build_component_rows": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.build_component_rows",
+      "start_line": 207,
+      "end_line": 221,
+      "type": "FUNCTION",
+      "content_hash": "ff9b76356e0baee6"
+    },
+    "arch/build.py|arch.build.main": {
+      "file_path": "arch/build.py",
+      "qualified_name": "arch.build.main",
+      "start_line": 224,
+      "end_line": 247,
+      "type": "FUNCTION",
+      "content_hash": "7d4c5c2d82613b50"
+    },
+    "public/custom.js|public.custom.<function>": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>",
+      "start_line": 4,
+      "end_line": 47,
+      "type": "FUNCTION",
+      "content_hash": "4f0d16a2081418ba"
+    },
+    "public/custom.js|public.custom.<function>.mount": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.mount",
+      "start_line": 19,
+      "end_line": 23,
+      "type": "FUNCTION",
+      "content_hash": "e5f367d08ff4ff68"
+    },
+    "public/custom.js|public.custom.<function>.remove": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.remove",
+      "start_line": 24,
+      "end_line": 27,
+      "type": "FUNCTION",
+      "content_hash": "c75ed9d12ef27a8f"
+    },
+    "public/custom.js|public.custom.<function>.remove.setTimeout() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.remove.setTimeout() callback",
+      "start_line": 26,
+      "end_line": 26,
+      "type": "FUNCTION",
+      "content_hash": "1a4c82527746ecdc"
+    },
+    "public/custom.js|public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
+      "start_line": 40,
+      "end_line": 43,
+      "type": "FUNCTION",
+      "content_hash": "677dab5c020258f9"
+    },
+    "public/custom.js|public.custom.<function>.setTimeout() callback": {
+      "file_path": "public/custom.js",
+      "qualified_name": "public.custom.<function>.setTimeout() callback",
+      "start_line": 46,
+      "end_line": 46,
+      "type": "FUNCTION",
+      "content_hash": "8a232882cf5f76ad"
+    },
+    "app/nodes/commands.py|app.nodes.commands._pg_url": {
+      "file_path": "app/nodes/commands.py",
+      "qualified_name": "app.nodes.commands._pg_url",
+      "start_line": 32,
+      "end_line": 33,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/nodes/commands.py|app.nodes.commands._connect": {
+      "file_path": "app/nodes/commands.py",
+      "qualified_name": "app.nodes.commands._connect",
+      "start_line": 36,
+      "end_line": 37,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/nodes/commands.py|app.nodes.commands.ensure_commands_table": {
+      "file_path": "app/nodes/commands.py",
+      "qualified_name": "app.nodes.commands.ensure_commands_table",
+      "start_line": 40,
+      "end_line": 66,
+      "type": "FUNCTION",
+      "content_hash": "b49fba2c54950929"
+    },
+    "app/nodes/commands.py|app.nodes.commands.enqueue_command": {
+      "file_path": "app/nodes/commands.py",
+      "qualified_name": "app.nodes.commands.enqueue_command",
+      "start_line": 69,
+      "end_line": 81,
+      "type": "FUNCTION",
+      "content_hash": "ce88d506b66beaf8"
+    },
+    "app/nodes/commands.py|app.nodes.commands.pull_pending": {
+      "file_path": "app/nodes/commands.py",
+      "qualified_name": "app.nodes.commands.pull_pending",
+      "start_line": 84,
+      "end_line": 110,
+      "type": "FUNCTION",
+      "content_hash": "1f4cf7dc22adb72f"
+    },
+    "app/nodes/registry.py|app.nodes.registry._pg_url": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry._pg_url",
+      "start_line": 40,
+      "end_line": 41,
+      "type": "FUNCTION",
+      "content_hash": "cace76d6a9ef414e"
+    },
+    "app/nodes/registry.py|app.nodes.registry._connect": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry._connect",
+      "start_line": 44,
+      "end_line": 45,
+      "type": "FUNCTION",
+      "content_hash": "f5b9de0e5918e163"
+    },
+    "app/nodes/registry.py|app.nodes.registry.ensure_nodes_table": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.ensure_nodes_table",
+      "start_line": 48,
+      "end_line": 75,
+      "type": "FUNCTION",
+      "content_hash": "139eed697dafc983"
+    },
+    "app/nodes/registry.py|app.nodes.registry.register_node": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.register_node",
+      "start_line": 78,
+      "end_line": 109,
+      "type": "FUNCTION",
+      "content_hash": "b4773154589b8f41"
+    },
+    "app/nodes/registry.py|app.nodes.registry.touch_node": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.touch_node",
+      "start_line": 112,
+      "end_line": 120,
+      "type": "FUNCTION",
+      "content_hash": "74afc5818dfc4204"
+    },
+    "app/nodes/registry.py|app.nodes.registry.get_node": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.get_node",
+      "start_line": 123,
+      "end_line": 135,
+      "type": "FUNCTION",
+      "content_hash": "fcc132f66f4160da"
+    },
+    "app/nodes/registry.py|app.nodes.registry.list_nodes": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.list_nodes",
+      "start_line": 138,
+      "end_line": 155,
+      "type": "FUNCTION",
+      "content_hash": "282fd572745d6498"
+    },
+    "app/nodes/registry.py|app.nodes.registry.nodes_with_capability": {
+      "file_path": "app/nodes/registry.py",
+      "qualified_name": "app.nodes.registry.nodes_with_capability",
+      "start_line": 158,
+      "end_line": 181,
+      "type": "FUNCTION",
+      "content_hash": "ce0f0c82b1d0d1bb"
+    },
+    "app/tools/registry.py|app.tools.registry.tools_for_capabilities": {
+      "file_path": "app/tools/registry.py",
+      "qualified_name": "app.tools.registry.tools_for_capabilities",
+      "start_line": 53,
+      "end_line": 61,
+      "type": "FUNCTION",
+      "content_hash": "e7185ebf7a13f394"
+    },
+    "app/tools/registry.py|app.tools.registry.capability_for_tool": {
+      "file_path": "app/tools/registry.py",
+      "qualified_name": "app.tools.registry.capability_for_tool",
+      "start_line": 64,
+      "end_line": 66,
+      "type": "FUNCTION",
+      "content_hash": "9bdda11a8e48de7c"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime",
+      "start_line": 38,
+      "end_line": 181,
+      "type": "CLASS",
+      "content_hash": "286f4fb40dc79c7f"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.__init__": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.__init__",
+      "start_line": 39,
+      "end_line": 45,
+      "type": "METHOD",
+      "content_hash": "c1a0580c412e0cdf"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.load": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.load",
+      "start_line": 48,
+      "end_line": 58,
+      "type": "METHOD",
+      "content_hash": "4d28d5aef7cdf166"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime._needs_confirm": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime._needs_confirm",
+      "start_line": 62,
+      "end_line": 67,
+      "type": "METHOD",
+      "content_hash": "a6204bb165514d80"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime._to_json_schema": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime._to_json_schema",
+      "start_line": 70,
+      "end_line": 94,
+      "type": "METHOD",
+      "content_hash": "e5e69bd8e8d18c1f"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.visible_tools",
+      "start_line": 97,
+      "end_line": 109,
+      "type": "METHOD",
+      "content_hash": "794857f874e3b036"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.is_allowed": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.is_allowed",
+      "start_line": 111,
+      "end_line": 112,
+      "type": "METHOD",
+      "content_hash": "be253cdbc5c3ac20"
+    },
+    "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute": {
+      "file_path": "app/tools/runtime.py",
+      "qualified_name": "app.tools.runtime.ToolRuntime.execute",
+      "start_line": 115,
+      "end_line": 181,
+      "type": "METHOD",
+      "content_hash": "82fc5ce0bb66f566"
+    }
+  },
+  "components": [
+    {
+      "name": "Interaction Surfaces",
+      "description": "Exposes external interaction surfaces including LINE messaging, Discord voice, device HTTP endpoints, queue listeners, and SSO handoffs.",
+      "key_entities": [
+        {
+          "qualified_name": "app.surfaces.device.device_intent",
+          "reference_file": "app/surfaces/device.py",
+          "reference_start_line": 74,
+          "reference_end_line": 90
+        },
+        {
+          "qualified_name": "app.surfaces.line.ensure_line_table",
+          "reference_file": "app/surfaces/line.py",
+          "reference_start_line": 52,
+          "reference_end_line": 71
+        },
+        {
+          "qualified_name": "app.surfaces.sso.establish_sso_session",
+          "reference_file": "app/surfaces/sso.py",
+          "reference_start_line": 70,
+          "reference_end_line": 94
+        }
+      ],
+      "source_cluster_ids": [
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/surfaces/device.py",
+          "methods": [
+            "app.surfaces.device._check_token",
+            "app.surfaces.device.device_register",
+            "app.surfaces.device.device_intent",
+            "app.surfaces.device.device_poll",
+            "app.surfaces.device.device_result",
+            "app.surfaces.device.device_img"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/discord_voice.py",
+          "methods": [
+            "app.surfaces.discord_voice._pg_url",
+            "app.surfaces.discord_voice.ensure_discord_voice_table",
+            "app.surfaces.discord_voice._get_session_id",
+            "app.surfaces.discord_voice._store_mapping",
+            "app.surfaces.discord_voice._touch_mapping",
+            "app.surfaces.discord_voice.chat",
+            "app.surfaces.discord_voice.discord_voice_chat"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/line.py",
+          "methods": [
+            "app.surfaces.line._pg_url",
+            "app.surfaces.line.ensure_line_table",
+            "app.surfaces.line._save_follow",
+            "app.surfaces.line._mark_unfollow",
+            "app.surfaces.line._line_reply",
+            "app.surfaces.line.push_to_user",
+            "app.surfaces.line.push_images_to_user",
+            "app.surfaces.line._download_line_image",
+            "app.surfaces.line._transcribe_line_audio",
+            "app.surfaces.line._verify_signature",
+            "app.surfaces.line.scan_timeouts_endpoint",
+            "app.surfaces.line.line_webhook",
+            "app.surfaces.line._session_key",
+            "app.surfaces.line._push_target",
+            "app.surfaces.line._handle_event"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/line_opencode.py",
+          "methods": [
+            "app.surfaces.line_opencode._pg_url",
+            "app.surfaces.line_opencode.ensure_line_opencode_table",
+            "app.surfaces.line_opencode._get_mapping_row",
+            "app.surfaces.line_opencode._store_mapping",
+            "app.surfaces.line_opencode._update_mapping",
+            "app.surfaces.line_opencode._touch_mapping",
+            "app.surfaces.line_opencode._get_display_name",
+            "app.surfaces.line_opencode.chat"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/line_session.py",
+          "methods": [
+            "app.surfaces.line_session._pg_url",
+            "app.surfaces.line_session._connect",
+            "app.surfaces.line_session.ensure_session_tables",
+            "app.surfaces.line_session.get_active_session",
+            "app.surfaces.line_session.start_session",
+            "app.surfaces.line_session.end_session",
+            "app.surfaces.line_session._add_message",
+            "app.surfaces.line_session._recent_messages",
+            "app.surfaces.line_session.chat",
+            "app.surfaces.line_session.scan_timeouts",
+            "app.surfaces.line_session.is_end_keyword"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/queue_consumer.py",
+          "methods": [
+            "app.surfaces.queue_consumer._process_message",
+            "app.surfaces.queue_consumer._consume_loop",
+            "app.surfaces.queue_consumer.start_in_background"
+          ]
+        },
+        {
+          "file_path": "app/surfaces/sso.py",
+          "methods": [
+            "app.surfaces.sso._pg_url",
+            "app.surfaces.sso._connect",
+            "app.surfaces.sso.ensure_sso_sessions_table",
+            "app.surfaces.sso.establish_sso_session",
+            "app.surfaces.sso.get_sso_session",
+            "app.surfaces.sso.sso_handoff"
+          ]
+        }
+      ],
+      "component_id": "1",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Domain Modules",
+      "description": "Executes domain business operations for charts, project management, and sustainability impact calculation via a module registry.",
+      "key_entities": [
+        {
+          "qualified_name": "app.modules.base.ModuleContext",
+          "reference_file": "app/modules/base.py",
+          "reference_start_line": 20,
+          "reference_end_line": 36
+        },
+        {
+          "qualified_name": "app.modules.registry.invoke",
+          "reference_file": "app/modules/registry.py",
+          "reference_start_line": 100,
+          "reference_end_line": 107
+        }
+      ],
+      "source_cluster_ids": [
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/modules/base.py",
+          "methods": [
+            "app.modules.base.ModuleContext",
+            "app.modules.base.ModuleContext.llm",
+            "app.modules.base.result"
+          ]
+        },
+        {
+          "file_path": "app/modules/chart/handler.py",
+          "methods": [
+            "app.modules.chart.handler._run_query",
+            "app.modules.chart.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/modules/project_management/handler.py",
+          "methods": [
+            "app.modules.project_management.handler._list",
+            "app.modules.project_management.handler._create",
+            "app.modules.project_management.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/modules/registry.py",
+          "methods": [
+            "app.modules.registry.Module",
+            "app.modules.registry.Module.__init__",
+            "app.modules.registry.Module.handle",
+            "app.modules.registry.Module.supports",
+            "app.modules.registry.discover",
+            "app.modules.registry.discover._iter_meta_dirs",
+            "app.modules.registry.modules_for_project",
+            "app.modules.registry.get_by_id",
+            "app.modules.registry.invoke"
+          ]
+        },
+        {
+          "file_path": "app/modules/sustainability/sdg/handler.py",
+          "methods": [
+            "app.modules.sustainability.sdg.handler._parse_json_obj",
+            "app.modules.sustainability.sdg.handler._generate",
+            "app.modules.sustainability.sdg.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/modules/sustainability/sroi/handler.py",
+          "methods": [
+            "app.modules.sustainability.sroi.handler._unwrap",
+            "app.modules.sustainability.sroi.handler._indicators_from_template",
+            "app.modules.sustainability.sroi.handler._indicators_from_sroi",
+            "app.modules.sustainability.sroi.handler._parse_json_obj",
+            "app.modules.sustainability.sroi.handler._estimate",
+            "app.modules.sustainability.sroi.handler.handle"
+          ]
+        }
+      ],
+      "component_id": "2",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Chat Applications",
+      "description": "Implements distinct chat application modes and exposes registry metadata for user-facing interactive workflows.",
+      "key_entities": [
+        {
+          "qualified_name": "app.apps._registry.chainlit_commands",
+          "reference_file": "app/apps/_registry.py",
+          "reference_start_line": 124,
+          "reference_end_line": 142
+        },
+        {
+          "qualified_name": "app.apps._registry.get_by_id",
+          "reference_file": "app/apps/_registry.py",
+          "reference_start_line": 145,
+          "reference_end_line": 147
+        }
+      ],
+      "source_cluster_ids": [
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/apps/_registry.py",
+          "methods": [
+            "app.apps._registry.App",
+            "app.apps._registry.App.__init__",
+            "app.apps._registry.App.full_id",
+            "app.apps._registry.discover",
+            "app.apps._registry.filter_enabled",
+            "app.apps._registry.is_enabled_for",
+            "app.apps._registry.chainlit_commands",
+            "app.apps._registry.get_by_id",
+            "app.apps._registry.default_app",
+            "app.apps._registry.apps_for_project"
+          ]
+        },
+        {
+          "file_path": "app/apps/chart_analysis/handler.py",
+          "methods": [
+            "app.apps.chart_analysis.handler._fmt",
+            "app.apps.chart_analysis.handler._mock_runtime",
+            "app.apps.chart_analysis.handler._mock_runtime._stub_execute",
+            "app.apps.chart_analysis.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/apps/hello_world/handler.py",
+          "methods": [
+            "app.apps.hello_world.handler._icon_for",
+            "app.apps.hello_world.handler._list_aliases",
+            "app.apps.hello_world.handler._stream_one",
+            "app.apps.hello_world.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/apps/plain_chat/handler.py",
+          "methods": [
+            "app.apps.plain_chat.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/apps/web_search/handler.py",
+          "methods": [
+            "app.apps.web_search.handler._badge",
+            "app.apps.web_search.handler.handle"
+          ]
+        }
+      ],
+      "component_id": "3",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Core AI Services",
+      "description": "Provides foundational AI orchestration, model generation, opencode sessions, search, and local storage capabilities.",
+      "key_entities": [
+        {
+          "qualified_name": "app.core.copilot.run_copilot",
+          "reference_file": "app/core/copilot.py",
+          "reference_start_line": 94,
+          "reference_end_line": 143
+        },
+        {
+          "qualified_name": "app.core.llm.make_llm",
+          "reference_file": "app/core/llm.py",
+          "reference_start_line": 16,
+          "reference_end_line": 39
+        },
+        {
+          "qualified_name": "app.core.opencode.create_session",
+          "reference_file": "app/core/opencode.py",
+          "reference_start_line": 123,
+          "reference_end_line": 141
+        }
+      ],
+      "source_cluster_ids": [
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/core/copilot.py",
+          "methods": [
+            "app.core.copilot._confirm_question",
+            "app.core.copilot._inner",
+            "app.core.copilot._fmt_result",
+            "app.core.copilot._parse_json_obj",
+            "app.core.copilot.run_copilot",
+            "app.core.copilot.execute_confirmed",
+            "app.core.copilot._make_module_ctx",
+            "app.core.copilot.generate_and_save_sdg",
+            "app.core.copilot._indicators_from_template",
+            "app.core.copilot.estimate_and_save_sroi"
+          ]
+        },
+        {
+          "file_path": "app/core/llm.py",
+          "methods": [
+            "app.core.llm.make_llm"
+          ]
+        },
+        {
+          "file_path": "app/core/opencode.py",
+          "methods": [
+            "app.core.opencode.is_enabled",
+            "app.core.opencode.is_vision_model",
+            "app.core.opencode._auth",
+            "app.core.opencode._default_model_ref",
+            "app.core.opencode._message_model_ref",
+            "app.core.opencode._extract_reply",
+            "app.core.opencode._image_url",
+            "app.core.opencode._send_body",
+            "app.core.opencode.create_session",
+            "app.core.opencode.get_session_model",
+            "app.core.opencode.send_message"
+          ]
+        },
+        {
+          "file_path": "app/core/search.py",
+          "methods": [
+            "app.core.search.SearchHit",
+            "app.core.search.SearchOutcome",
+            "app.core.search._tavily",
+            "app.core.search._ddg_sync",
+            "app.core.search._ddg",
+            "app.core.search.search",
+            "app.core.search.is_configured"
+          ]
+        },
+        {
+          "file_path": "app/core/storage.py",
+          "methods": [
+            "app.core.storage.LocalStorageClient",
+            "app.core.storage.LocalStorageClient.__init__",
+            "app.core.storage.LocalStorageClient.upload_file",
+            "app.core.storage.LocalStorageClient.delete_file",
+            "app.core.storage.LocalStorageClient.get_read_url",
+            "app.core.storage.LocalStorageClient.close"
+          ]
+        }
+      ],
+      "component_id": "4",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Application Host and Dispatch",
+      "description": "Orchestrates the application lifecycle, normalizes multi-channel messages into envelopes, and coordinates project-scoped dispatching.",
+      "key_entities": [
+        {
+          "qualified_name": "app.dispatch.Envelope",
+          "reference_file": "app/dispatch.py",
+          "reference_start_line": 37,
+          "reference_end_line": 43
+        },
+        {
+          "qualified_name": "app.dispatch.handle_device_intent",
+          "reference_file": "app/dispatch.py",
+          "reference_start_line": 91,
+          "reference_end_line": 113
+        },
+        {
+          "qualified_name": "app.dispatch.converse",
+          "reference_file": "app/dispatch.py",
+          "reference_start_line": 132,
+          "reference_end_line": 165
+        },
+        {
+          "qualified_name": "app.main._init_tables",
+          "reference_file": "app/main.py",
+          "reference_start_line": 88,
+          "reference_end_line": 96
+        }
+      ],
+      "source_cluster_ids": [
+        "9",
+        "15",
+        "16",
+        "25"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/auth/issuers.py",
+          "methods": [
+            "app.auth.issuers._now",
+            "app.auth.issuers._fetch_jwks",
+            "app.auth.issuers._pubkey_for",
+            "app.auth.issuers.verify_handoff",
+            "app.auth.issuers.fetch_manifest"
+          ]
+        },
+        {
+          "file_path": "app/dispatch.py",
+          "methods": [
+            "app.dispatch.Envelope",
+            "app.dispatch._json_list",
+            "app.dispatch._json_obj",
+            "app.dispatch._select_capabilities",
+            "app.dispatch.handle_device_intent",
+            "app.dispatch._picked_to_commands",
+            "app.dispatch.converse",
+            "app.dispatch._expand"
+          ]
+        },
+        {
+          "file_path": "app/main.py",
+          "methods": [
+            "app.main.auth_callback",
+            "app.main.sso_header_auth",
+            "app.main._init_tables",
+            "app.main._current_user_project",
+            "app.main._enabled_apps_for",
+            "app.main._register_commands",
+            "app.main.on_chat_resume",
+            "app.main._sso_session_for_current_user",
+            "app.main._load_sso_runtime",
+            "app.main.on_start",
+            "app.main._read_text_file",
+            "app.main._frame_file",
+            "app.main._emit_copilot",
+            "app.main._run_copilot_emit",
+            "app.main._run_with_attachments",
+            "app.main._handle_cms_attachments",
+            "app.main.on_message",
+            "app.main.cms_confirm",
+            "app.main.cms_sroi",
+            "app.main.cms_attach"
+          ]
+        },
+        {
+          "file_path": "app/projects/registry.py",
+          "methods": [
+            "app.projects.registry._pg_url",
+            "app.projects.registry._connect",
+            "app.projects.registry.ensure_projects_table",
+            "app.projects.registry.get_project",
+            "app.projects.registry.get_litellm_key",
+            "app.projects.registry.list_projects",
+            "app.projects.registry.normalize_enabled_apps",
+            "app.projects.registry.normalize_app_flags",
+            "app.projects.registry.get_enabled_apps",
+            "app.projects.registry.get_app_flags",
+            "app.projects.registry.set_enabled_apps",
+            "app.projects.registry.get_enabled_modules",
+            "app.projects.registry.set_enabled_modules"
+          ]
+        }
+      ],
+      "component_id": "5",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Data Source Adapters",
+      "description": "Abstracts data access through CMS, mock stub, and generic data source adapter interfaces.",
+      "key_entities": [
+        {
+          "qualified_name": "app.adapters.base.DataSource",
+          "reference_file": "app/adapters/base.py",
+          "reference_start_line": 48,
+          "reference_end_line": 57
+        },
+        {
+          "qualified_name": "app.adapters.cms.CMSDataSource",
+          "reference_file": "app/adapters/cms.py",
+          "reference_start_line": 24,
+          "reference_end_line": 57
+        }
+      ],
+      "source_cluster_ids": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/adapters/base.py",
+          "methods": [
+            "app.adapters.base.QuerySpec",
+            "app.adapters.base.AdapterResult",
+            "app.adapters.base.DataSource",
+            "app.adapters.base.DataSource.__init__",
+            "app.adapters.base.DataSource.query",
+            "app.adapters.base.unwrap_cms"
+          ]
+        },
+        {
+          "file_path": "app/adapters/cms.py",
+          "methods": [
+            "app.adapters.cms.CMSDataSource",
+            "app.adapters.cms.CMSDataSource.__init__",
+            "app.adapters.cms.CMSDataSource.bind",
+            "app.adapters.cms.CMSDataSource.query"
+          ]
+        },
+        {
+          "file_path": "app/adapters/registry.py",
+          "methods": [
+            "app.adapters.registry.register",
+            "app.adapters.registry.get_adapter_cls",
+            "app.adapters.registry.create"
+          ]
+        },
+        {
+          "file_path": "app/adapters/stub.py",
+          "methods": [
+            "app.adapters.stub.StubDataSource",
+            "app.adapters.stub.StubDataSource.__init__",
+            "app.adapters.stub.StubDataSource.query"
+          ]
+        }
+      ],
+      "component_id": "6",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Build Tooling and Static Assets",
+      "description": "Houses architecture diagram generation scripts and browser static assets.",
+      "key_entities": [
+        {
+          "qualified_name": "arch.build.build_mermaid",
+          "reference_file": "arch/build.py",
+          "reference_start_line": 160,
+          "reference_end_line": 204
+        },
+        {
+          "qualified_name": "arch.build.main",
+          "reference_file": "arch/build.py",
+          "reference_start_line": 224,
+          "reference_end_line": 247
+        }
+      ],
+      "source_cluster_ids": [
+        "35",
+        "36"
+      ],
+      "file_methods": [
+        {
+          "file_path": "arch/build.py",
+          "methods": [
+            "arch.build.esc_label",
+            "arch.build.esc_html",
+            "arch.build.file_ref",
+            "arch.build.collect",
+            "arch.build.collect.claim",
+            "arch.build.build_mermaid",
+            "arch.build.build_component_rows",
+            "arch.build.main"
+          ]
+        },
+        {
+          "file_path": "public/custom.js",
+          "methods": [
+            "public.custom.<function>",
+            "public.custom.<function>.mount",
+            "public.custom.<function>.remove",
+            "public.custom.<function>.remove.setTimeout() callback",
+            "public.custom.<function>.document.addEventListener(\"DOMContentLoaded\") callback",
+            "public.custom.<function>.setTimeout() callback"
+          ]
+        }
+      ],
+      "component_id": "7",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Device Node Management",
+      "description": "Manages edge device node registrations, capability tracking, and outbound command dispatch queues.",
+      "key_entities": [
+        {
+          "qualified_name": "app.nodes.commands.enqueue_command",
+          "reference_file": "app/nodes/commands.py",
+          "reference_start_line": 69,
+          "reference_end_line": 81
+        },
+        {
+          "qualified_name": "app.nodes.registry.register_node",
+          "reference_file": "app/nodes/registry.py",
+          "reference_start_line": 78,
+          "reference_end_line": 109
+        },
+        {
+          "qualified_name": "app.nodes.registry.nodes_with_capability",
+          "reference_file": "app/nodes/registry.py",
+          "reference_start_line": 158,
+          "reference_end_line": 181
+        }
+      ],
+      "source_cluster_ids": [
+        "23",
+        "24"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/nodes/commands.py",
+          "methods": [
+            "app.nodes.commands._pg_url",
+            "app.nodes.commands._connect",
+            "app.nodes.commands.ensure_commands_table",
+            "app.nodes.commands.enqueue_command",
+            "app.nodes.commands.pull_pending"
+          ]
+        },
+        {
+          "file_path": "app/nodes/registry.py",
+          "methods": [
+            "app.nodes.registry._pg_url",
+            "app.nodes.registry._connect",
+            "app.nodes.registry.ensure_nodes_table",
+            "app.nodes.registry.register_node",
+            "app.nodes.registry.touch_node",
+            "app.nodes.registry.get_node",
+            "app.nodes.registry.list_nodes",
+            "app.nodes.registry.nodes_with_capability"
+          ]
+        }
+      ],
+      "component_id": "8",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    },
+    {
+      "name": "Tool Runtime and Registry",
+      "description": "Maintains tool schemas mapped to device capabilities and executes dynamic tool runtime invocations.",
+      "key_entities": [
+        {
+          "qualified_name": "app.tools.registry.tools_for_capabilities",
+          "reference_file": "app/tools/registry.py",
+          "reference_start_line": 53,
+          "reference_end_line": 61
+        },
+        {
+          "qualified_name": "app.tools.runtime.ToolRuntime",
+          "reference_file": "app/tools/runtime.py",
+          "reference_start_line": 38,
+          "reference_end_line": 181
+        }
+      ],
+      "source_cluster_ids": [
+        "33",
+        "34"
+      ],
+      "file_methods": [
+        {
+          "file_path": "app/tools/registry.py",
+          "methods": [
+            "app.tools.registry.tools_for_capabilities",
+            "app.tools.registry.capability_for_tool"
+          ]
+        },
+        {
+          "file_path": "app/tools/runtime.py",
+          "methods": [
+            "app.tools.runtime.ToolRuntime",
+            "app.tools.runtime.ToolRuntime.__init__",
+            "app.tools.runtime.ToolRuntime.load",
+            "app.tools.runtime.ToolRuntime._needs_confirm",
+            "app.tools.runtime.ToolRuntime._to_json_schema",
+            "app.tools.runtime.ToolRuntime.visible_tools",
+            "app.tools.runtime.ToolRuntime.is_allowed",
+            "app.tools.runtime.ToolRuntime.execute"
+          ]
+        }
+      ],
+      "component_id": "9",
+      "can_expand": false,
+      "components": [],
+      "components_relations": []
+    }
+  ],
+  "components_relations": [
+    {
+      "relation": "invokes sandbox sessions in",
+      "src_name": "Interaction Surfaces",
+      "dst_name": "Core AI Services",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
+          "target": "app/core/opencode.py|app.core.opencode.create_session",
+          "call_sites": [
+            {
+              "line": 116,
+              "column": 77
+            }
+          ],
+          "description": "Surface chat handlers create sessions and execute sandboxed operations in OpenCode."
+        }
+      ],
+      "src_id": "1",
+      "dst_id": "4",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
+          "target": "app/core/opencode.py|app.core.opencode.create_session",
+          "call_sites": [
+            {
+              "line": 116,
+              "column": 77
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
+          "target": "app/core/opencode.py|app.core.opencode.send_message",
+          "call_sites": [
+            {
+              "line": 125,
+              "column": 27
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.discord_voice_chat",
+          "target": "app/core/opencode.py|app.core.opencode.is_enabled",
+          "call_sites": [
+            {
+              "line": 136,
+              "column": 21
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.create_session",
+          "call_sites": [
+            {
+              "line": 180,
+              "column": 46
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.get_session_model",
+          "call_sites": [
+            {
+              "line": 199,
+              "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.is_vision_model",
+          "call_sites": [
+            {
+              "line": 203,
+              "column": 38
+            },
+            {
+              "line": 209,
+              "column": 62
+            },
+            {
+              "line": 214,
+              "column": 43
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.send_message",
+          "call_sites": [
+            {
+              "line": 186,
+              "column": 28
+            },
+            {
+              "line": 221,
+              "column": 27
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "dispatches user envelopes to",
+      "src_name": "Interaction Surfaces",
+      "dst_name": "Application Host and Dispatch",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.handle_device_intent",
+          "call_sites": [
+            {
+              "line": 89,
+              "column": 20
+            }
+          ],
+          "description": "Device and LINE surfaces package messages into envelopes and route them through the dispatcher."
+        }
+      ],
+      "src_id": "1",
+      "dst_id": "5",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.Envelope",
+          "call_sites": [
+            {
+              "line": 88,
+              "column": 11
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.handle_device_intent",
+          "call_sites": [
+            {
+              "line": 89,
+              "column": 20
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_result",
+          "target": "app/projects/registry.py|app.projects.registry.get_project",
+          "call_sites": [
+            {
+              "line": 126,
+              "column": 35
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
+          "target": "app/dispatch.py|app.dispatch.converse",
+          "call_sites": [
+            {
+              "line": 224,
+              "column": 33
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/auth/issuers.py|app.auth.issuers.fetch_manifest",
+          "call_sites": [
+            {
+              "line": 76,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/auth/issuers.py|app.auth.issuers.verify_handoff",
+          "call_sites": [
+            {
+              "line": 75,
+              "column": 24
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "registers nodes and pulls commands from",
+      "src_name": "Interaction Surfaces",
+      "dst_name": "Device Node Management",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
+          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
+          "call_sites": [
+            {
+              "line": 62,
+              "column": 25
+            }
+          ],
+          "description": "Device surfaces register nodes, report heartbeats, and pull queued execution commands."
+        }
+      ],
+      "src_id": "1",
+      "dst_id": "8",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
+          "call_sites": [
+            {
+              "line": 86,
+              "column": 29
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
+          "target": "app/nodes/commands.py|app.nodes.commands.pull_pending",
+          "call_sites": [
+            {
+              "line": 107,
+              "column": 36
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
+          "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
+          "call_sites": [
+            {
+              "line": 106,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
+          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
+          "call_sites": [
+            {
+              "line": 62,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/line.py|app.surfaces.line._handle_event",
+          "target": "app/nodes/commands.py|app.nodes.commands.enqueue_command",
+          "call_sites": [
+            {
+              "line": 378,
+              "column": 33
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "initializes tool runtime from",
+      "src_name": "Interaction Surfaces",
+      "dst_name": "Tool Runtime and Registry",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 77,
+              "column": 45
+            }
+          ],
+          "description": "SSO sessions initialize and inspect the tool runtime for visible tool definitions."
+        }
+      ],
+      "src_id": "1",
+      "dst_id": "9",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 77,
+              "column": 45
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
+          "call_sites": [
+            {
+              "line": 77,
+              "column": 67
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 116,
+              "column": 46
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "queries data via",
+      "src_name": "Domain Modules",
+      "dst_name": "Data Source Adapters",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/modules/chart/handler.py|app.modules.chart.handler._run_query",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 30,
+              "column": 26
+            }
+          ],
+          "description": "Domain handlers query and update data through underlying data source adapters."
+        }
+      ],
+      "src_id": "2",
+      "dst_id": "6",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/modules/chart/handler.py|app.modules.chart.handler._run_query",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 30,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/chart/handler.py|app.modules.chart.handler._run_query",
+          "target": "app/adapters/base.py|app.adapters.base.QuerySpec",
+          "call_sites": [
+            {
+              "line": 21,
+              "column": 12
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/project_management/handler.py|app.modules.project_management.handler._create",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 26,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/project_management/handler.py|app.modules.project_management.handler._create",
+          "target": "app/adapters/base.py|app.adapters.base.QuerySpec",
+          "call_sites": [
+            {
+              "line": 27,
+              "column": 9
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/project_management/handler.py|app.modules.project_management.handler._list",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 18,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/project_management/handler.py|app.modules.project_management.handler._list",
+          "target": "app/adapters/base.py|app.adapters.base.QuerySpec",
+          "call_sites": [
+            {
+              "line": 18,
+              "column": 32
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._generate",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 55,
+              "column": 26
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/sustainability/sdg/handler.py|app.modules.sustainability.sdg.handler._generate",
+          "target": "app/adapters/base.py|app.adapters.base.QuerySpec",
+          "call_sites": [
+            {
+              "line": 56,
+              "column": 9
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._estimate",
+          "target": "app/adapters/base.py|app.adapters.base.DataSource.query",
+          "call_sites": [
+            {
+              "line": 78,
+              "column": 27
+            },
+            {
+              "line": 84,
+              "column": 33
+            },
+            {
+              "line": 109,
+              "column": 28
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/modules/sustainability/sroi/handler.py|app.modules.sustainability.sroi.handler._estimate",
+          "target": "app/adapters/base.py|app.adapters.base.QuerySpec",
+          "call_sites": [
+            {
+              "line": 79,
+              "column": 9
+            },
+            {
+              "line": 85,
+              "column": 13
+            },
+            {
+              "line": 110,
+              "column": 9
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "executes modules through",
+      "src_name": "Chat Applications",
+      "dst_name": "Domain Modules",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 84,
+              "column": 21
+            }
+          ],
+          "description": "Analysis applications invoke domain calculation modules via the module registry."
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "2",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/modules/base.py|app.modules.base.ModuleContext",
+          "call_sites": [
+            {
+              "line": 80,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 84,
+              "column": 21
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "invokes models and search from",
+      "src_name": "Chat Applications",
+      "dst_name": "Core AI Services",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 17,
+              "column": 24
+            }
+          ],
+          "description": "Interactive chat applications invoke language models and web search services."
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "4",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/hello_world/handler.py|app.apps.hello_world.handler._stream_one",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 55,
+              "column": 28
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 17,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/web_search/handler.py|app.apps.web_search.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 63,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/web_search/handler.py|app.apps.web_search.handler.handle",
+          "target": "app/core/search.py|app.core.search.search",
+          "call_sites": [
+            {
+              "line": 34,
+              "column": 21
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "instantiates data sources from",
+      "src_name": "Chat Applications",
+      "dst_name": "Data Source Adapters",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
+          "call_sites": [
+            {
+              "line": 73,
+              "column": 20
+            },
+            {
+              "line": 75,
+              "column": 24
+            }
+          ],
+          "description": "Applications instantiate data source adapters to supply contextual records."
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "6",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
+          "call_sites": [
+            {
+              "line": 73,
+              "column": 20
+            },
+            {
+              "line": 75,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler.handle",
+          "target": "app/adapters/stub.py|app.adapters.stub.StubDataSource",
+          "call_sites": [
+            {
+              "line": 77,
+              "column": 20
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "executes tools via",
+      "src_name": "Chat Applications",
+      "dst_name": "Tool Runtime and Registry",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
+          "call_sites": [
+            {
+              "line": 56,
+              "column": 8
+            }
+          ],
+          "description": "Application handlers execute tools dynamically within the runtime environment."
+        }
+      ],
+      "src_id": "3",
+      "dst_id": "9",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 49,
+              "column": 10
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/chart_analysis/handler.py|app.apps.chart_analysis.handler._mock_runtime",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
+          "call_sites": [
+            {
+              "line": 56,
+              "column": 8
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "triggers module handlers in",
+      "src_name": "Core AI Services",
+      "dst_name": "Domain Modules",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 179,
+              "column": 38
+            },
+            {
+              "line": 182,
+              "column": 17
+            }
+          ],
+          "description": "Copilot workflows invoke sustainability and domain calculation modules."
+        }
+      ],
+      "src_id": "4",
+      "dst_id": "2",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/core/copilot.py|app.core.copilot._make_module_ctx",
+          "target": "app/modules/base.py|app.modules.base.ModuleContext",
+          "call_sites": [
+            {
+              "line": 168,
+              "column": 12
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 207,
+              "column": 38
+            },
+            {
+              "line": 210,
+              "column": 17
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 179,
+              "column": 38
+            },
+            {
+              "line": 182,
+              "column": 17
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "configures data adapters via",
+      "src_name": "Core AI Services",
+      "dst_name": "Data Source Adapters",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/core/copilot.py|app.core.copilot._make_module_ctx",
+          "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
+          "call_sites": [
+            {
+              "line": 170,
+              "column": 14
+            }
+          ],
+          "description": "Copilot context builders instantiate CMS adapters for external system interaction."
+        }
+      ],
+      "src_id": "4",
+      "dst_id": "6",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/core/copilot.py|app.core.copilot._make_module_ctx",
+          "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
+          "call_sites": [
+            {
+              "line": 170,
+              "column": 14
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "initializes database tables in",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Interaction Surfaces",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+          "call_sites": [
+            {
+              "line": 92,
+              "column": 24
+            }
+          ],
+          "description": "Application startup initializes surface-specific database tables."
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "1",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "call_sites": [
+            {
+              "line": 96,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+          "call_sites": [
+            {
+              "line": 92,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
+          "call_sites": [
+            {
+              "line": 95,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
+          "call_sites": [
+            {
+              "line": 93,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table",
+          "call_sites": [
+            {
+              "line": 94,
+              "column": 23
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._sso_session_for_current_user",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+          "call_sites": [
+            {
+              "line": 145,
+              "column": 30
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.sso_header_auth",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+          "call_sites": [
+            {
+              "line": 62,
+              "column": 30
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "resolves applications from",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Chat Applications",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
+          "call_sites": [
+            {
+              "line": 388,
+              "column": 11
+            }
+          ],
+          "description": "Main message loop resolves and activates enabled chat applications."
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "3",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/main.py|app.main._register_commands",
+          "target": "app/apps/_registry.py|app.apps._registry.chainlit_commands",
+          "call_sites": [
+            {
+              "line": 127,
+              "column": 12
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/_registry.py|app.apps._registry.App.full_id",
+          "call_sites": [
+            {
+              "line": 400,
+              "column": 80
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/_registry.py|app.apps._registry.default_app",
+          "call_sites": [
+            {
+              "line": 390,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
+          "call_sites": [
+            {
+              "line": 388,
+              "column": 11
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
+          "call_sites": [
+            {
+              "line": 399,
+              "column": 12
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "orchestrates prompts and copilot in",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Core AI Services",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 146,
+              "column": 11
+            }
+          ],
+          "description": "Dispatcher and message handlers execute copilot loops and LLM completions."
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "4",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 75,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 146,
+              "column": 11
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._run_copilot_emit",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 253,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.cms_confirm",
+          "target": "app/core/copilot.py|app.core.copilot.execute_confirmed",
+          "call_sites": [
+            {
+              "line": 423,
+              "column": 21
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.cms_confirm",
+          "target": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
+          "call_sites": [
+            {
+              "line": 436,
+              "column": 29
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.cms_sroi",
+          "target": "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi",
+          "call_sites": [
+            {
+              "line": 477,
+              "column": 23
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "queries capabilities and nodes from",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Device Node Management",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._picked_to_commands",
+          "target": "app/nodes/registry.py|app.nodes.registry.nodes_with_capability",
+          "call_sites": [
+            {
+              "line": 120,
+              "column": 27
+            }
+          ],
+          "description": "Dispatcher inspects node registry for capabilities and translates intents to commands."
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "8",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._picked_to_commands",
+          "target": "app/nodes/registry.py|app.nodes.registry.nodes_with_capability",
+          "call_sites": [
+            {
+              "line": 120,
+              "column": 27
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/nodes/registry.py|app.nodes.registry.list_nodes",
+          "call_sites": [
+            {
+              "line": 142,
+              "column": 19
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch.handle_device_intent",
+          "target": "app/nodes/registry.py|app.nodes.registry.list_nodes",
+          "call_sites": [
+            {
+              "line": 97,
+              "column": 19
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/nodes/commands.py|app.nodes.commands.ensure_commands_table",
+          "call_sites": [
+            {
+              "line": 91,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/nodes/registry.py|app.nodes.registry.ensure_nodes_table",
+          "call_sites": [
+            {
+              "line": 90,
+              "column": 25
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main.on_message",
+          "target": "app/nodes/commands.py|app.nodes.commands.enqueue_command",
+          "call_sites": [
+            {
+              "line": 382,
+              "column": 41
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "binds capability tools from",
+      "src_name": "Application Host and Dispatch",
+      "dst_name": "Tool Runtime and Registry",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",
+          "call_sites": [
+            {
+              "line": 153,
+              "column": 15
+            }
+          ],
+          "description": "Dispatcher maps node capabilities to tool schemas for LLM function-calling."
+        }
+      ],
+      "src_id": "5",
+      "dst_id": "9",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",
+          "call_sites": [
+            {
+              "line": 85,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/tools/registry.py|app.tools.registry.tools_for_capabilities",
+          "call_sites": [
+            {
+              "line": 71,
+              "column": 13
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",
+          "call_sites": [
+            {
+              "line": 153,
+              "column": 15
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/tools/registry.py|app.tools.registry.tools_for_capabilities",
+          "call_sites": [
+            {
+              "line": 144,
+              "column": 13
+            }
+          ],
+          "description": ""
+        }
+      ]
+    },
+    {
+      "relation": "executes runtime queries in",
+      "src_name": "Data Source Adapters",
+      "dst_name": "Tool Runtime and Registry",
+      "evidence": "",
+      "key_edges": [
+        {
+          "source": "app/adapters/cms.py|app.adapters.cms.CMSDataSource.query",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
+          "call_sites": [
+            {
+              "line": 41,
+              "column": 38
+            }
+          ],
+          "description": "CMS adapter queries trigger registered tool invocations inside the tool runtime."
+        }
+      ],
+      "src_id": "6",
+      "dst_id": "9",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/adapters/cms.py|app.adapters.cms.CMSDataSource.query",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.execute",
+          "call_sites": [
+            {
+              "line": 41,
+              "column": 38
+            }
+          ],
+          "description": ""
+        }
+      ]
+    }
+  ]
+}

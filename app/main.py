@@ -14,8 +14,11 @@ from app.apps._registry import (
     chainlit_commands,
     default_app,
     discover,
+    filter_enabled,
     get_by_id,
+    is_enabled_for,
     menu_apps,
+    DEFAULT_PROJECT,
 )
 from app.core.copilot import (
     run_copilot,
@@ -120,20 +123,46 @@ except RuntimeError:
 queue_consumer.start_in_background()
 
 
+async def _current_user_project(user) -> Optional[str]:
+    """SSO 使用者回其 project（identity.project）；非 SSO 回 None（全開）。"""
+    if user is None:
+        return None
+    md = getattr(user, "metadata", None) or {}
+    return md.get("project")
+
+
+async def _enabled_apps_for(project: Optional[str]) -> Optional[set[str]]:
+    """該登入 project 的啟用矩陣；project 為 None → 全開（None）。"""
+    if not project:
+        return None
+    return await project_registry.get_enabled_apps(project)
+
+
 async def _register_commands():
-    cmds = chainlit_commands()
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    cmds = chainlit_commands(enabled)
     await cl.context.emitter.set_commands(cmds)
-    logger.info("Registered %d command(s): %s", len(cmds), [c["id"] for c in cmds])
+    logger.info("Registered %d command(s) for project=%s: %s",
+                len(cmds), project, [c["id"] for c in cmds])
 
 
-def _app_actions() -> list[cl.Action]:
+async def _app_actions() -> list[cl.Action]:
     """工具選單的 app → 一排「點了就跑」的按鈕。
 
     Chainlit 的 command（輸入框旁 `...` 那個選單）選完只是把標籤掛到輸入框上，
     **還要按送出**才會派工 —— 使用者選了以為壞掉是常態（實際回報過）。
     Action 按鈕點下去直接觸發 callback，不需要送出，才是「選了就有反應」。
     command 保留（熟手打字更快），按鈕是給第一次用的人看的。
+
+    #127：按鈕也套用 per-project 啟用矩陣，遮蔽的 app 連按鈕都不出現。
     """
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    candidates = menu_apps() if enabled is None else filter_enabled(menu_apps(), enabled)
+
     # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
     # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
     def _label(a) -> str:
@@ -141,7 +170,7 @@ def _app_actions() -> list[cl.Action]:
 
     return [
         cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
-        for a in menu_apps()
+        for a in candidates
     ]
 
 
@@ -153,6 +182,18 @@ async def open_app(action: cl.Action):
     if app is None:
         await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
         return
+
+    # #127：按鈕是依當下 enable 矩陣產的，但再抗一層防呆 —— session 換人/矩陣變動時
+    # 舊按鈕可能殘留，被點到也要能擋。
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        await cl.Message(
+            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+        ).send()
+        return
+
     logger.info("action open_app → %s", app.id)
     # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
     # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
@@ -287,7 +328,7 @@ async def on_start():
                 "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
                 "或直接點下面的工具："
             ),
-            actions=_app_actions(),
+            actions=await _app_actions(),
         ).send()
         return
 
@@ -297,7 +338,7 @@ async def on_start():
             "- 直接輸入問題 → 一般對話（OpenAI gpt-4o-mini）\n"
             "- 或直接點下面的工具："
         ),
-        actions=_app_actions(),
+        actions=await _app_actions(),
     ).send()
 
 
@@ -586,6 +627,17 @@ async def on_message(msg: cl.Message):
         await cl.Message(content="⚠️ 沒有可用的處理器").send()
         return
 
+    # #127 dispatch guard：該登入 project 啟用矩陣遮蔽的 app，直接被呼叫 → 回「未啟用」，不跑 handler。
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        logger.info("dispatch blocked: app=%s not enabled for project=%s", app.full_id, project)
+        await cl.Message(
+            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+        ).send()
+        return
+
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
     await app.handle(content, msg)
 
@@ -756,6 +808,8 @@ async def cms_attach(action: cl.Action):
         return
     if not (atts and runtime):
         await cl.Message(content="找不到剛剛的檔案了，請再上傳一次。").send()
+        return
+    if not act:
         return
     intent = _ATTACH_INTENTS.get(act)
     if not intent:

@@ -14,6 +14,7 @@ import logging
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.core.llm import make_llm
+from app.modules.base import ModuleContext
 
 logger = logging.getLogger(__name__)
 
@@ -155,16 +156,31 @@ async def execute_confirmed(runtime, name: str, args: dict) -> dict:
     return {"reply": f"⚠️ 執行失敗：{result.get('reason', result.get('status'))}", "ok": False, "data": {}}
 
 
-# ── Phase 1：SDG 產生器（#57）──────────────────────────────────
-_SDG_PROMPT = (
-    "你是 SDG 顧問。根據專案資訊，從聯合國 17 個 SDG 中挑出 **3~6 個最相關的**，"
-    "為每個寫一句『這專案如何推進該 SDG』的繁體中文描述（約 30~60 字）。"
-    "只放真的命中的，別硬湊。**只回 JSON 物件** {\"SDG編號(字串1~17)\":\"描述\"}，不要其他文字。"
-)
+# ── Phase 1/2：SDG / SROI 產生器（#57 → #129 module 化）──────────
+# 邏輯已搬進 app/modules/sustainability/{sdg,sroi}：這裡的角色只是
+# 「組好 adapter（CMS）＋ context」呼叫 module，並維持對外函式簽名，
+# main.py / action callback 不必改。換資料後端 = 換 ctx.data，module 零修改。
+
+
+def _make_module_ctx(runtime, api_key, user, make_llm) -> ModuleContext:
+    """組 SDG/SROI module 的執行環境：project + CMS adapter + LLM factory。"""
+    from app.adapters.cms import CMSDataSource
+    return ModuleContext(
+        project="sechome",
+        data=CMSDataSource(runtime),
+        make_llm=make_llm,
+        api_key=api_key,
+        llm_user=user,
+    )
 
 
 async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
-    """只生成結構化 SDG 結果，不執行 CMS 寫入。"""
+    """只生成結構化 SDG 結果，不執行 CMS 寫入（surfaces/sdg.py 的 endpoint 用）。"""
+    _SDG_PROMPT = (
+        "你是 SDG 顧問。根據專案資訊，從聯合國 17 個 SDG 中挑出 **3~6 個最相關的**，"
+        "為每個寫一句『這專案如何推進該 SDG』的繁體中文描述（約 30~60 字）。"
+        "只放真的命中的，別硬湊。**只回 JSON 物件** {\"SDG編號(字串1~17)\":\"描述\"}，不要其他文字。"
+    )
     llm = make_llm(api_key=api_key, user=user, streaming=False)
     resp = await llm.ainvoke([
         SystemMessage(content=_SDG_PROMPT),
@@ -176,32 +192,19 @@ async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
 
 
 async def generate_and_save_sdg(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
-    """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。"""
-    sdgs = await generate_sdg(project_info, api_key=api_key, user=user)
-    if not sdgs:
-        return "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」重試）"
-    result = await runtime.execute("save_sdg", {"uuid": uuid, "project_sdgs": sdgs}, confirmed=True)
-    if result.get("status") == "ok":
-        return "已自動產生並存好 SDG：" + "、".join(f"SDG {k}" for k in sorted(sdgs, key=int))
-    return f"（SDG 儲存失敗：{result.get('reason')}）"
-
-
-# ── Phase 2：SROI 估算器（#57）──────────────────────────────────
-_SROI_PROMPT = (
-    "你是 SROI 估算顧問。下面有專案資訊與 SROI 指標表（每個指標含『輸入欄標籤』）。"
-    "請根據專案資訊，為**能合理對應**的指標估出輸入欄的草稿數字（依標籤由左到右、跳過公式欄）。"
-    "只填有把握的指標、其餘留空，數字是粗估草稿。**只回 JSON** "
-    "{\"social\":{\"S-1\":[數字,...]},\"economy\":{\"E-1\":[...]},\"environment\":{\"E-1-1\":[...]}}。"
-)
+    """讀專案資訊 → LLM 產 {SDG編號:描述} → save_sdg。自動（save_sdg needs_confirm=false）。"""
+    from app.modules.registry import invoke
+    ctx = _make_module_ctx(runtime, api_key, user, make_llm)
+    ctx.action = "generate"
+    res = await invoke("sustainability.sdg", ctx, {"project_info": project_info, "uuid": uuid})
+    return res["reply"]
 
 
 def _indicators_from_template(tmpl_result: dict) -> dict:
-    """get_sroi_template 的乾淨格式 {face:[{id,title,inputs}]} → {face:[{id,title,inputs}]}。
-
-    CMS 新端點（POST /projects/sroi_template，秒回、不碰 Drive）直接給 id/title/inputs，
-    比 get_sroi 的 head/key 結構好剖太多。
-    """
+    """保留給舊呼叫端（無 module 環境時）；新路徑一律走 sustainability.sroi module。"""
     data = _inner(tmpl_result.get("result") if "result" in tmpl_result else tmpl_result)
+    if not isinstance(data, dict):
+        data = {}
     out = {}
     for face in ("social", "economy", "environment"):
         out[face] = [
@@ -211,69 +214,15 @@ def _indicators_from_template(tmpl_result: dict) -> dict:
     return out
 
 
-def _sroi_indicators(get_sroi_result: dict) -> dict:
-    """從 get_sroi 結果抽出 {social:[{id,inputs}], economy:[...], environment:[...]}。"""
-    data = _inner(get_sroi_result.get("result") if "result" in get_sroi_result else get_sroi_result)
-    out = {}
-    for face, key in (("social", "sroi_social"), ("economy", "sroi_economy"), ("environment", "sroi_environment")):
-        items = []
-        for it in (data.get(key) or []):
-            head = (it.get("head") or [""])[0]
-            iid = head.split(".")[0].strip() if head else ""
-            keys = it.get("key") or []
-            # 輸入欄 = 「價值計算」之前的標籤
-            inputs = []
-            for k in keys:
-                if k in ("價值計算", "評估標準"):
-                    break
-                if k:
-                    inputs.append(k)
-            if iid:
-                items.append({"id": iid, "inputs": inputs})
-        out[face] = items
-    return out
-
-
 async def estimate_and_save_sroi(runtime, project_info: dict, uuid: str, *, api_key=None, user=None) -> str:
     """拿 SROI 指標 template → LLM 估草稿值 → save_sroi。草稿，提醒使用者自行核對。
 
-    取指標表：優先 get_sroi_template（CMS 新端點，秒回、不碰 Drive）；
-    舊 SSO session 的 manifest 還沒這支 → deny/error，退回 get_sroi(uuid)
-    （CMS 已修不再 500，但要複製 Google Sheet ~11s 冷啟動 → 給足 120s）。
+    module 化後（#129）：邏輯在 sustainability.sroi module，這裡只組 adapter + context。
+    取指標表邏輯（優先 get_sroi_template、fallback get_sroi）與 save_sroi 的
+    encoding=json 全都在 module 內處理。
     """
-    tmpl = await runtime.execute("get_sroi_template", {"uuid_project": uuid}, confirmed=False, timeout=30.0)
-    if tmpl.get("status") == "ok":
-        indicators = _indicators_from_template(tmpl)
-    else:
-        logger.info("get_sroi_template unavailable (%s) → fallback get_sroi", tmpl.get("status"))
-        legacy = await runtime.execute("get_sroi", {"uuid_project": uuid}, confirmed=False, timeout=120.0)
-        if legacy.get("status") != "ok":
-            return f"（拿不到 SROI 指標表：{tmpl.get('reason') or legacy.get('reason')}）"
-        indicators = _sroi_indicators(legacy)
-    llm = make_llm(api_key=api_key, user=user, streaming=False)
-    resp = await llm.ainvoke([
-        SystemMessage(content=_SROI_PROMPT),
-        HumanMessage(content=json.dumps({"project": project_info, "indicators": indicators}, ensure_ascii=False)),
-    ])
-    vals = _parse_json_obj(resp.content or "")
-    payload = {"uuid_project": uuid}
-    n = 0
-    for face in ("social", "economy", "environment"):
-        block = vals.get(face) or {}
-        if isinstance(block, dict) and block:
-            payload[face] = block
-            n += len(block)
-    if n == 0:
-        return "（這個專案的描述還不足以估出 SROI 指標，補一點社會/經濟/環境影響的細節再試。）"
-    # save_sroi 必須走 JSON body：CMS handler 不會把 form 欄位的 JSON 字串 json.loads 回來，
-    # 用 form 會「收下卻 written=[]」（success:true 假象 → 全 0）。manifest 未標 encoding，這裡強制。
-    result = await runtime.execute("save_sroi", payload, confirmed=True, timeout=120.0, encoding="json")
-    if result.get("status") == "ok":
-        total = sum(len(indicators.get(f) or []) for f in ("social", "economy", "environment"))
-        return (
-            f"我依你的計畫內容，幫這個專案的 SROI 表**先填了 {n} 個指標的估計數字**"
-            f"（整份共 {total} 個指標，其餘我沒把握、先留白給你）。\n\n"
-            "⚠️ 這些是 **AI 依描述猜的草稿、不是真實數據** —— 請到專案頁面的"
-            "「**成果展現 → SROI**」區，核對並把數字改成真的（改完 SROI 比率會自動重算）。"
-        )
-    return f"（SROI 儲存失敗：{result.get('reason')}）"
+    from app.modules.registry import invoke
+    ctx = _make_module_ctx(runtime, api_key, user, make_llm)
+    ctx.action = "estimate"
+    res = await invoke("sustainability.sroi", ctx, {"project_info": project_info, "uuid": uuid})
+    return res["reply"]
