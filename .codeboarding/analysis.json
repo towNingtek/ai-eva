@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "generated_at": "2026-09-15T13:59:05.130203+00:00",
-    "source_tree_hash": "fa941107e66688b370b0631bc2e4e199ff5522984ab3ca55dce63e88b8ea1b93",
+    "generated_at": "2026-09-16T08:21:48.178890+00:00",
+    "source_tree_hash": "9db065889cfb61b2bcfb0c6c825b4170e3b87a9c416164d0f6c74e0cfdf920bc",
     "repo_name": ".codeboarding-target",
     "depth_level": 1,
     "depth_cap": 2,
     "file_coverage_summary": {
-      "total_files": 159,
-      "analyzed": 77,
-      "not_analyzed": 82,
+      "total_files": 164,
+      "analyzed": 79,
+      "not_analyzed": 85,
       "not_analyzed_by_reason": {
-        "other": 65,
-        "codeboardingignore": 17
+        "other": 67,
+        "codeboardingignore": 18
       }
     },
     "tree_spec": {
@@ -499,6 +499,19 @@
       ],
       "content_hash": "c152238bf4d578b5",
       "module_hash": "3dc2c26547bd811b"
+    },
+    "app/apps/project_match/handler.py": {
+      "method_keys": [
+        "app/apps/project_match/handler.py|app.apps.project_match.handler._plain",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler._budget",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler._projects",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler._describe",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler.build_intent",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler.pick_pair",
+        "app/apps/project_match/handler.py|app.apps.project_match.handler.handle"
+      ],
+      "content_hash": "1ef2a12d9d66f0ed",
+      "module_hash": "b6d56dea68d83b20"
     },
     "app/apps/regulation_check/handler.py": {
       "method_keys": [
@@ -1826,6 +1839,62 @@
       "end_line": 22,
       "type": "FUNCTION",
       "content_hash": "62f32908f1b97c58"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler._plain": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler._plain",
+      "start_line": 37,
+      "end_line": 40,
+      "type": "FUNCTION",
+      "content_hash": "07642f009571745b"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler._budget": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler._budget",
+      "start_line": 43,
+      "end_line": 47,
+      "type": "FUNCTION",
+      "content_hash": "83f51cbc4bbe45b1"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler._projects": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler._projects",
+      "start_line": 50,
+      "end_line": 66,
+      "type": "FUNCTION",
+      "content_hash": "57b2643c9bb1a2b8"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler._describe": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler._describe",
+      "start_line": 69,
+      "end_line": 76,
+      "type": "FUNCTION",
+      "content_hash": "eb0c89e76f24473b"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler.build_intent": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler.build_intent",
+      "start_line": 79,
+      "end_line": 93,
+      "type": "FUNCTION",
+      "content_hash": "2be2b4bdef29cde6"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler.pick_pair": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler.pick_pair",
+      "start_line": 96,
+      "end_line": 98,
+      "type": "FUNCTION",
+      "content_hash": "df0fe8f9cd66e9f7"
+    },
+    "app/apps/project_match/handler.py|app.apps.project_match.handler.handle": {
+      "file_path": "app/apps/project_match/handler.py",
+      "qualified_name": "app.apps.project_match.handler.handle",
+      "start_line": 101,
+      "end_line": 140,
+      "type": "FUNCTION",
+      "content_hash": "c6d9eb32323f84f5"
     },
     "app/apps/regulation_check/handler.py|app.apps.regulation_check.handler._unwrap": {
       "file_path": "app/apps/regulation_check/handler.py",
@@ -3970,6 +4039,12 @@
           "reference_end_line": 204
         },
         {
+          "qualified_name": "app.apps.project_match.handler.handle",
+          "reference_file": "app/apps/project_match/handler.py",
+          "reference_start_line": 101,
+          "reference_end_line": 140
+        },
+        {
           "qualified_name": "app.apps.regulation_check.handler.handle",
           "reference_file": "app/apps/regulation_check/handler.py",
           "reference_start_line": 126,
@@ -4037,6 +4112,18 @@
           "file_path": "app/apps/plain_chat/handler.py",
           "methods": [
             "app.apps.plain_chat.handler.handle"
+          ]
+        },
+        {
+          "file_path": "app/apps/project_match/handler.py",
+          "methods": [
+            "app.apps.project_match.handler._plain",
+            "app.apps.project_match.handler._budget",
+            "app.apps.project_match.handler._projects",
+            "app.apps.project_match.handler._describe",
+            "app.apps.project_match.handler.build_intent",
+            "app.apps.project_match.handler.pick_pair",
+            "app.apps.project_match.handler.handle"
           ]
         },
         {
@@ -5309,6 +5396,17 @@
             }
           ],
           "description": "Knowledge base application lists regulations and queries corpus metrics"
+        },
+        {
+          "source": "app/apps/knowledge_base/handler.py|app.apps.knowledge_base.handler.reg_activate",
+          "target": "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf",
+          "call_sites": [
+            {
+              "line": 131,
+              "column": 31
+            }
+          ],
+          "description": "Ingests uploaded PDF regulations into registry."
         }
       ],
       "src_id": "3",
@@ -5529,11 +5627,22 @@
       ]
     },
     {
-      "relation": "orchestrates LLM flows via",
+      "relation": "calls",
       "src_name": "Chat Applications",
       "dst_name": "Core AI Services",
       "evidence": "",
       "key_edges": [
+        {
+          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 17,
+              "column": 24
+            }
+          ],
+          "description": "Creates LLM client for conversational chat."
+        },
         {
           "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
@@ -5543,7 +5652,18 @@
               "column": 24
             }
           ],
-          "description": "Social post application executes AI workflows via copilot runner"
+          "description": "Invokes copilot workflows for social post generation."
+        },
+        {
+          "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 124,
+              "column": 24
+            }
+          ],
+          "description": "Invokes copilot workflows for project matching."
         }
       ],
       "src_id": "3",
@@ -5612,6 +5732,17 @@
             {
               "line": 88,
               "column": 20
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 124,
+              "column": 24
             }
           ],
           "description": ""
