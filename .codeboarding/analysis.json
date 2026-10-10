@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-10-10T16:23:17.436083+00:00",
-    "source_tree_hash": "38195237d28237059a18caddaa55a67aa066cc0564271ad82550bbecc01011cb",
+    "generated_at": "2026-10-10T16:34:47.849506+00:00",
+    "source_tree_hash": "c52ea34f6c4bd726a68671506074cc2a125f1678c617b36ef862a06d1fe55d7e",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
@@ -381,8 +381,8 @@
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape",
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.cms_copilot_endpoint"
       ],
-      "content_hash": "ddc154518eb40f3a",
-      "module_hash": "6a5f152019b7d4d3"
+      "content_hash": "de9b34e3ad658726",
+      "module_hash": "698c3e9b045492f2"
     },
     "app/surfaces/device.py": {
       "method_keys": [
@@ -1269,72 +1269,72 @@
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._parse": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._parse",
-      "start_line": 53,
-      "end_line": 64,
+      "start_line": 54,
+      "end_line": 65,
       "type": "FUNCTION",
       "content_hash": "473898fac254c1f6"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._fallback_reply": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._fallback_reply",
-      "start_line": 70,
-      "end_line": 79,
+      "start_line": 71,
+      "end_line": 80,
       "type": "FUNCTION",
       "content_hash": "fc7fc9eb409a4f87"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._sdg_no": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._sdg_no",
-      "start_line": 85,
-      "end_line": 98,
+      "start_line": 86,
+      "end_line": 99,
       "type": "FUNCTION",
       "content_hash": "e078cdd31b5206ba"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._sdg_texts": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._sdg_texts",
-      "start_line": 101,
-      "end_line": 116,
+      "start_line": 102,
+      "end_line": 117,
       "type": "FUNCTION",
       "content_hash": "92e8dcb967ffca1d"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.clean_suggestions": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.clean_suggestions",
-      "start_line": 119,
-      "end_line": 149,
+      "start_line": 120,
+      "end_line": 150,
       "type": "FUNCTION",
       "content_hash": "0024e67dc85c0d34"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._history": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._history",
-      "start_line": 152,
-      "end_line": 161,
+      "start_line": 153,
+      "end_line": 162,
       "type": "FUNCTION",
       "content_hash": "92b751e0704beef7"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.ask",
-      "start_line": 164,
-      "end_line": 184,
+      "start_line": 165,
+      "end_line": 185,
       "type": "FUNCTION",
-      "content_hash": "7b84e7768badd1fb"
+      "content_hash": "3d37a81a6e518208"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._shape",
-      "start_line": 187,
-      "end_line": 194,
+      "start_line": 188,
+      "end_line": 195,
       "type": "FUNCTION",
       "content_hash": "bb700b76fd26df21"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.cms_copilot_endpoint": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.cms_copilot_endpoint",
-      "start_line": 198,
-      "end_line": 214,
+      "start_line": 199,
+      "end_line": 215,
       "type": "FUNCTION",
       "content_hash": "eb7c0e222a38c837"
     },
@@ -4407,14 +4407,14 @@
         {
           "qualified_name": "app.surfaces.cms_copilot.ask",
           "reference_file": "app/surfaces/cms_copilot.py",
-          "reference_start_line": 164,
-          "reference_end_line": 184
+          "reference_start_line": 165,
+          "reference_end_line": 185
         },
         {
           "qualified_name": "app.surfaces.cms_copilot.cms_copilot_endpoint",
           "reference_file": "app/surfaces/cms_copilot.py",
-          "reference_start_line": 198,
-          "reference_end_line": 214
+          "reference_start_line": 199,
+          "reference_end_line": 215
         },
         {
           "qualified_name": "app.surfaces.device.device_intent",
@@ -5559,15 +5559,26 @@
           "description": "Creates OpenCode session for Discord voice chat"
         },
         {
-          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
+          "target": "app/core/opencode.py|app.core.opencode.send_message",
           "call_sites": [
             {
-              "line": 165,
-              "column": 11
+              "line": 125,
+              "column": 27
             }
           ],
-          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
+          "description": "Discord voice chats forward messages to OpenCode sessions"
+        },
+        {
+          "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.discord_voice_chat",
+          "target": "app/core/opencode.py|app.core.opencode.is_enabled",
+          "call_sites": [
+            {
+              "line": 136,
+              "column": 21
+            }
+          ],
+          "description": "Discord voice chat checks OpenCode availability"
         },
         {
           "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
@@ -5579,6 +5590,17 @@
             }
           ],
           "description": "LINE OpenCode chat initializes OpenCode sessions."
+        },
+        {
+          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 166,
+              "column": 11
+            }
+          ],
+          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
         }
       ],
       "src_id": "2",
@@ -5690,7 +5712,7 @@
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
             {
-              "line": 165,
+              "line": 166,
               "column": 11
             }
           ],
@@ -5706,6 +5728,17 @@
       "key_edges": [
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.Envelope",
+          "call_sites": [
+            {
+              "line": 88,
+              "column": 11
+            }
+          ],
+          "description": "Device intent handler wraps payloads into envelopes"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/dispatch.py|app.dispatch.handle_device_intent",
           "call_sites": [
             {
@@ -5714,17 +5747,6 @@
             }
           ],
           "description": "Device surface passes device intents to dispatch handler"
-        },
-        {
-          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
-          "target": "app/dispatch.py|app.dispatch.converse",
-          "call_sites": [
-            {
-              "line": 224,
-              "column": 33
-            }
-          ],
-          "description": "Delegates LINE chat session messages to conversational dispatch"
         },
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_result",
@@ -5736,6 +5758,17 @@
             }
           ],
           "description": "Device result handler fetches project definitions from project registry."
+        },
+        {
+          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
+          "target": "app/dispatch.py|app.dispatch.converse",
+          "call_sites": [
+            {
+              "line": 224,
+              "column": 33
+            }
+          ],
+          "description": "Delegates LINE chat session messages to conversational dispatch"
         },
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
@@ -5839,6 +5872,17 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
+          "call_sites": [
+            {
+              "line": 86,
+              "column": 29
+            }
+          ],
+          "description": "Device intent updates node activity timestamps"
+        },
+        {
           "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
           "target": "app/nodes/commands.py|app.nodes.commands.pull_pending",
           "call_sites": [
@@ -5848,6 +5892,17 @@
             }
           ],
           "description": "Pulls pending commands for polling device nodes"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
+          "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
+          "call_sites": [
+            {
+              "line": 106,
+              "column": 25
+            }
+          ],
+          "description": "Device poll updates node activity timestamps"
         },
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_register",
@@ -5941,17 +5996,6 @@
       "key_edges": [
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
-          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
-          "call_sites": [
-            {
-              "line": 81,
-              "column": 67
-            }
-          ],
-          "description": "SSO surface inspects visible tools from runtime"
-        },
-        {
-          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
@@ -5964,6 +6008,43 @@
             }
           ],
           "description": "SSO session initialization creates tool runtime instances."
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
+          "call_sites": [
+            {
+              "line": 81,
+              "column": 67
+            }
+          ],
+          "description": "SSO surface inspects visible tools from runtime"
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 123,
+              "column": 24
+            }
+          ],
+          "description": "SSO session retrieval initializes tool runtime"
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
+          "call_sites": [
+            {
+              "line": 154,
+              "column": 32
+            },
+            {
+              "line": 169,
+              "column": 32
+            }
+          ],
+          "description": "SSO session refresh initializes tool runtime"
         }
       ],
       "src_id": "2",
@@ -6675,6 +6756,17 @@
         },
         {
           "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "call_sites": [
+            {
+              "line": 109,
+              "column": 25
+            }
+          ],
+          "description": "Application startup ensures voice surface tables exist."
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
           "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
           "call_sites": [
             {
@@ -6686,14 +6778,25 @@
         },
         {
           "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
           "call_sites": [
             {
-              "line": 109,
+              "line": 108,
               "column": 25
             }
           ],
-          "description": "Application startup ensures voice surface tables exist."
+          "description": "Table initialization creates LINE OpenCode storage tables"
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
+          "call_sites": [
+            {
+              "line": 106,
+              "column": 24
+            }
+          ],
+          "description": "Table initialization creates LINE session storage tables"
         }
       ],
       "src_id": "6",
