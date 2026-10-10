@@ -1,6 +1,6 @@
 {
   "repository_name": ".codeboarding-target",
-  "timestamp": "2026-10-10T15:25:08.295768+00:00",
+  "timestamp": "2026-10-10T15:39:48.242578+00:00",
   "overall_score": 1.0,
   "check_summaries": [
     {
@@ -15,17 +15,6 @@
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "javascript"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [],
-      "packages_checked": 1,
-      "packages_in_cycles": 0
     },
     {
       "check_name": "unused_code_diagnostics",
@@ -47,24 +36,11 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 328,
+      "total_entities_checked": 329,
       "findings_count": 0,
       "warning_count": 0,
       "score": 1.0,
       "finding_groups": []
-    },
-    {
-      "check_name": "circular_dependencies",
-      "description": "Detects circular dependencies between packages",
-      "languages": [
-        "python"
-      ],
-      "check_type": "circular_dependencies",
-      "cycles": [
-        "app -> app.surfaces -> app"
-      ],
-      "packages_checked": 25,
-      "packages_in_cycles": 2
     },
     {
       "check_name": "unused_code_diagnostics",
