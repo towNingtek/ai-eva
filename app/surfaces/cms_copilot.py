@@ -45,6 +45,7 @@ SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續�
 - 不知道的事實不要編；SROI 的實際數字一定要使用者自己填，你只能解釋指標、提醒要準備哪些佐證。
 - 只回 JSON：{"reply":"給使用者看的回覆","suggestions":{...可省略的鍵...}}，不要其他文字。
 - 建議的內容放在 suggestions，不要只寫在 reply 裡；reply 簡短說明你建議了什麼即可。
+- 一致性：reply 說「建議 SDG x、y」時，suggestions.sdgs 一定要列出 x、y，並在 suggestions.sdg_texts 附說明；說「建議這些活動」時，suggestions.tasks 一定要有；說「寫好理念」時，suggestions.philosophy 一定要有全文。
 
 格式範例（建議 SDG 時）：
 {"reply":"從理念看，SDG 3 和 11 也很相關，說明已附上。","suggestions":{"sdgs":[3,11],"sdg_texts":{"3":"透過每月共餐…","11":"以社區為場域…"}}}"""
@@ -162,7 +163,7 @@ def _history(raw) -> list:
 
 
 async def ask(project: dict, step: str, message: str, history: list, *, user: str = "") -> dict:
-    llm = make_llm(user=user, streaming=False, temperature=0.4)
+    llm = make_llm(user=user, streaming=False, temperature=0.2)
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
     resp = await asyncio.wait_for(llm.ainvoke([
         SystemMessage(content=SYSTEM),
