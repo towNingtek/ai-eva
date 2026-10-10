@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-10-10T17:37:48.949608+00:00",
-    "source_tree_hash": "b9372d4dad1be349cee9193c5eed9e4f3886af6246f45c988ab98b08174e50d0",
+    "generated_at": "2026-10-10T17:47:50.518395+00:00",
+    "source_tree_hash": "9588bf5e5fdcef65be3ddadf46e5d43940c4be8c5231209858197c691746ccf7",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
@@ -382,8 +382,8 @@
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape",
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.cms_copilot_endpoint"
       ],
-      "content_hash": "bec88e613118b987",
-      "module_hash": "770fb248a056dfa8"
+      "content_hash": "1b01f05077b6e38b",
+      "module_hash": "9f84d176fcb68e10"
     },
     "app/surfaces/device.py": {
       "method_keys": [
@@ -1270,80 +1270,80 @@
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._parse": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._parse",
-      "start_line": 61,
-      "end_line": 72,
+      "start_line": 63,
+      "end_line": 74,
       "type": "FUNCTION",
       "content_hash": "473898fac254c1f6"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._fallback_reply": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._fallback_reply",
-      "start_line": 78,
-      "end_line": 87,
+      "start_line": 80,
+      "end_line": 89,
       "type": "FUNCTION",
       "content_hash": "fc7fc9eb409a4f87"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._sdg_no": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._sdg_no",
-      "start_line": 93,
-      "end_line": 106,
+      "start_line": 95,
+      "end_line": 108,
       "type": "FUNCTION",
       "content_hash": "e078cdd31b5206ba"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._sdg_texts": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._sdg_texts",
-      "start_line": 109,
-      "end_line": 124,
+      "start_line": 111,
+      "end_line": 126,
       "type": "FUNCTION",
       "content_hash": "92e8dcb967ffca1d"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.sdgs_in_reply": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.sdgs_in_reply",
-      "start_line": 130,
-      "end_line": 138,
+      "start_line": 132,
+      "end_line": 140,
       "type": "FUNCTION",
       "content_hash": "e3c273a2fb9ad77b"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.clean_suggestions": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.clean_suggestions",
-      "start_line": 141,
-      "end_line": 171,
+      "start_line": 143,
+      "end_line": 173,
       "type": "FUNCTION",
       "content_hash": "0024e67dc85c0d34"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._history": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._history",
-      "start_line": 174,
-      "end_line": 183,
+      "start_line": 176,
+      "end_line": 185,
       "type": "FUNCTION",
       "content_hash": "92b751e0704beef7"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.ask",
-      "start_line": 186,
-      "end_line": 218,
+      "start_line": 188,
+      "end_line": 225,
       "type": "FUNCTION",
-      "content_hash": "36db25e7fd737233"
+      "content_hash": "abd3a84549309409"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot._shape",
-      "start_line": 221,
-      "end_line": 228,
+      "start_line": 228,
+      "end_line": 235,
       "type": "FUNCTION",
       "content_hash": "bb700b76fd26df21"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.cms_copilot_endpoint": {
       "file_path": "app/surfaces/cms_copilot.py",
       "qualified_name": "app.surfaces.cms_copilot.cms_copilot_endpoint",
-      "start_line": 232,
-      "end_line": 248,
+      "start_line": 239,
+      "end_line": 255,
       "type": "FUNCTION",
       "content_hash": "eb7c0e222a38c837"
     },
@@ -4416,14 +4416,14 @@
         {
           "qualified_name": "app.surfaces.cms_copilot.cms_copilot_endpoint",
           "reference_file": "app/surfaces/cms_copilot.py",
-          "reference_start_line": 232,
-          "reference_end_line": 248
+          "reference_start_line": 239,
+          "reference_end_line": 255
         },
         {
           "qualified_name": "app.surfaces.cms_copilot.ask",
           "reference_file": "app/surfaces/cms_copilot.py",
-          "reference_start_line": 186,
-          "reference_end_line": 218
+          "reference_start_line": 188,
+          "reference_end_line": 225
         },
         {
           "qualified_name": "app.surfaces.device.device_intent",
@@ -5573,7 +5573,7 @@
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
             {
-              "line": 187,
+              "line": 189,
               "column": 11
             }
           ],
@@ -5722,7 +5722,7 @@
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
             {
-              "line": 187,
+              "line": 189,
               "column": 11
             }
           ],
@@ -6006,17 +6006,6 @@
       "key_edges": [
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
-          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
-          "call_sites": [
-            {
-              "line": 81,
-              "column": 67
-            }
-          ],
-          "description": "SSO surface inspects visible tools from runtime"
-        },
-        {
-          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
@@ -6029,6 +6018,17 @@
             }
           ],
           "description": "SSO session initialization creates tool runtime instances."
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
+          "call_sites": [
+            {
+              "line": 81,
+              "column": 67
+            }
+          ],
+          "description": "SSO surface inspects visible tools from runtime"
         },
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
@@ -6777,17 +6777,6 @@
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
-          "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
-          "call_sites": [
-            {
-              "line": 245,
-              "column": 39
-            }
-          ],
-          "description": "Main application handles session refreshes on unauthorized responses"
-        },
-        {
           "source": "app/main.py|app.main._init_tables",
           "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
           "call_sites": [
@@ -6797,6 +6786,17 @@
             }
           ],
           "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
+        },
+        {
+          "source": "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
+          "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
+          "call_sites": [
+            {
+              "line": 245,
+              "column": 39
+            }
+          ],
+          "description": "Main application handles session refreshes on unauthorized responses"
         },
         {
           "source": "app/main.py|app.main._init_tables",
