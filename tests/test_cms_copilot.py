@@ -73,3 +73,21 @@ class CmsCopilotTests(TestCase):
         with patch.object(cms_copilot, "make_llm", return_value=llm), self.assertRaises(HTTPException) as e:
             self.run_ep(BODY)
         self.assertEqual(e.exception.status_code, 502)
+
+    def test_raw_newlines_inside_json_strings_are_accepted(self):
+        content = '{"reply":"整理好了","suggestions":{"philosophy":"第一段\n第二段"}}'
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content=content)))
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertEqual(out["suggestions"], {"philosophy": "第一段\n第二段"})
+
+    def test_broken_json_never_shown_raw(self):
+        content = '{"reply":"整理好了\\n請看","suggestions":{"philosophy":"未結束'
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content=content)))
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertEqual(out, {"reply": "整理好了\n請看", "suggestions": {}})
+        llm.ainvoke.return_value = SimpleNamespace(content='{"suggestions": {"sdgs": [1]')
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertNotIn("{", out["reply"])
