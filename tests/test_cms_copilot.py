@@ -1,3 +1,4 @@
+import json
 import asyncio
 from types import SimpleNamespace
 from unittest import TestCase
@@ -151,3 +152,13 @@ class CmsCopilotTests(TestCase):
         with patch.object(cms_copilot, "make_llm", return_value=llm), patch.object(cms_copilot, "ATTEMPT_TIMEOUT", 0.05):
             out = self.run_ep(BODY)
         self.assertEqual((out["reply"], len(calls)), ("ok", 2))
+
+    def test_tasks_recovered_from_reply(self):
+        reply = '我建議以下活動：\n1. {"name":"長者農業分享會","overview":"邀請長者分享經驗。"}\n2. {"name":"季節蔬菜課","overview":"認識當季蔬菜。"}'
+        content = json.dumps({"reply": reply, "suggestions": {}}, ensure_ascii=False)
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content=content)))
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertEqual([t["name"] for t in out["suggestions"]["tasks"]], ["長者農業分享會", "季節蔬菜課"])
+        self.assertNotIn("{", out["reply"])
+        self.assertIn("1. 長者農業分享會：邀請長者分享經驗。", out["reply"])

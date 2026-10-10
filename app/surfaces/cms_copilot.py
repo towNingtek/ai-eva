@@ -140,6 +140,24 @@ def sdgs_in_reply(reply: str) -> list:
     return nums if 0 < len(nums) <= 6 else []
 
 
+_OBJ = re.compile(r"\{[^{}]*\}")
+
+
+def tasks_in_reply(reply: str):
+    """reply 裡夾著 {"name":..,"overview":..} → (乾淨的 reply, tasks)。"""
+    tasks, keep = [], reply or ""
+    for m in _OBJ.finditer(reply or ""):
+        try:
+            o = json.loads(m.group(), strict=False)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(o, dict) and isinstance(o.get("name"), str):
+            tasks.append(o)
+            line = f"{o['name']}：{o.get('overview') or ''}".rstrip("：")
+            keep = keep.replace(m.group(), line, 1)
+    return keep, tasks
+
+
 def clean_suggestions(raw) -> dict:
     """白名單 + 長度上限。CMS 端會再驗一次。"""
     out: dict = {}
@@ -213,6 +231,11 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
         return {"reply": reply[:1500], "suggestions": {"sdgs": nums} if nums else {}}
     raw = data.get("suggestions")
     cleaned = clean_suggestions(raw)
+    if "tasks" not in cleaned:
+        fixed, found = tasks_in_reply(reply)
+        tasks = clean_suggestions({"tasks": found}).get("tasks")
+        if tasks:
+            reply, cleaned["tasks"] = fixed, tasks
     if "sdgs" not in cleaned and "sdg_texts" not in cleaned:
         # 模型常只在 reply 寫「建議加入 SDG 12、13」而沒放 suggestions：撈回編號，
         # 前端仍要使用者按「加入」才寫入
