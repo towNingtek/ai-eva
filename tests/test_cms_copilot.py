@@ -105,7 +105,7 @@ class CmsCopilotTests(TestCase):
         async def slow(*_a, **_k):
             await asyncio.sleep(1)
         llm = SimpleNamespace(ainvoke=slow)
-        with patch.object(cms_copilot, "make_llm", return_value=llm), patch.object(cms_copilot, "LLM_TIMEOUT", 0.05), \
+        with patch.object(cms_copilot, "make_llm", return_value=llm), patch.object(cms_copilot, "LLM_TIMEOUT", 0.1), patch.object(cms_copilot, "ATTEMPT_TIMEOUT", 0.05), \
                 self.assertRaises(HTTPException) as e:
             self.run_ep(BODY)
         self.assertEqual(e.exception.status_code, 502)
@@ -139,3 +139,15 @@ class CmsCopilotTests(TestCase):
             self.run_ep(BODY)
         self.assertEqual(mk.call_args.kwargs["alias"], cms_copilot.COPILOT_MODEL)
         self.assertEqual(mk.call_args.kwargs["max_tokens"], cms_copilot.MAX_TOKENS)
+
+    def test_one_stuck_attempt_is_retried(self):
+        calls = []
+        async def flaky(*_a, **_k):
+            calls.append(1)
+            if len(calls) == 1:
+                await asyncio.sleep(1)
+            return SimpleNamespace(content='{"reply":"ok"}')
+        llm = SimpleNamespace(ainvoke=flaky)
+        with patch.object(cms_copilot, "make_llm", return_value=llm), patch.object(cms_copilot, "ATTEMPT_TIMEOUT", 0.05):
+            out = self.run_ep(BODY)
+        self.assertEqual((out["reply"], len(calls)), ("ok", 2))
