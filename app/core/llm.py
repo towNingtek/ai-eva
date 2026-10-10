@@ -20,6 +20,7 @@ def make_llm(
     user: str | None = None,
     temperature: float = 0.2,
     streaming: bool = True,
+    max_tokens: int | None = None,
 ) -> ChatOpenAI:
     """LiteLLM 後 ChatOpenAI factory。
 
@@ -29,6 +30,8 @@ def make_llm(
     """
     # OpenAI 的 `user` 欄必須是字串；SSO 帶進來的 user_id 可能是整數 → 一律 str()（否則 400）。
     extra = {"model_kwargs": {"user": str(user)}} if user else {}
+    if max_tokens:
+        extra["max_tokens"] = max_tokens
     return ChatOpenAI(
         model=alias or LITELLM_DEFAULT_MODEL,
         api_key=api_key or LITELLM_API_KEY or "litellm-no-auth",
