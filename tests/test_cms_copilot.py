@@ -91,3 +91,12 @@ class CmsCopilotTests(TestCase):
         with patch.object(cms_copilot, "make_llm", return_value=llm):
             out = self.run_ep(BODY)
         self.assertNotIn("{", out["reply"])
+
+    def test_common_sdg_shapes_are_understood(self):
+        c = cms_copilot.clean_suggestions
+        self.assertEqual(c({"sdgs": ["SDG 3", "SDG11：永續城鄉", {"sdg": 12, "text": "減少浪費"}, True]}),
+                         {"sdgs": [3, 11, 12], "sdg_texts": {"12": "減少浪費"}})
+        self.assertEqual(c({"sdg_texts": {"SDG 3": "健康", "目標4": "教育", "x": "bad"}}),
+                         {"sdg_texts": {"3": "健康", "4": "教育"}})
+        self.assertEqual(c({"sdg_texts": [{"sdg": "3", "description": "健康"}, {"n": 99, "text": "bad"}]}),
+                         {"sdg_texts": {"3": "健康"}})
