@@ -100,3 +100,16 @@ class CmsCopilotTests(TestCase):
                          {"sdg_texts": {"3": "健康", "4": "教育"}})
         self.assertEqual(c({"sdg_texts": [{"sdg": "3", "description": "健康"}, {"n": 99, "text": "bad"}]}),
                          {"sdg_texts": {"3": "健康"}})
+
+    def test_slow_llm_times_out_as_502(self):
+        async def slow(*_a, **_k):
+            await asyncio.sleep(1)
+        llm = SimpleNamespace(ainvoke=slow)
+        with patch.object(cms_copilot, "make_llm", return_value=llm), patch.object(cms_copilot, "LLM_TIMEOUT", 0.05), \
+                self.assertRaises(HTTPException) as e:
+            self.run_ep(BODY)
+        self.assertEqual(e.exception.status_code, 502)
+
+    def test_prompt_allows_answering_sroi_questions(self):
+        self.assertIn("SROI", cms_copilot.SYSTEM)
+        self.assertIn("不要拒絕回答", cms_copilot.SYSTEM)
