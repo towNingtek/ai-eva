@@ -125,3 +125,10 @@ class CmsCopilotTests(TestCase):
         with patch.object(cms_copilot, "make_llm", return_value=llm):
             out = self.run_ep(BODY)
         self.assertEqual(out["suggestions"], {"sdgs": [12, 13, 15]})
+
+    def test_sdgs_recovered_when_json_is_broken(self):
+        content = '{"reply":"建議加入 SDG 6、12、13、15，並已為每個 SDG 撰寫說明。","suggestions":{"sdg_texts":{"6":"未結束'
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content=content)))
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertEqual(out["suggestions"], {"sdgs": [6, 12, 13, 15]})

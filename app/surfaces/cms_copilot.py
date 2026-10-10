@@ -45,6 +45,7 @@ SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續�
 - 不知道的事實不要編；SROI 的實際數字一定要使用者自己填，你只能解釋指標、提醒要準備哪些佐證。
 - 只回 JSON：{"reply":"給使用者看的回覆","suggestions":{...可省略的鍵...}}，不要其他文字。
 - 建議的內容放在 suggestions，不要只寫在 reply 裡；reply 簡短說明你建議了什麼即可。
+- 精簡：每個 SDG 說明 80 字內、最多建議 4 個 SDG，活動概述 60 字內（回應太長會逾時）。
 - 一致性：reply 說「建議 SDG x、y」時，suggestions.sdgs 一定要列出 x、y，並在 suggestions.sdg_texts 附說明；說「建議這些活動」時，suggestions.tasks 一定要有；說「寫好理念」時，suggestions.philosophy 一定要有全文。
 
 格式範例（建議 SDG 時）：
@@ -190,7 +191,9 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
     if not reply:
         # 模型沒照格式回：撈出 reply 或用原文（純文字時），不給建議
         reply = _fallback_reply(resp.content or "") or "抱歉，我這次沒有整理好，請再問一次。"
-        return {"reply": reply[:1500], "suggestions": {}}
+        nums = sdgs_in_reply(reply)
+        logger.info("cms copilot: unparsable JSON (len=%d), recovered sdgs=%s", len(resp.content or ""), nums)
+        return {"reply": reply[:1500], "suggestions": {"sdgs": nums} if nums else {}}
     raw = data.get("suggestions")
     cleaned = clean_suggestions(raw)
     if "sdgs" not in cleaned and "sdg_texts" not in cleaned:
