@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import time
 
@@ -28,6 +29,8 @@ MAX_HISTORY = 8
 LLM_TIMEOUT = 45
 # 正常回覆 100–500 tokens；封頂避免偶發的長篇輸出拖到逾時
 MAX_TOKENS = 900
+# 互動式助手要快：不跟 LITELLM_DEFAULT_MODEL（beta 可能指向本地慢模型）
+COPILOT_MODEL = os.getenv("CMS_COPILOT_MODEL", "cloud-fast")
 STEPS = {"basic", "sdgs", "impact", "contact", "sroi", "review"}
 
 SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續專案後台填寫專案資料。用繁體中文、口語、簡短回答（150 字內，必要時條列）。
@@ -181,7 +184,7 @@ def _history(raw) -> list:
 
 
 async def ask(project: dict, step: str, message: str, history: list, *, user: str = "") -> dict:
-    llm = make_llm(user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS)
+    llm = make_llm(alias=COPILOT_MODEL, user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS)
     t0 = time.monotonic()
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
     resp = await asyncio.wait_for(llm.ainvoke([
@@ -191,7 +194,7 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
         HumanMessage(content=message),
     ]), timeout=LLM_TIMEOUT)
     meta = getattr(resp, "response_metadata", None) or {}
-    logger.info("cms copilot: step=%s %.1fs finish=%s usage=%s", step, time.monotonic() - t0,
+    logger.info("cms copilot: model=%s step=%s %.1fs finish=%s usage=%s", COPILOT_MODEL, step, time.monotonic() - t0,
                 meta.get("finish_reason"), meta.get("token_usage"))
     data = _parse(resp.content or "")
     reply = str(data.get("reply") or "").strip()

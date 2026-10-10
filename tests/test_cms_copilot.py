@@ -132,3 +132,10 @@ class CmsCopilotTests(TestCase):
         with patch.object(cms_copilot, "make_llm", return_value=llm):
             out = self.run_ep(BODY)
         self.assertEqual(out["suggestions"], {"sdgs": [6, 12, 13, 15]})
+
+    def test_uses_dedicated_fast_model(self):
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content='{"reply":"ok"}')))
+        with patch.object(cms_copilot, "make_llm", return_value=llm) as mk:
+            self.run_ep(BODY)
+        self.assertEqual(mk.call_args.kwargs["alias"], cms_copilot.COPILOT_MODEL)
+        self.assertEqual(mk.call_args.kwargs["max_tokens"], cms_copilot.MAX_TOKENS)
