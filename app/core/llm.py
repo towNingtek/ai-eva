@@ -21,6 +21,7 @@ def make_llm(
     temperature: float = 0.2,
     streaming: bool = True,
     max_tokens: int | None = None,
+    json_mode: bool = False,
 ) -> ChatOpenAI:
     """LiteLLM 後 ChatOpenAI factory。
 
@@ -32,6 +33,8 @@ def make_llm(
     extra = {"model_kwargs": {"user": str(user)}} if user else {}
     if max_tokens:
         extra["max_tokens"] = max_tokens
+    if json_mode:
+        extra.setdefault("model_kwargs", {})["response_format"] = {"type": "json_object"}
     return ChatOpenAI(
         model=alias or LITELLM_DEFAULT_MODEL,
         api_key=api_key or LITELLM_API_KEY or "litellm-no-auth",
