@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-10-10T17:59:20.469872+00:00",
-    "source_tree_hash": "5e79a7c5d8c0ba9b8ccca6482d63541605a8bcee543991ce80b1fd24b99b92bc",
+    "generated_at": "2026-10-10T18:10:28.034770+00:00",
+    "source_tree_hash": "55bd6b38cf86841c682e951658ddb2123dfe3d42d0141922e149df6d4772df0a",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
@@ -383,7 +383,7 @@
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape",
         "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.cms_copilot_endpoint"
       ],
-      "content_hash": "e8f96a084979b226",
+      "content_hash": "e9cf06db581d2978",
       "module_hash": "39ef5f3738441c05"
     },
     "app/surfaces/device.py": {
@@ -625,7 +625,7 @@
       "method_keys": [
         "app/core/llm.py|app.core.llm.make_llm"
       ],
-      "content_hash": "557d0578984d4be3",
+      "content_hash": "89195a6a43bf4b61",
       "module_hash": "58b8483f168fa71a"
     },
     "app/core/opencode.py": {
@@ -1338,7 +1338,7 @@
       "start_line": 206,
       "end_line": 248,
       "type": "FUNCTION",
-      "content_hash": "e21d5fd1878b973d"
+      "content_hash": "c8e23a7bd47346a5"
     },
     "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot._shape": {
       "file_path": "app/surfaces/cms_copilot.py",
@@ -2328,9 +2328,9 @@
       "file_path": "app/core/llm.py",
       "qualified_name": "app.core.llm.make_llm",
       "start_line": 16,
-      "end_line": 42,
+      "end_line": 45,
       "type": "FUNCTION",
-      "content_hash": "555998ab479b22e7"
+      "content_hash": "c399bf3a4a197406"
     },
     "app/core/opencode.py|app.core.opencode.is_enabled": {
       "file_path": "app/core/opencode.py",
@@ -4755,7 +4755,7 @@
           "qualified_name": "app.core.llm.make_llm",
           "reference_file": "app/core/llm.py",
           "reference_start_line": 16,
-          "reference_end_line": 42
+          "reference_end_line": 45
         },
         {
           "qualified_name": "app.core.opencode.create_session",
@@ -5568,17 +5568,6 @@
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 207,
-              "column": 11
-            }
-          ],
-          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
-        },
-        {
           "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
           "target": "app/core/opencode.py|app.core.opencode.create_session",
           "call_sites": [
@@ -5588,6 +5577,17 @@
             }
           ],
           "description": "Creates OpenCode session for Discord voice chat"
+        },
+        {
+          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 207,
+              "column": 11
+            }
+          ],
+          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
         },
         {
           "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
@@ -5758,6 +5758,17 @@
           "description": "Device surface passes device intents to dispatch handler"
         },
         {
+          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
+          "target": "app/dispatch.py|app.dispatch.converse",
+          "call_sites": [
+            {
+              "line": 224,
+              "column": 33
+            }
+          ],
+          "description": "Delegates LINE chat session messages to conversational dispatch"
+        },
+        {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/dispatch.py|app.dispatch.Envelope",
           "call_sites": [
@@ -5778,17 +5789,6 @@
             }
           ],
           "description": "Device result handler fetches project definitions from project registry."
-        },
-        {
-          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
-          "target": "app/dispatch.py|app.dispatch.converse",
-          "call_sites": [
-            {
-              "line": 224,
-              "column": 33
-            }
-          ],
-          "description": "Delegates LINE chat session messages to conversational dispatch"
         },
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
@@ -5903,6 +5903,17 @@
           "description": "Pulls pending commands for polling device nodes"
         },
         {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
+          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
+          "call_sites": [
+            {
+              "line": 62,
+              "column": 25
+            }
+          ],
+          "description": "Device surface registers hardware nodes and pulls queued commands"
+        },
+        {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
           "call_sites": [
@@ -5923,17 +5934,6 @@
             }
           ],
           "description": "Device poll updates node activity timestamps"
-        },
-        {
-          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
-          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
-          "call_sites": [
-            {
-              "line": 62,
-              "column": 25
-            }
-          ],
-          "description": "Device surface registers hardware nodes and pulls queued commands"
         },
         {
           "source": "app/surfaces/line.py|app.surfaces.line._handle_event",
@@ -6260,6 +6260,17 @@
             }
           ],
           "description": "Application handlers execute copilot routines"
+        },
+        {
+          "source": "app/apps/hello_world/handler.py|app.apps.hello_world.handler._stream_one",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 55,
+              "column": 28
+            }
+          ],
+          "description": "Application handlers request language model completions"
         },
         {
           "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
@@ -6714,6 +6725,21 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/regulations/ingest.py|app.regulations.ingest.ingest_uploaded_pdf",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 257,
+              "column": 15
+            },
+            {
+              "line": 259,
+              "column": 15
+            }
+          ],
+          "description": "Regulation ingest and audit judge request LLM evaluations"
+        },
+        {
           "source": "app/regulations/judge.py|app.regulations.judge.run_check",
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
@@ -6787,17 +6813,6 @@
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
-          "call_sites": [
-            {
-              "line": 109,
-              "column": 25
-            }
-          ],
-          "description": "Application startup ensures voice surface tables exist."
-        },
-        {
           "source": "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
           "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
@@ -6818,6 +6833,17 @@
             }
           ],
           "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
+          "call_sites": [
+            {
+              "line": 109,
+              "column": 25
+            }
+          ],
+          "description": "Application startup ensures voice surface tables exist."
         },
         {
           "source": "app/main.py|app.main._init_tables",
