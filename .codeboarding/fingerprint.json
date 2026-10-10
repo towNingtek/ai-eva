@@ -126,7 +126,7 @@
     "app/core/storage.py": "18e89d1bc453a6ac",
     "app/core/opencode.py": "60cd2641dd5f802b",
     "app/core/search.py": "8426a59052b5c166",
-    "app/surfaces/cms_copilot.py": "ddc154518eb40f3a",
+    "app/surfaces/cms_copilot.py": "de9b34e3ad658726",
     "app/surfaces/device.py": "8d448e721f4a5766",
     "app/surfaces/discord_voice.py": "dba3f272050e2d76",
     "app/surfaces/push.py": "9c3e9c1918ce2f9e",

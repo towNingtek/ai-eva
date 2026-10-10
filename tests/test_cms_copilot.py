@@ -113,3 +113,15 @@ class CmsCopilotTests(TestCase):
     def test_prompt_allows_answering_sroi_questions(self):
         self.assertIn("SROI", cms_copilot.SYSTEM)
         self.assertIn("不要拒絕回答", cms_copilot.SYSTEM)
+
+    def test_sdgs_recovered_from_reply_when_suggestions_empty(self):
+        f = cms_copilot.sdgs_in_reply
+        self.assertEqual(f("建議加入 SDG 12、13、15，說明已附上。"), [12, 13, 15])
+        self.assertEqual(f("建議加入 SDG 3, 4 和 11"), [3, 4, 11])
+        self.assertEqual(f("你已經選了 SDG 3"), [])
+        self.assertEqual(f("建議加入 SDG 18"), [])
+        content = '{"reply":"建議加入 SDG 12、13、15，說明已附上。","suggestions":{}}'
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content=content)))
+        with patch.object(cms_copilot, "make_llm", return_value=llm):
+            out = self.run_ep(BODY)
+        self.assertEqual(out["suggestions"], {"sdgs": [12, 13, 15]})

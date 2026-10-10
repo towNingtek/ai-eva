@@ -117,6 +117,20 @@ def _sdg_texts(raw) -> dict:
     return out
 
 
+_SDG_RUN = re.compile(r"SDGs?\s*((?:\d{1,2}\s*(?:[、,，/和及與]|and)?\s*)+)", re.I)
+
+
+def sdgs_in_reply(reply: str) -> list:
+    """「建議加入 SDG 12、13、15」→ [12, 13, 15]；只在明確「建議/加入」時才撈。"""
+    if not re.search(r"建議|加入|適合|suggest|add", reply or "", re.I):
+        return []
+    nums = set()
+    for m in _SDG_RUN.finditer(reply):
+        nums.update(int(x) for x in re.findall(r"\d{1,2}", m.group(1)))
+    nums = sorted(n for n in nums if 1 <= n <= 17)
+    return nums if 0 < len(nums) <= 6 else []
+
+
 def clean_suggestions(raw) -> dict:
     """白名單 + 長度上限。CMS 端會再驗一次。"""
     out: dict = {}
@@ -179,6 +193,12 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
         return {"reply": reply[:1500], "suggestions": {}}
     raw = data.get("suggestions")
     cleaned = clean_suggestions(raw)
+    if "sdgs" not in cleaned and "sdg_texts" not in cleaned:
+        # 模型常只在 reply 寫「建議加入 SDG 12、13」而沒放 suggestions：撈回編號，
+        # 前端仍要使用者按「加入」才寫入
+        nums = sdgs_in_reply(reply)
+        if nums:
+            cleaned["sdgs"] = nums
     if raw and not cleaned:
         # 只記結構，不記內容（使用者資料）
         logger.info("cms copilot: suggestions dropped, shape=%s", _shape(raw))
