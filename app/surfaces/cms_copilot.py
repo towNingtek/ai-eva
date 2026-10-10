@@ -6,6 +6,7 @@ CMS 前端走原本的儲存 API 寫入。服務 token 與 /internal/sdg/generat
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -22,13 +23,17 @@ logger = logging.getLogger(__name__)
 
 MAX_MESSAGE = 1000
 MAX_HISTORY = 8
+# CMS 前面的 ingress 60 秒就 504；留餘裕給 CMS 後端，逾時回 502 讓前端顯示友善訊息
+LLM_TIMEOUT = 45
 STEPS = {"basic", "sdgs", "impact", "contact", "sroi", "review"}
 
 SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續專案後台填寫專案資料。用繁體中文、口語、簡短回答（150 字內，必要時條列）。
 
 你看得到目前專案內容（JSON）與使用者所在步驟。你**不能直接修改**任何資料，只能提出建議；使用者按「套用」才會寫入。
 
-可以提出的建議種類（只有這些）：
+你可以回答任何和填寫專案有關的問題（例如 SROI 指標要量什麼、要準備哪些佐證、某個欄位怎麼寫），答案直接寫在 reply。
+
+能「套用」到表單的建議只有以下幾種（放在 suggestions）；其他內容（例如 SROI 建議）就只寫在 reply，不要拒絕回答：
 - philosophy：計畫理念全文（100~300 字，具體寫出問題、對象、做法、預期改變；不知道的數字用（請填入…）標示，不要捏造）
 - sdgs：建議加入的 SDG 編號陣列（1~17，最多 6 個，只放真正相關的）
 - sdg_texts：物件 {"SDG編號":"這個專案如何推進該 SDG，約 40~80 字"}，只寫專案已選或你同時建議的 SDG
@@ -159,12 +164,12 @@ def _history(raw) -> list:
 async def ask(project: dict, step: str, message: str, history: list, *, user: str = "") -> dict:
     llm = make_llm(user=user, streaming=False, temperature=0.4)
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
-    resp = await llm.ainvoke([
+    resp = await asyncio.wait_for(llm.ainvoke([
         SystemMessage(content=SYSTEM),
         SystemMessage(content=f"目前專案內容與步驟：{context}"),
         *_history(history),
         HumanMessage(content=message),
-    ])
+    ]), timeout=LLM_TIMEOUT)
     data = _parse(resp.content or "")
     reply = str(data.get("reply") or "").strip()
     if not reply:
