@@ -27,6 +27,8 @@ MAX_MESSAGE = 1000
 MAX_HISTORY = 8
 # CMS 前面的 ingress 60 秒就 504；留餘裕給 CMS 後端，逾時回 502 讓前端顯示友善訊息
 LLM_TIMEOUT = 45
+# cloud-fast 正常 2–4 秒；偶發卡住就放棄重送一次（總和仍在 LLM_TIMEOUT 內）
+ATTEMPT_TIMEOUT = 20
 # 正常回覆 100–500 tokens；封頂避免偶發的長篇輸出拖到逾時
 MAX_TOKENS = 900
 # 互動式助手要快：不跟 LITELLM_DEFAULT_MODEL（beta 可能指向本地慢模型）
@@ -187,12 +189,17 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
     llm = make_llm(alias=COPILOT_MODEL, user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS)
     t0 = time.monotonic()
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
-    resp = await asyncio.wait_for(llm.ainvoke([
+    msgs = [
         SystemMessage(content=SYSTEM),
         SystemMessage(content=f"目前專案內容與步驟：{context}"),
         *_history(history),
         HumanMessage(content=message),
-    ]), timeout=LLM_TIMEOUT)
+    ]
+    try:
+        resp = await asyncio.wait_for(llm.ainvoke(msgs), timeout=ATTEMPT_TIMEOUT)
+    except asyncio.TimeoutError:
+        logger.info("cms copilot: attempt timed out after %ss, retrying", ATTEMPT_TIMEOUT)
+        resp = await asyncio.wait_for(llm.ainvoke(msgs), timeout=LLM_TIMEOUT - ATTEMPT_TIMEOUT)
     meta = getattr(resp, "response_metadata", None) or {}
     logger.info("cms copilot: model=%s step=%s %.1fs finish=%s usage=%s", COPILOT_MODEL, step, time.monotonic() - t0,
                 meta.get("finish_reason"), meta.get("token_usage"))
