@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
 from fastapi import HTTPException, Request
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -47,10 +48,26 @@ def _parse(text: str) -> dict:
     if s == -1 or e == -1:
         return {}
     try:
-        data = json.loads(text[s:e + 1])
+        # strict=False: models often put raw newlines inside JSON strings.
+        data = json.loads(text[s:e + 1], strict=False)
     except json.JSONDecodeError:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+_REPLY = re.compile(r'"reply"\s*:\s*"((?:[^"\\]|\\.)*)"', re.S)
+
+
+def _fallback_reply(text: str) -> str:
+    """Model answered in broken JSON: salvage "reply", never show raw JSON."""
+    m = _REPLY.search(text or "")
+    if m:
+        try:
+            return json.loads(f'"{m.group(1)}"', strict=False)
+        except json.JSONDecodeError:
+            return m.group(1)
+    t = (text or "").strip()
+    return "" if t.startswith("{") or t.startswith("```") else t
 
 
 def clean_suggestions(raw) -> dict:
@@ -111,8 +128,9 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
     data = _parse(resp.content or "")
     reply = str(data.get("reply") or "").strip()
     if not reply:
-        # 模型沒照格式回：把原文當回覆，不給建議
-        reply = (resp.content or "").strip()[:1500]
+        # 模型沒照格式回：撈出 reply 或用原文（純文字時），不給建議
+        reply = _fallback_reply(resp.content or "") or "抱歉，我這次沒有整理好，請再問一次。"
+        return {"reply": reply[:1500], "suggestions": {}}
     return {"reply": reply[:1500], "suggestions": clean_suggestions(data.get("suggestions"))}
 
 
