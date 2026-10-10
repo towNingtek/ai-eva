@@ -38,7 +38,11 @@ SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續�
 - 使用者只是問問題或閒聊時，不要給建議（suggestions 給空物件）。
 - 不要覆蓋使用者已經寫好的內容：sdg_texts 只寫目前空白的 SDG，除非使用者明確要求重寫。
 - 不知道的事實不要編；SROI 的實際數字一定要使用者自己填，你只能解釋指標、提醒要準備哪些佐證。
-- 只回 JSON：{"reply":"給使用者看的回覆","suggestions":{...可省略的鍵...}}，不要其他文字。"""
+- 只回 JSON：{"reply":"給使用者看的回覆","suggestions":{...可省略的鍵...}}，不要其他文字。
+- 建議的內容放在 suggestions，不要只寫在 reply 裡；reply 簡短說明你建議了什麼即可。
+
+格式範例（建議 SDG 時）：
+{"reply":"從理念看，SDG 3 和 11 也很相關，說明已附上。","suggestions":{"sdgs":[3,11],"sdg_texts":{"3":"透過每月共餐…","11":"以社區為場域…"}}}"""
 
 
 def _parse(text: str) -> dict:
@@ -70,6 +74,43 @@ def _fallback_reply(text: str) -> str:
     return "" if t.startswith("{") or t.startswith("```") else t
 
 
+_NUM = re.compile(r"\d+")
+
+
+def _sdg_no(v):
+    """3, "3", "SDG 3", "SDG3：健康", {"sdg": 3} → 3 (or None)."""
+    if isinstance(v, dict):
+        v = next((v[k] for k in ("sdg", "n", "id", "number", "goal") if k in v), None)
+    if isinstance(v, bool) or v is None:
+        return None
+    if isinstance(v, (int, float)):
+        n = int(v)
+    else:
+        m = _NUM.search(str(v))
+        if not m:
+            return None
+        n = int(m.group())
+    return n if 1 <= n <= 17 else None
+
+
+def _sdg_texts(raw) -> dict:
+    """{"3": "..."} / {"SDG 3": "..."} / [{"sdg": 3, "text": "..."}] → {"3": "..."}."""
+    pairs = []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, list):
+        for x in raw:
+            if isinstance(x, dict):
+                text = next((x[k] for k in ("text", "description", "desc", "content") if isinstance(x.get(k), str)), None)
+                pairs.append((x, text))
+    out = {}
+    for k, v in pairs:
+        n = _sdg_no(k)
+        if n and isinstance(v, str) and 0 < len(v.strip()) <= 1000:
+            out[str(n)] = v.strip()
+    return out
+
+
 def clean_suggestions(raw) -> dict:
     """白名單 + 長度上限。CMS 端會再驗一次。"""
     out: dict = {}
@@ -79,16 +120,15 @@ def clean_suggestions(raw) -> dict:
     if isinstance(ph, str) and 0 < len(ph.strip()) <= 2000:
         out["philosophy"] = ph.strip()
     sdgs = raw.get("sdgs")
+    texts = _sdg_texts(raw.get("sdg_texts"))
     if isinstance(sdgs, list):
-        nums = sorted({int(n) for n in sdgs if str(n).strip().isdigit() and 1 <= int(n) <= 17})
+        nums = sorted({n for n in map(_sdg_no, sdgs) if n})
+        # {"sdgs":[{"sdg":3,"text":"..."}]}: texts carried inline
+        texts = {**_sdg_texts([x for x in sdgs if isinstance(x, dict)]), **texts}
         if 0 < len(nums) <= 6:
             out["sdgs"] = nums
-    texts = raw.get("sdg_texts")
-    if isinstance(texts, dict):
-        t = {str(int(k)): v.strip() for k, v in texts.items()
-             if str(k).strip().isdigit() and 1 <= int(k) <= 17 and isinstance(v, str) and 0 < len(v.strip()) <= 1000}
-        if t:
-            out["sdg_texts"] = t
+    if texts:
+        out["sdg_texts"] = texts
     tasks = raw.get("tasks")
     if isinstance(tasks, list):
         items = []
@@ -131,7 +171,22 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
         # 模型沒照格式回：撈出 reply 或用原文（純文字時），不給建議
         reply = _fallback_reply(resp.content or "") or "抱歉，我這次沒有整理好，請再問一次。"
         return {"reply": reply[:1500], "suggestions": {}}
-    return {"reply": reply[:1500], "suggestions": clean_suggestions(data.get("suggestions"))}
+    raw = data.get("suggestions")
+    cleaned = clean_suggestions(raw)
+    if raw and not cleaned:
+        # 只記結構，不記內容（使用者資料）
+        logger.info("cms copilot: suggestions dropped, shape=%s", _shape(raw))
+    return {"reply": reply[:1500], "suggestions": cleaned}
+
+
+def _shape(v, depth=0):
+    if depth > 2:
+        return type(v).__name__
+    if isinstance(v, dict):
+        return {str(k)[:20]: _shape(x, depth + 1) for k, x in list(v.items())[:8]}
+    if isinstance(v, list):
+        return [_shape(v[0], depth + 1)] if v else []
+    return type(v).__name__
 
 
 @fastapi_app.post("/internal/cms/copilot")
