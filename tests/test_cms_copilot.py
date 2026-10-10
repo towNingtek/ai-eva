@@ -140,6 +140,7 @@ class CmsCopilotTests(TestCase):
             self.run_ep(BODY)
         self.assertEqual(mk.call_args.kwargs["alias"], cms_copilot.COPILOT_MODEL)
         self.assertEqual(mk.call_args.kwargs["max_tokens"], cms_copilot.MAX_TOKENS)
+        self.assertTrue(mk.call_args.kwargs["json_mode"])
 
     def test_one_stuck_attempt_is_retried(self):
         calls = []

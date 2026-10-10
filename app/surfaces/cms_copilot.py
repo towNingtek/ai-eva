@@ -204,7 +204,7 @@ def _history(raw) -> list:
 
 
 async def ask(project: dict, step: str, message: str, history: list, *, user: str = "") -> dict:
-    llm = make_llm(alias=COPILOT_MODEL, user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS)
+    llm = make_llm(alias=COPILOT_MODEL, user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS, json_mode=True)
     t0 = time.monotonic()
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
     msgs = [
