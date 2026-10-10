@@ -10,6 +10,7 @@ import asyncio
 import json
 import logging
 import re
+import time
 
 from fastapi import HTTPException, Request
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
@@ -25,6 +26,8 @@ MAX_MESSAGE = 1000
 MAX_HISTORY = 8
 # CMS 前面的 ingress 60 秒就 504；留餘裕給 CMS 後端，逾時回 502 讓前端顯示友善訊息
 LLM_TIMEOUT = 45
+# 正常回覆 100–500 tokens；封頂避免偶發的長篇輸出拖到逾時
+MAX_TOKENS = 900
 STEPS = {"basic", "sdgs", "impact", "contact", "sroi", "review"}
 
 SYSTEM = """你是「專案填寫助手」，協助台灣地方團隊在永續專案後台填寫專案資料。用繁體中文、口語、簡短回答（150 字內，必要時條列）。
@@ -178,7 +181,8 @@ def _history(raw) -> list:
 
 
 async def ask(project: dict, step: str, message: str, history: list, *, user: str = "") -> dict:
-    llm = make_llm(user=user, streaming=False, temperature=0.2)
+    llm = make_llm(user=user, streaming=False, temperature=0.2, max_tokens=MAX_TOKENS)
+    t0 = time.monotonic()
     context = json.dumps({"step": step, "project": project}, ensure_ascii=False)
     resp = await asyncio.wait_for(llm.ainvoke([
         SystemMessage(content=SYSTEM),
@@ -186,6 +190,9 @@ async def ask(project: dict, step: str, message: str, history: list, *, user: st
         *_history(history),
         HumanMessage(content=message),
     ]), timeout=LLM_TIMEOUT)
+    meta = getattr(resp, "response_metadata", None) or {}
+    logger.info("cms copilot: step=%s %.1fs finish=%s usage=%s", step, time.monotonic() - t0,
+                meta.get("finish_reason"), meta.get("token_usage"))
     data = _parse(resp.content or "")
     reply = str(data.get("reply") or "").strip()
     if not reply:
