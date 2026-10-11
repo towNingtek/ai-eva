@@ -48,3 +48,16 @@ class SdgEndpointTests(TestCase):
         ):
             result = asyncio.run(sdg.generate_sdg_endpoint(Request(token=self.token)))
         self.assertEqual(result, {"project_sdgs": {"1": "ok"}})
+
+
+class GenerateSdgModelTests(TestCase):
+    def test_generate_sdg_uses_fast_model_and_json_mode(self):
+        from types import SimpleNamespace
+        from app.core import copilot
+        llm = SimpleNamespace(ainvoke=AsyncMock(return_value=SimpleNamespace(content='{"3":"健康","SDG4":"教育","SDG 11":"社區","x":"bad"}')))
+        with patch.object(copilot, "make_llm", return_value=llm) as mk:
+            out = asyncio.run(copilot.generate_sdg({"name": "p"}))
+        self.assertEqual(out, {"3": "健康", "4": "教育", "11": "社區"})
+        self.assertEqual(mk.call_args.kwargs["alias"], copilot.SDG_GENERATE_MODEL)
+        self.assertEqual(copilot.SDG_GENERATE_MODEL, "cloud-fast")
+        self.assertTrue(mk.call_args.kwargs["json_mode"])
