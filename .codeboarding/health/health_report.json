@@ -1,7 +1,7 @@
 {
   "repository_name": ".codeboarding-target",
-  "timestamp": "2026-10-10T18:09:54.685617+00:00",
-  "overall_score": 1.0,
+  "timestamp": "2026-10-11T03:21:51.037765+00:00",
+  "overall_score": 0.9994285714285714,
   "check_summaries": [
     {
       "check_name": "function_size",
@@ -49,12 +49,48 @@
         "python"
       ],
       "check_type": "standard",
-      "total_entities_checked": 0,
-      "findings_count": 0,
-      "warning_count": 0,
-      "score": 1.0,
-      "finding_groups": []
+      "total_entities_checked": 2,
+      "findings_count": 2,
+      "warning_count": 1,
+      "score": 0.9,
+      "finding_groups": [
+        {
+          "severity": "info",
+          "threshold": 0,
+          "description": "Variables declared but never used",
+          "entities": [
+            {
+              "entity_name": "[unused_variable] \"_indicators_from_template\" is not accessed",
+              "file_path": "app/core/copilot.py",
+              "line_start": 216,
+              "line_end": 216,
+              "metric_value": 0.0
+            }
+          ]
+        },
+        {
+          "severity": "warning",
+          "threshold": 0,
+          "description": "Functions/methods defined but never called",
+          "entities": [
+            {
+              "entity_name": "[unused_function] Function \"_indicators_from_template\" is not accessed",
+              "file_path": "app/core/copilot.py",
+              "line_start": 216,
+              "line_end": 216,
+              "metric_value": 0.0
+            }
+          ]
+        }
+      ]
     }
   ],
-  "file_summaries": []
+  "file_summaries": [
+    {
+      "file_path": "app/core/copilot.py",
+      "total_findings": 2,
+      "warning_findings": 1,
+      "composite_risk_score": 25.0
+    }
+  ]
 }

@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "generated_at": "2026-10-10T18:10:28.034770+00:00",
-    "source_tree_hash": "55bd6b38cf86841c682e951658ddb2123dfe3d42d0141922e149df6d4772df0a",
+    "generated_at": "2026-10-11T03:22:10.529156+00:00",
+    "source_tree_hash": "c66ea0dbbfbbbdee91fa362f582bb74fca9ad325a067fda389993378cf3ba842",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
@@ -618,8 +618,8 @@
         "app/core/copilot.py|app.core.copilot._indicators_from_template",
         "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi"
       ],
-      "content_hash": "df546baa966101d1",
-      "module_hash": "44a5e4d4186a8a70"
+      "content_hash": "03e58e4e5e7aaec0",
+      "module_hash": "503f98de334cd737"
     },
     "app/core/llm.py": {
       "method_keys": [
@@ -2239,88 +2239,88 @@
     "app/core/copilot.py|app.core.copilot._confirm_question": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._confirm_question",
-      "start_line": 50,
-      "end_line": 55,
+      "start_line": 52,
+      "end_line": 57,
       "type": "FUNCTION",
       "content_hash": "92e13e77f9479c01"
     },
     "app/core/copilot.py|app.core.copilot._inner": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._inner",
-      "start_line": 58,
-      "end_line": 62,
+      "start_line": 60,
+      "end_line": 64,
       "type": "FUNCTION",
       "content_hash": "f6e794afd00e457f"
     },
     "app/core/copilot.py|app.core.copilot._fmt_result": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._fmt_result",
-      "start_line": 65,
-      "end_line": 78,
+      "start_line": 67,
+      "end_line": 80,
       "type": "FUNCTION",
       "content_hash": "bb0898cb6cc5327a"
     },
     "app/core/copilot.py|app.core.copilot._parse_json_obj": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._parse_json_obj",
-      "start_line": 81,
-      "end_line": 91,
+      "start_line": 83,
+      "end_line": 93,
       "type": "FUNCTION",
       "content_hash": "e2f15fc7ab8f2977"
     },
     "app/core/copilot.py|app.core.copilot.run_copilot": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.run_copilot",
-      "start_line": 94,
-      "end_line": 143,
+      "start_line": 96,
+      "end_line": 145,
       "type": "FUNCTION",
       "content_hash": "e3afbad20fd81ac9"
     },
     "app/core/copilot.py|app.core.copilot.execute_confirmed": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.execute_confirmed",
-      "start_line": 146,
-      "end_line": 156,
+      "start_line": 148,
+      "end_line": 158,
       "type": "FUNCTION",
       "content_hash": "bf98c48616ed8488"
     },
     "app/core/copilot.py|app.core.copilot._make_module_ctx": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._make_module_ctx",
-      "start_line": 165,
-      "end_line": 174,
+      "start_line": 167,
+      "end_line": 176,
       "type": "FUNCTION",
       "content_hash": "aaa05cb308190365"
     },
     "app/core/copilot.py|app.core.copilot.generate_sdg": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.generate_sdg",
-      "start_line": 177,
-      "end_line": 191,
+      "start_line": 182,
+      "end_line": 204,
       "type": "FUNCTION",
-      "content_hash": "2a23abb225a30aee"
+      "content_hash": "0938e583e8d3ffb4"
     },
     "app/core/copilot.py|app.core.copilot.generate_and_save_sdg": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.generate_and_save_sdg",
-      "start_line": 194,
-      "end_line": 200,
+      "start_line": 207,
+      "end_line": 213,
       "type": "FUNCTION",
       "content_hash": "633ff5a8b976790e"
     },
     "app/core/copilot.py|app.core.copilot._indicators_from_template": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot._indicators_from_template",
-      "start_line": 203,
-      "end_line": 214,
+      "start_line": 216,
+      "end_line": 227,
       "type": "FUNCTION",
       "content_hash": "7e66ac5f41b5ed27"
     },
     "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi": {
       "file_path": "app/core/copilot.py",
       "qualified_name": "app.core.copilot.estimate_and_save_sroi",
-      "start_line": 217,
-      "end_line": 228,
+      "start_line": 230,
+      "end_line": 241,
       "type": "FUNCTION",
       "content_hash": "a59c1cc1937d13fb"
     },
@@ -4748,8 +4748,14 @@
         {
           "qualified_name": "app.core.copilot.run_copilot",
           "reference_file": "app/core/copilot.py",
-          "reference_start_line": 94,
-          "reference_end_line": 143
+          "reference_start_line": 96,
+          "reference_end_line": 145
+        },
+        {
+          "qualified_name": "app.core.copilot.execute_confirmed",
+          "reference_file": "app/core/copilot.py",
+          "reference_start_line": 148,
+          "reference_end_line": 158
         },
         {
           "qualified_name": "app.core.llm.make_llm",
@@ -5579,6 +5585,17 @@
           "description": "Creates OpenCode session for Discord voice chat"
         },
         {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.create_session",
+          "call_sites": [
+            {
+              "line": 180,
+              "column": 46
+            }
+          ],
+          "description": "LINE OpenCode chat initializes OpenCode sessions."
+        },
+        {
           "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
@@ -5610,17 +5627,6 @@
             }
           ],
           "description": "Discord voice chat checks OpenCode availability"
-        },
-        {
-          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
-          "target": "app/core/opencode.py|app.core.opencode.create_session",
-          "call_sites": [
-            {
-              "line": 180,
-              "column": 46
-            }
-          ],
-          "description": "LINE OpenCode chat initializes OpenCode sessions."
         }
       ],
       "src_id": "2",
@@ -5717,23 +5723,23 @@
           "description": ""
         },
         {
-          "source": "app/surfaces/sdg.py|app.surfaces.sdg.generate_sdg_endpoint",
-          "target": "app/core/copilot.py|app.core.copilot.generate_sdg",
-          "call_sites": [
-            {
-              "line": 29,
-              "column": 22
-            }
-          ],
-          "description": ""
-        },
-        {
           "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
           "target": "app/core/llm.py|app.core.llm.make_llm",
           "call_sites": [
             {
               "line": 207,
               "column": 11
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/surfaces/sdg.py|app.surfaces.sdg.generate_sdg_endpoint",
+          "target": "app/core/copilot.py|app.core.copilot.generate_sdg",
+          "call_sites": [
+            {
+              "line": 29,
+              "column": 22
             }
           ],
           "description": ""
@@ -5748,28 +5754,6 @@
       "key_edges": [
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
-          "target": "app/dispatch.py|app.dispatch.handle_device_intent",
-          "call_sites": [
-            {
-              "line": 89,
-              "column": 20
-            }
-          ],
-          "description": "Device surface passes device intents to dispatch handler"
-        },
-        {
-          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
-          "target": "app/dispatch.py|app.dispatch.converse",
-          "call_sites": [
-            {
-              "line": 224,
-              "column": 33
-            }
-          ],
-          "description": "Delegates LINE chat session messages to conversational dispatch"
-        },
-        {
-          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/dispatch.py|app.dispatch.Envelope",
           "call_sites": [
             {
@@ -5778,6 +5762,17 @@
             }
           ],
           "description": "Device intent handler wraps payloads into envelopes"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.handle_device_intent",
+          "call_sites": [
+            {
+              "line": 89,
+              "column": 20
+            }
+          ],
+          "description": "Device surface passes device intents to dispatch handler"
         },
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_result",
@@ -5789,6 +5784,17 @@
             }
           ],
           "description": "Device result handler fetches project definitions from project registry."
+        },
+        {
+          "source": "app/surfaces/line_session.py|app.surfaces.line_session.chat",
+          "target": "app/dispatch.py|app.dispatch.converse",
+          "call_sites": [
+            {
+              "line": 224,
+              "column": 33
+            }
+          ],
+          "description": "Delegates LINE chat session messages to conversational dispatch"
         },
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
@@ -5892,28 +5898,6 @@
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
-          "target": "app/nodes/commands.py|app.nodes.commands.pull_pending",
-          "call_sites": [
-            {
-              "line": 107,
-              "column": 36
-            }
-          ],
-          "description": "Pulls pending commands for polling device nodes"
-        },
-        {
-          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
-          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
-          "call_sites": [
-            {
-              "line": 62,
-              "column": 25
-            }
-          ],
-          "description": "Device surface registers hardware nodes and pulls queued commands"
-        },
-        {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
           "call_sites": [
@@ -5926,6 +5910,17 @@
         },
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
+          "target": "app/nodes/commands.py|app.nodes.commands.pull_pending",
+          "call_sites": [
+            {
+              "line": 107,
+              "column": 36
+            }
+          ],
+          "description": "Pulls pending commands for polling device nodes"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_poll",
           "target": "app/nodes/registry.py|app.nodes.registry.touch_node",
           "call_sites": [
             {
@@ -5934,6 +5929,17 @@
             }
           ],
           "description": "Device poll updates node activity timestamps"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_register",
+          "target": "app/nodes/registry.py|app.nodes.registry.register_node",
+          "call_sites": [
+            {
+              "line": 62,
+              "column": 25
+            }
+          ],
+          "description": "Device surface registers hardware nodes and pulls queued commands"
         },
         {
           "source": "app/surfaces/line.py|app.surfaces.line._handle_event",
@@ -6016,17 +6022,6 @@
       "key_edges": [
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
-          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
-          "call_sites": [
-            {
-              "line": 81,
-              "column": 67
-            }
-          ],
-          "description": "SSO surface inspects visible tools from runtime"
-        },
-        {
-          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
           "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime",
           "call_sites": [
             {
@@ -6039,6 +6034,17 @@
             }
           ],
           "description": "SSO session initialization creates tool runtime instances."
+        },
+        {
+          "source": "app/surfaces/sso.py|app.surfaces.sso.establish_sso_session",
+          "target": "app/tools/runtime.py|app.tools.runtime.ToolRuntime.visible_tools",
+          "call_sites": [
+            {
+              "line": 81,
+              "column": 67
+            }
+          ],
+          "description": "SSO surface inspects visible tools from runtime"
         },
         {
           "source": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
@@ -6251,6 +6257,17 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 17,
+              "column": 24
+            }
+          ],
+          "description": "Application handlers instantiate LLMs and invoke copilot workflows."
+        },
+        {
           "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
@@ -6271,56 +6288,12 @@
             }
           ],
           "description": "Application handlers request language model completions"
-        },
-        {
-          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 17,
-              "column": 24
-            }
-          ],
-          "description": "Application handlers instantiate LLMs and invoke copilot workflows."
         }
       ],
       "src_id": "3",
       "dst_id": "4",
       "is_static": true,
       "all_edges": [
-        {
-          "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
-          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
-          "call_sites": [
-            {
-              "line": 124,
-              "column": 24
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
-          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
-          "call_sites": [
-            {
-              "line": 47,
-              "column": 24
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection",
-          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
-          "call_sites": [
-            {
-              "line": 88,
-              "column": 20
-            }
-          ],
-          "description": ""
-        },
         {
           "source": "app/apps/web_search/handler.py|app.apps.web_search.handler.handle",
           "target": "app/core/search.py|app.core.search.search",
@@ -6361,6 +6334,39 @@
             {
               "line": 63,
               "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 124,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 47,
+              "column": 24
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 88,
+              "column": 20
             }
           ],
           "description": ""
@@ -6633,11 +6639,22 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi",
+          "target": "app/modules/registry.py|app.modules.registry.invoke",
+          "call_sites": [
+            {
+              "line": 240,
+              "column": 17
+            }
+          ],
+          "description": "Copilot executes sustainability SROI estimation via domain module registry"
+        },
+        {
           "source": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 199,
+              "line": 212,
               "column": 17
             }
           ],
@@ -6653,7 +6670,7 @@
           "target": "app/modules/base.py|app.modules.base.ModuleContext",
           "call_sites": [
             {
-              "line": 168,
+              "line": 170,
               "column": 12
             }
           ],
@@ -6664,7 +6681,7 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 227,
+              "line": 240,
               "column": 17
             }
           ],
@@ -6675,7 +6692,7 @@
           "target": "app/modules/registry.py|app.modules.registry.invoke",
           "call_sites": [
             {
-              "line": 199,
+              "line": 212,
               "column": 17
             }
           ],
@@ -6694,7 +6711,7 @@
           "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
           "call_sites": [
             {
-              "line": 170,
+              "line": 172,
               "column": 14
             }
           ],
@@ -6710,7 +6727,7 @@
           "target": "app/adapters/cms.py|app.adapters.cms.CMSDataSource",
           "call_sites": [
             {
-              "line": 170,
+              "line": 172,
               "column": 14
             }
           ],
@@ -6825,17 +6842,6 @@
         },
         {
           "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
-          "call_sites": [
-            {
-              "line": 105,
-              "column": 24
-            }
-          ],
-          "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
-        },
-        {
-          "source": "app/main.py|app.main._init_tables",
           "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
           "call_sites": [
             {
@@ -6844,6 +6850,17 @@
             }
           ],
           "description": "Application startup ensures voice surface tables exist."
+        },
+        {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+          "call_sites": [
+            {
+              "line": 105,
+              "column": 24
+            }
+          ],
+          "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
         },
         {
           "source": "app/main.py|app.main._init_tables",
@@ -7144,6 +7161,28 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/dispatch.py|app.dispatch.converse",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 146,
+              "column": 11
+            }
+          ],
+          "description": "Dispatch and main entrypoint invoke LLMs and execute copilot confirmation workflows."
+        },
+        {
+          "source": "app/main.py|app.main.cms_confirm",
+          "target": "app/core/copilot.py|app.core.copilot.execute_confirmed",
+          "call_sites": [
+            {
+              "line": 665,
+              "column": 21
+            }
+          ],
+          "description": "Main application handles copilot execution and confirmations"
+        },
+        {
           "source": "app/main.py|app.main._run_copilot_emit",
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
@@ -7153,6 +7192,22 @@
             }
           ],
           "description": "Main copilot runner executes workflow steps"
+        }
+      ],
+      "src_id": "6",
+      "dst_id": "4",
+      "is_static": true,
+      "all_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 75,
+              "column": 15
+            }
+          ],
+          "description": ""
         },
         {
           "source": "app/dispatch.py|app.dispatch.converse",
@@ -7163,13 +7218,8 @@
               "column": 11
             }
           ],
-          "description": "Dispatch and main entrypoint invoke LLMs and execute copilot confirmation workflows."
-        }
-      ],
-      "src_id": "6",
-      "dst_id": "4",
-      "is_static": true,
-      "all_edges": [
+          "description": ""
+        },
         {
           "source": "app/main.py|app.main._run_copilot_emit",
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
@@ -7210,28 +7260,6 @@
             {
               "line": 719,
               "column": 23
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/dispatch.py|app.dispatch._select_capabilities",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 75,
-              "column": 15
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/dispatch.py|app.dispatch.converse",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 146,
-              "column": 11
             }
           ],
           "description": ""

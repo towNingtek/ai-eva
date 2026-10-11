@@ -122,7 +122,7 @@
     "app/nodes/registry.py": "1796c91e5d8717ba",
     "app/nodes/commands.py": "c2c78290354f1345",
     "app/core/llm.py": "89195a6a43bf4b61",
-    "app/core/copilot.py": "df546baa966101d1",
+    "app/core/copilot.py": "03e58e4e5e7aaec0",
     "app/core/storage.py": "18e89d1bc453a6ac",
     "app/core/opencode.py": "60cd2641dd5f802b",
     "app/core/search.py": "8426a59052b5c166",
