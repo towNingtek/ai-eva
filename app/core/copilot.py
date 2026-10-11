@@ -9,6 +9,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import logging
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
@@ -174,6 +176,9 @@ def _make_module_ctx(runtime, api_key, user, make_llm) -> ModuleContext:
     )
 
 
+SDG_GENERATE_MODEL = os.getenv("SDG_GENERATE_MODEL", "cloud-fast")
+
+
 async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
     """只生成結構化 SDG 結果，不執行 CMS 寫入（surfaces/sdg.py 的 endpoint 用）。"""
     _SDG_PROMPT = (
@@ -181,13 +186,21 @@ async def generate_sdg(project_info: dict, *, api_key=None, user=None) -> dict:
         "為每個寫一句『這專案如何推進該 SDG』的繁體中文描述（約 30~60 字）。"
         "只放真的命中的，別硬湊。**只回 JSON 物件** {\"SDG編號(字串1~17)\":\"描述\"}，不要其他文字。"
     )
-    llm = make_llm(api_key=api_key, user=user, streaming=False)
+    # CMS「AI 選 SDGs」是同步等待的按鈕：固定用快模型（SDG_GENERATE_MODEL 可覆寫），
+    # 不跟 LITELLM_DEFAULT_MODEL（beta 可能是本地慢模型，實測 10–55 秒）
+    llm = make_llm(alias=SDG_GENERATE_MODEL, api_key=api_key, user=user, streaming=False, json_mode=True)
     resp = await llm.ainvoke([
         SystemMessage(content=_SDG_PROMPT),
         HumanMessage(content=json.dumps(project_info, ensure_ascii=False)),
     ])
     sdgs = _parse_json_obj(resp.content or "")
-    sdgs = {str(k): v for k, v in sdgs.items() if str(k).isdigit() and v}  # 清成 {編號:描述}
+    # 清成 {編號:描述}；模型偶爾回 "SDG2" / "SDG 2" 當鍵
+    out = {}
+    for k, v in sdgs.items():
+        m = re.fullmatch(r"\s*(?:SDGs?\s*)?(\d{1,2})\s*", str(k), re.I)
+        if m and v:
+            out[m.group(1)] = v
+    sdgs = out
     return sdgs
 
 
