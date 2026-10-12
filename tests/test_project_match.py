@@ -183,6 +183,29 @@ class TestBatching:
         assert "1 筆" in fake.get("match_element").props["error"]
         assert "u002" in caplog.text
 
+    def test_unnamed_project_is_kept_not_failed(self, env):
+        """舊站搬來的未命名專案（新北 11 筆）仍可選，不算讀取失敗。"""
+        projects = pool(3)
+        projects[1]["name"] = ""
+        rt = StubRuntime(projects)
+        fake, _ = open_panel(env, rt)
+        el = fake.get("match_element")
+        assert options(fake) == ["u001", "u002", "u003"]
+        assert "u002" in el.props["options"][1]["name"]
+        assert not el.props["error"]
+
+    def test_load_more_keeps_selection(self, env):
+        """「載入更多」後已選的我的專案／對象不能被清掉（element.update 會重掛元件）。"""
+        rt = StubRuntime(pool(45))
+        fake, _ = open_panel(env, rt)
+        el = fake.get("match_element")
+        assert el.props["pickerId"]
+        asyncio.run(pm.match_more(Action({"mine": "u001", "partners": ["u002", "u003"], "open": True})))
+        assert el.props["mine"] == "u001"
+        assert el.props["partners"] == ["u002", "u003"]
+        assert el.props["open"] is True
+        assert all(s["mine"] == "u001" for s in fake.snapshots[-21:])
+
 
 class TestRun:
     def test_n_selected_gives_n_cards(self, env):

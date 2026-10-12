@@ -6,9 +6,22 @@ export default function MatchPicker() {
   const options = props.options || [];
   const total = props.total || 0;
   const loaded = props.loaded || 0;
-  const [mine, setMine] = useState("");
-  const [partners, setPartners] = useState([]);
-  const [open, setOpen] = useState(false);
+  // 後端每次 element.update() 都會重新掛載元件（useState 歸零）。選取狀態
+  // 存在 window 上（以 props.pickerId 為 key）跨重掛保留；送 action 時一併帶回後端。
+  const store = (window.__matchPicker = window.__matchPicker || {});
+  const key = props.pickerId || "default";
+  const saved = store[key] || { mine: props.mine || "", partners: props.partners || [], open: !!props.open };
+  const [mine, setMineState] = useState(saved.mine);
+  const [partners, setPartnersState] = useState(saved.partners);
+  const [open, setOpenState] = useState(saved.open);
+  const save = (patch) => { store[key] = { mine, partners, open, ...(store[key] || {}), ...patch }; };
+  const setMine = (v) => { save({ mine: v }); setMineState(v); };
+  const setOpen = (v) => { save({ open: v }); setOpenState(v); };
+  const setPartners = (fn) => setPartnersState((cur) => {
+    const next = typeof fn === "function" ? fn(cur) : fn;
+    save({ partners: next });
+    return next;
+  });
 
   const busy = props.loading || props.running;
   const togglePartner = (uuid) => setPartners((cur) => cur.includes(uuid)
@@ -19,7 +32,7 @@ export default function MatchPicker() {
   };
   const nameOf = (uuid) => (options.find((o) => o.uuid === uuid) || {}).name || uuid;
   const run = () => callAction({ name: "match_run", payload: { mine, partners } });
-  const more = () => callAction({ name: "match_more", payload: {} });
+  const more = () => callAction({ name: "match_more", payload: { mine, partners, open: true } });
   const candidates = options.filter((o) => o.uuid !== mine);
 
   return (
