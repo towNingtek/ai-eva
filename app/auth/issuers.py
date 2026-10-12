@@ -40,6 +40,9 @@ ISSUERS: dict[str, dict] = {
         "project": "sechome",   # CMS AI 秘書遷移專案（#50）；tenant 取自 token 的 tenant_id
         "tenant_cms_base_url": {
             "yunlin": "https://yunlin-beta.4impact.cc",
+            # *.sechome.cc 租戶經 tenant-env-router 到 dev origin；manifest / refresh 要打租戶自己的
+            # host，否則 origin 會解析成預設租戶（townway#78 工商搬遷）。
+            "ntidipc": "https://ntidipc.sechome.cc",
         },
         "tenant_project_map": {
             "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
