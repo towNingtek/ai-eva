@@ -17,6 +17,8 @@
 import logging
 import re
 
+from uuid import uuid4
+
 import chainlit as cl
 from langchain_core.messages import AIMessage, HumanMessage
 
@@ -77,8 +79,10 @@ async def fetch_info(runtime, uuid: str) -> dict | None:
         logger.warning("project_match: get_project_info %s failed: %s", uuid, detail.get("reason") or detail.get("status"))
         return None
     info = _data(detail)
-    if isinstance(info, dict) and info.get("name"):
-        return {**info, "uuid": uuid}
+    if isinstance(info, dict):
+        # 舊站搬來的資料有未命名專案（新北 11 筆）；仍是可媒合的專案，不算失敗
+        name = _plain(info.get("name"), "")
+        return {**info, "uuid": uuid, "name": name or f"（未命名專案 {uuid}）"}
     return None
 
 
@@ -130,6 +134,10 @@ def _new_element(total: int) -> cl.CustomElement:
             "loading": True,
             "running": False,
             "error": "",
+            "mine": "",         # 使用者選取（前端 updateElement 同步回來；後端 update 時保留）
+            "partners": [],
+            "open": False,
+            "pickerId": uuid4().hex,  # 前端以此為 key 保存選取（跨重新掛載）
         },
     )
 
@@ -190,6 +198,17 @@ async def handle(payload: str, msg: cl.Message) -> None:
     await load_batch(runtime, state, element)
 
 
+def keep_selection(element, payload: dict) -> None:
+    """把前端目前的選取寫回 props。後端每次 element.update() 都會重新掛載元件，
+    不寫回的話「載入更多」會把已選的我的專案／對象清掉。"""
+    if "mine" in payload:
+        element.props["mine"] = payload.get("mine") or ""
+    if "partners" in payload:
+        element.props["partners"] = list(dict.fromkeys(payload.get("partners") or []))
+    if "open" in payload:
+        element.props["open"] = bool(payload.get("open"))
+
+
 @cl.action_callback("match_more")
 async def match_more(action: cl.Action):
     runtime = cl.user_session.get("cms_runtime")
@@ -200,6 +219,7 @@ async def match_more(action: cl.Action):
         return
     if state["cursor"] >= len(state["uuids"]):
         return
+    keep_selection(element, action.payload or {})
     await load_batch(runtime, state, element)
 
 
@@ -248,6 +268,7 @@ async def match_run(action: cl.Action):
         await cl.Message(content="⚠️ 請先選擇「我的專案」並至少勾選一個媒合對象。").send()
         return
     if element:
+        keep_selection(element, payload)
         element.props["running"] = True
         await element.update()
     try:
