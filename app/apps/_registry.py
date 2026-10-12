@@ -130,6 +130,26 @@ def is_enabled_for(app: App, project: str, enabled: set[str] | None) -> bool:
     return app.id in enabled or app.full_id in enabled
 
 
+def role_allows(app: App, role_apps: dict | None) -> bool:
+    """角色層開關（tplanet-multi-tenant#308）：CMS manifest 的 `apps` = {app_id: bool}。
+
+    啟用矩陣（enabled_apps）是 per-project；這層是 per-role（例：一般使用者不可用法規檢核）。
+    role_apps=None（非 SSO、或 CMS 尚未帶 apps）→ 不限制，行為等同現狀。
+    app 不在 role_apps 裡 → 不限制（CMS 只列出有角色限制的 app）。
+    值不是 True 就擋（CMS 說了算，型別錯也不放行）。
+    """
+    if not role_apps or app is None:
+        return True
+    if app.id not in role_apps:
+        return True
+    return role_apps[app.id] is True
+
+
+def filter_role(apps: list[App], role_apps: dict | None) -> list[App]:
+    """選單／按鈕用：濾掉該角色不能開的 app。"""
+    return [a for a in apps if role_allows(a, role_apps)]
+
+
 def chainlit_commands(enabled: set[str] | None = None) -> list[dict]:
     """CommandDict list for cl.context.emitter.set_commands()。
 
