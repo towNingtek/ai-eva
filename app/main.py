@@ -15,9 +15,11 @@ from app.apps._registry import (
     default_app,
     discover,
     filter_enabled,
+    filter_role,
     get_by_id,
     is_enabled_for,
     menu_apps,
+    role_allows,
     DEFAULT_PROJECT,
 )
 from app.core.copilot import (
@@ -139,11 +141,42 @@ async def _enabled_apps_for(project: Optional[str]) -> Optional[set[str]]:
     return await project_registry.get_enabled_apps(project)
 
 
+def _set_role_apps(manifest) -> None:
+    """CMS manifest 的 `apps`（{app_id: bool}，#308 角色層開關）放進 session。
+    舊版 CMS 沒帶 → None → 不限制（向後相容）。"""
+    apps = (manifest or {}).get("apps")
+    cl.user_session.set("role_apps", apps if isinstance(apps, dict) else None)
+
+
+def _role_apps() -> Optional[dict]:
+    return cl.user_session.get("role_apps")
+
+
+async def _guard_app(app) -> bool:
+    """dispatch 前的共同檢查：project 啟用矩陣（#127）＋角色（#308）。擋下時回訊息、回 False。"""
+    user = cl.user_session.get("user")
+    project = await _current_user_project(user)
+    enabled = await _enabled_apps_for(project)
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        logger.info("dispatch blocked: app=%s not enabled for project=%s", app.full_id, project)
+        await cl.Message(
+            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+        ).send()
+        return False
+    if not role_allows(app, _role_apps()):
+        logger.info("dispatch blocked: app=%s not allowed for role (user=%s)",
+                    app.full_id, getattr(user, "identifier", None))
+        await cl.Message(content="⚠️ 你的帳號權限無法使用「{}」。".format(app.label)).send()
+        return False
+    return True
+
+
 async def _register_commands():
     user = cl.user_session.get("user")
     project = await _current_user_project(user)
     enabled = await _enabled_apps_for(project)
-    cmds = chainlit_commands(enabled)
+    cmds = [c for c in chainlit_commands(enabled)
+            if role_allows(get_by_id(c["id"]), _role_apps())]
     await cl.context.emitter.set_commands(cmds)
     logger.info("Registered %d command(s) for project=%s: %s",
                 len(cmds), project, [c["id"] for c in cmds])
@@ -163,6 +196,7 @@ async def _app_actions() -> list[cl.Action]:
     project = await _current_user_project(user)
     enabled = await _enabled_apps_for(project)
     candidates = menu_apps() if enabled is None else filter_enabled(menu_apps(), enabled)
+    candidates = filter_role(candidates, _role_apps())  # #308：角色不能用的 app 不出按鈕
 
     # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
     # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
@@ -184,15 +218,9 @@ async def open_app(action: cl.Action):
         await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
         return
 
-    # #127：按鈕是依當下 enable 矩陣產的，但再抗一層防呆 —— session 換人/矩陣變動時
+    # #127／#308：按鈕是依當下矩陣與角色產的，但再擋一層 —— session 換人/矩陣變動時
     # 舊按鈕可能殘留，被點到也要能擋。
-    user = cl.user_session.get("user")
-    project = await _current_user_project(user)
-    enabled = await _enabled_apps_for(project)
-    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
-        await cl.Message(
-            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
-        ).send()
+    if not await _guard_app(app):
         return
 
     logger.info("action open_app → %s", app.id)
@@ -271,6 +299,7 @@ async def _load_sso_runtime():
     if not sess.get("degraded"):
         _attach_refresh_handler(runtime, sess["session_id"])
     cl.user_session.set("cms_runtime", runtime)
+    _set_role_apps(sess.get("manifest"))
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
     idn = sess["identity"]
@@ -304,6 +333,7 @@ async def _refresh_sso_runtime():
         if not refreshed.get("degraded"):
             _attach_refresh_handler(runtime, sid)
         cl.user_session.set("cms_runtime", runtime)
+        _set_role_apps(refreshed.get("manifest"))
         return True
     except Exception:
         logger.exception("_refresh_sso_runtime failed unexpectedly")
@@ -315,9 +345,9 @@ async def on_start():
     # 工具選單要先註冊：SSO 分支下面會 early return，擺在後面等於 SSO 使用者
     # （CMS 進來的承辦人）在**新對話**永遠看不到工具選單，只有 resume 舊對話才有
     # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
-    await _register_commands()
-
+    # #308：先載 SSO（拿到 manifest 的角色開關）再註冊，否則選單會漏掉角色過濾。
     idn = await _load_sso_runtime()
+    await _register_commands()
     if idn:
         # CMS 副駕模式
         runtime = cl.user_session.get("cms_runtime")
@@ -542,6 +572,8 @@ async def on_message(msg: cl.Message):
     if msg.command and not command_is_followup:
         app = get_by_id(msg.command)
         if app is not None:
+            if not await _guard_app(app):
+                return
             logger.info("dispatch tool command → %s", app.id)
             await app.handle(content, msg)
             return
@@ -628,15 +660,8 @@ async def on_message(msg: cl.Message):
         await cl.Message(content="⚠️ 沒有可用的處理器").send()
         return
 
-    # #127 dispatch guard：該登入 project 啟用矩陣遮蔽的 app，直接被呼叫 → 回「未啟用」，不跑 handler。
-    user = cl.user_session.get("user")
-    project = await _current_user_project(user)
-    enabled = await _enabled_apps_for(project)
-    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
-        logger.info("dispatch blocked: app=%s not enabled for project=%s", app.full_id, project)
-        await cl.Message(
-            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
-        ).send()
+    # #127／#308 dispatch guard：啟用矩陣遮蔽、或角色不能用的 app，直接被呼叫 → 擋下，不跑 handler。
+    if not await _guard_app(app):
         return
 
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
