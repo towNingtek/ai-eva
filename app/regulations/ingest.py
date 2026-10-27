@@ -68,8 +68,6 @@ LAW_DOMAIN: dict[str, str] = {
     "農村社區執行農村再生相關計畫經費編列及核銷說明": "農村再生",
     "農業委員會補助或委辦計畫助理人員工作酬金支給薪點參考表": "農村再生",
     "農業部補助直轄市及縣（市）政府推動社區農村再生計畫審查及管考作業要點": "農村再生",
-    # YAML v1 明列「地方自治」為未涵蓋領域；這部也沒有全文，雙重排除。
-    "雲林縣政府農村再生計畫審查小組設置要點": "地方自治",
 }
 
 # 「第 8 條」與「第8條」兩種排版都要吃（PDF 抽出來的空白不一致）
@@ -237,7 +235,7 @@ async def ingest_uploaded_pdf(pdf_path: Path, name: str, *, model: str | None = 
     """一部上傳的 PDF → {articles, controls, version, no_fulltext}。
 
     這是唯一會在 runtime 呼叫 LLM 的 ingest 路徑，只給「管理者上傳並審核啟用」用。
-    MANIFEST 內的 31 部走建置時抽取、產物進版控（可 diff、可追是哪個模型抽的）；
+    MANIFEST 內的法規走建置時抽取、產物進版控（可 diff、可追是哪個模型抽的）；
     使用者上傳的沒有 repo 產物，只能就地抽 —— 所以 corpus_version 留空、
     extracted_by 記下模型，報告才分得出這條管制是哪來的。
     """
