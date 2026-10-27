@@ -1,6 +1,6 @@
 corpus_version: v1
 source: https://drive.google.com/drive/folders/1hkZesklBTVYmNuNvXC-tvlVKLlwSUTNc
-count: 31
+count: 30
 regulations:
 - name: 都市計畫法
   category: 都市地區
@@ -150,12 +150,12 @@ regulations:
 - name: 農村再生政策方針
   category: 農村再生
   file: 農村再生政策方針.pdf
-  sha256: 2c7a62f5851b066b95f9321d87b19f1e7695fe6127b0a60f2b7c2da2ce3391d8
-  chars: 853
-  drive_id: 1oTkOHtvsYDEG61jidb-p7lpoPf43QuVt
+  sha256: 9c452838508e0689e0aeb2385dd6fffeaeb5b3d883b2cd7c37fd3d1c633365d8
+  chars: 2109
+  drive_id: ''
   version: ''
   law_domain: 農村再生
-  no_fulltext: true
+  source_note: 文創（莞瑤）提供，2026-10-27，office#3；農業部農村發展及水土保持署官網版本
 - name: 農村再生條例
   category: 農村再生
   file: 農村再生條例.pdf
@@ -244,14 +244,5 @@ regulations:
   drive_id: 1iTzygiKf6V1vcsldbOFZV6Ql9_1PHPTz
   version: ''
   law_domain: 農村再生
-- name: 雲林縣政府農村再生計畫審查小組設置要點
-  category: 農村再生
-  file: 雲林縣政府農村再生計畫審查小組設置要點.pdf
-  sha256: 8e7a7bf93878c6d5f545acbdd32a6a78663eb5d860d4b548e4a57c4fd81712fb
-  chars: 762
-  drive_id: 1ns861n_246LW-YK0-WrYNCHGU74PsmAQ
-  version: ''
-  law_domain: 地方自治
-  no_fulltext: true
 extracted_by: openai-5.4-xiaozhen
-count_fulltext: 29
+count_fulltext: 30
