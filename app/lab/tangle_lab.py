@@ -105,18 +105,20 @@ async def _open(mode, pid, qid):
 
 def _element(sid):
     s = _sessions()[sid]
-    supp = [{"subject": k[0], "code": k[1], "text": v} for k, v in s["supp"].items()]
-    return cl.CustomElement(name="TangleOrbit", display="side",
+    supp = [{"subject": int(k.split(":", 1)[0]), "code": k.split(":", 1)[1], "text": v} for k, v in s["supp"].items()]
+    el = cl.CustomElement(name="TangleOrbit", display="side",
                             props={"sid": sid, "mode": s["mode"], "p": s["p"], "q": s["q"] or "",
                                    "v": ASSET_V, "supplements": supp})
+    return el
 
 
 async def _show(sid):
     s = _sessions()[sid]
     el = _element(sid)
     cl.user_session.set("tangle_element", el)
-    await cl.ElementSidebar.set_title(f"{NAMES[s['mode']]} / {s['title']}")
+    # Chainlit 2.12: set_elements keeps the previous title, so elements first, then title.
     await cl.ElementSidebar.set_elements([el], key=f"tangle-{sid}-{len(s['supp'])}")
+    await cl.ElementSidebar.set_title(f"{NAMES[s['mode']]} / {s['title']}")
 
 
 @cl.action_callback("tangle_reopen")
@@ -146,7 +148,7 @@ async def on_pick(action: cl.Action):
     A = PROJECTS[s["p"]]
     B = PROJECTS[s["q"]] if s["q"] else None
     who = B if (subject == 2 and B) else A
-    prev = s["supp"].get((subject, code))
+    prev = s["supp"].get(f"{subject}:{code}")
     if s["mode"] == "law":
         body = f"{_quote(A, code)}\n\n**可能要留意**\n{T['law']}\n\n**想先確認**\n{T['lawQ']}"
     elif d.get("kind") == "relation" and B:
@@ -192,7 +194,7 @@ async def on_confirm(action: cl.Action):
     s = _sessions().get(d["sid"])
     if not s:
         return
-    s["supp"][(d["subject"], d["code"])] = d["text"]
+    s["supp"][f"{d['subject']}:{d['code']}"] = d["text"]
     await cl.Message(content=f"已確認補充到「{d['label']}」，衛星標示「已補充・未查證」。\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
     if cl.user_session.get("tangle_active") == d["sid"]:
         await _show(d["sid"])
