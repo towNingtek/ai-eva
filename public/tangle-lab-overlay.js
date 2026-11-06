@@ -12,17 +12,17 @@
  function toggleSidebar(){var b=document.getElementById("sidebar-trigger-button")||document.querySelector('[data-sidebar="trigger"]');if(b){b.click();return true}return false}
  var state={open:false,hadSidebar:null};
  function css(){if(document.getElementById(KEY+"-css"))return;var s=document.createElement("style");s.id=KEY+"-css";
-  s.textContent='#'+KEY+'{position:fixed;top:60px;left:0;bottom:0;z-index:40;background:#13161c;border-right:1px solid #2a2d38;box-shadow:8px 0 30px #0002;transition:transform .32s ease}'
+  s.textContent='#'+KEY+'{position:fixed;top:60px;left:0;bottom:0;z-index:40;background:#101519;border-right:1px solid #24302f;box-shadow:8px 0 30px #0002;transition:transform .32s ease}'
   +'#'+KEY+'.hide{transform:translateX(-102%)}#'+KEY+' iframe{width:100%;height:100%;border:0;display:block}'
   +'body.'+KEY+'-on #root{padding-left:var(--tws-w)}body.'+KEY+'-on #root{transition:padding-left .32s ease}'
-  +'#'+KEY+'-close{position:absolute;right:14px;top:12px;z-index:2;font:13px system-ui;color:#e8e2f2;background:#262434;border:1px solid #514564;border-radius:9px;padding:6px 12px;cursor:pointer}';
+  +'#'+KEY+'-close{position:absolute;right:14px;top:12px;z-index:2;font:13px system-ui;color:#e3efed;background:#1b2a29;border:1px solid #2f5d59;border-radius:9px;padding:6px 12px;cursor:pointer}';
   document.head.appendChild(s)}
  function width(){return Math.max(520,Math.round(window.innerWidth*0.62))}
  function open(args){css();var p=document.getElementById(KEY);
   if(!p){p=document.createElement("div");p.id=KEY;p.className="hide";
    p.innerHTML='<button id="'+KEY+'-close" title="收合工作區，回到原本的聊天畫面">收合 ↙</button><iframe title="雲林專案工作區"></iframe>';
    document.body.appendChild(p);document.getElementById(KEY+"-close").onclick=close}
-  var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+(args.v||"1");
+  var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+(args.v||"1")+"&b=1793943178";
   var f=p.querySelector("iframe");if(f.getAttribute("src")!==src)f.setAttribute("src",src);
   if(!state.open){state.hadSidebar=sidebarOpen();if(state.hadSidebar)toggleSidebar()}
   state.open=true;var w=width();p.style.width=w+"px";document.body.style.setProperty("--tws-w",w+"px");document.body.classList.add(KEY+"-on");

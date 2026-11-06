@@ -241,6 +241,8 @@ async def on_chat_resume(thread):
     # 否則 cms_runtime=None，附件與副駕對話全失效（#66 實測踩到）。
     await _load_sso_runtime()
     await _register_commands()
+    if TANGLE_LAB:
+        await tangle_lab.resume()
 
 
 def _current_chainlit_user():

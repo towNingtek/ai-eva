@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Secondhome@AI｜互補網絡 v11</title>
 <style>
-:root{--bg:#060a10;--panel:#141a22;--line:#28303a;--need:#f5a524;--offer:#a78bfa;
+:root{--bg:#060a10;--panel:#141a22;--line:#28303a;--need:#f5a524;--offer:#93f2ea;
       --clarify:#f471b5;--explore:#4ade80;--dim:#8b949e;--text:#e6edf3;--open:#ff6b6b;--teal:#2dd4bf}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);overflow:hidden;
@@ -187,7 +187,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
 
       <div style="font-size:12px;color:#8b949e;margin:2px 0 6px">節點＝一個 project</div>
       <div class="lg"><span class="lgb" style="background:#f5a524"></span>金觸手＝<b style="color:#e6edf3">NEED</b>　我缺這個能力</div>
-      <div class="lg"><span class="lgb" style="background:#a78bfa"></span>紫觸手＝<b style="color:#e6edf3">OFFER</b>　我有這個能力</div>
+      <div class="lg"><span class="lgb" style="background:#93f2ea"></span>紫觸手＝<b style="color:#e6edf3">OFFER</b>　我有這個能力</div>
       <div class="lg"><span class="lgb" style="background:#f5a524;opacity:.45"></span>虛線空心＝該能力資料不全</div>
       <div class="lg"><span class="lgb" style="background:#ff6b6b"></span><b style="color:#ff6b6b">紅色脈動</b>＝落空，網絡中無人對接</div>
       <div style="font-size:10px;color:#5f6b7a;margin:3px 0 0 29px;line-height:1.5">
@@ -197,7 +197,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
         邊＝一條 bridge_feature</div>
       <div class="lg"><span class="lgb" style="background:#ffe2a0;height:3px"></span><b style="color:#e6edf3">粒子</b>＝資源流動</div>
       <div style="font-size:10px;color:#8b949e;margin:1px 0 7px 29px;line-height:1.6">
-        從 <b style="color:#a78bfa">OFFER 端</b> 流向 <b style="color:#f5a524">NEED 端</b>——<br>
+        從 <b style="color:#93f2ea">OFFER 端</b> 流向 <b style="color:#f5a524">NEED 端</b>——<br>
         <b style="color:#e6edf3">有的人把能力送給缺的人</b>。</div>
       <div class="lg"><span class="lgb" style="background:#f5a524"></span>軌道亮／粒子多＝橋強</div>
       <div style="font-size:10px;color:#5f6b7a;margin:-2px 0 6px 29px">強度＝需求優先序 × 對方成熟度</div>
@@ -219,8 +219,8 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js"></script><script src="./semantics.js"></script><script src="./yunlin-frame.js?v=1793893754"></script>
-<script src="./moons.js">
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./yunlin-frame.js?v=1793943178"></script>
+<script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
  tick=function(n){if(!focus&&!drag){const time=performance.now()/1000;P.forEach((p,i)=>{const a=pos[p.id];if(!a.pin){a.x=Wd*(i===0?.27:.73)+Math.sin(time*.14+i)*3;a.y=Hd*.50+Math.cos(time*.12+i)*4;a.vx=0;a.vy=0}});return;}layoutTick(n)};
@@ -420,7 +420,7 @@ function pn(x,y,z,seed){
 function planetTexture(id){
  if(planetCache[id])return planetCache[id];
  const size=224,c=document.createElement('canvas');c.width=c.height=size;const context=c.getContext('2d'),out=context.createImageData(size,size);
- const palette=id===1?[[46,37,66],[122,103,153],[199,180,189]]:[[32,55,58],[91,129,123],[187,202,174]];
+ const palette=id===1?[[60,47,32],[152,124,86],[216,200,170]]:[[32,55,58],[91,129,123],[187,202,174]];
  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
  const nx=(x-size/2)/(size/2-3),ny=(y-size/2)/(size/2-3),rr=nx*nx+ny*ny;if(rr>=1)continue;
  const nz=Math.sqrt(1-rr),warp=pn(nx*3+4,ny*3+7,nz*3,id)*1.1;
@@ -437,7 +437,7 @@ function planetTexture(id){
  }context.putImageData(out,0,0);return planetCache[id]=c.toDataURL();
 }
 function drawPlanet(g,a,r,id,selected){
- const defs=el('defs',{}),grad=el('radialGradient',{id:'air'+id,cx:'.42',cy:'.38',r:'.6'});grad.appendChild(el('stop',{offset:'.65','stop-color':id===1?'#c5a7e5':'#a7d1c1','stop-opacity':'0'}));grad.appendChild(el('stop',{offset:'.88','stop-color':id===1?'#c5a7e5':'#a7d1c1','stop-opacity':'.45'}));grad.appendChild(el('stop',{offset:'1','stop-color':'#101520','stop-opacity':'0'}));defs.appendChild(grad);g.appendChild(defs);
+ const defs=el('defs',{}),grad=el('radialGradient',{id:'air'+id,cx:'.42',cy:'.38',r:'.6'});grad.appendChild(el('stop',{offset:'.65','stop-color':id===1?'#ace0dc':'#a7d1c1','stop-opacity':'0'}));grad.appendChild(el('stop',{offset:'.88','stop-color':id===1?'#ace0dc':'#a7d1c1','stop-opacity':'.45'}));grad.appendChild(el('stop',{offset:'1','stop-color':'#101520','stop-opacity':'0'}));defs.appendChild(grad);g.appendChild(defs);
  g.appendChild(el('circle',{cx:a.x,cy:a.y,r:r*1.19,fill:'url(#air'+id+')'}));
  if(planetCache.ready){g.appendChild(el('image',{x:a.x-r,y:a.y-r,width:r*2,height:r*2,href:planetTexture(id),'pointer-events':'none'}));}
  else g.appendChild(el('circle',{cx:a.x,cy:a.y,r,fill:'#355267'}));
@@ -481,7 +481,7 @@ function render(){
     // Continuous orbital route. Unknown evidence fades out instead of dashes.
     const gid='route-'+bi,grad=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
     const unknown=b.q<.6;
-    [[0,.08],[.15,.45],[.38,unknown?.18:.65],[.58,unknown?0:.65],[.82,unknown?0:.45],[1,unknown?0:.08]].forEach(([u,o])=>grad.appendChild(el('stop',{offset:u,'stop-color':'#c4b5e6','stop-opacity':o})));
+    [[0,.08],[.15,.45],[.38,unknown?.18:.65],[.58,unknown?0:.65],[.82,unknown?0:.45],[1,unknown?0:.08]].forEach(([u,o])=>grad.appendChild(el('stop',{offset:u,'stop-color':'#b9e2df','stop-opacity':o})));
     d.appendChild(grad);
     const route=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.65,'stroke-linecap':'round'});svg.appendChild(route);
     const hit=el('path',{d:route.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[b.tag]+'：'+(unknown?'待釐清':'有依據的關係')});
@@ -509,7 +509,7 @@ function render(){
 
     }
     TA[p.id].forEach(it=>{
-      const c=it.d==="n"?"#f5a524":"#a78bfa";
+      const c=it.d==="n"?"#f5a524":"#93f2ea";
       const L=tipLen(p,it), ex=a.x+Math.cos(it.ang)*L, ey=a.y+Math.sin(it.ang)*L;
       const dead=!it.linked, low=it.t[2]<.6;
       // Satellites float independently; no stalk from planet surface.
@@ -518,15 +518,15 @@ function render(){
       glow.appendChild(el('stop',{offset:1,'stop-color':c,'stop-opacity':0}));d.appendChild(glow);
       g.appendChild(el('circle',{cx:ex,cy:ey,r:7,fill:'url(#'+glow.id+')','pointer-events':'none'}));
       if(ddSupplements.has(p.id+':'+it.t[0])){
- const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#cfb6ec','stroke-width':.6,opacity:.5});g.appendChild(halo);
- const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#ddc8f3','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
+ const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#bae8e4','stroke-width':.6,opacity:.5});g.appendChild(halo);
+ const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
  }
       drawMoon(g,ex,ey,isF?7.5:5.5,it.d==='n'?'need':'offer',false);
       const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
       target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
       target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
       target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
-      if(true){const tx=el('text',{x:ex,y:ey-9,fill:'#bdb8cf','font-size':(10/VZ).toFixed(2),'text-anchor':'middle'});tx.textContent=BN[it.t[0]];g.appendChild(tx);}
+      if(true){const tx=el('text',{x:ex,y:ey-9,fill:'#bacdcc','font-size':(10/VZ).toFixed(2),'text-anchor':'middle'});tx.textContent=BN[it.t[0]];g.appendChild(tx);}
 
     });
     const col=isF?"#2dd4bf":(s?COL[s.st]:"#5f6b7a");
@@ -535,7 +535,7 @@ function render(){
     if(a.pin) g.appendChild(el("circle",{cx:a.x,cy:a.y,r:r+5,fill:"none",stroke:"#2dd4bf",
       "stroke-width":.5,opacity:".16"}));
     if(LOD>=1||isF){
-      const nm=el("text",{x:a.x,y:a.y+r+14/VZ,fill:isF?"#c9b6e3":"#b9b8c9",
+      const nm=el("text",{x:a.x,y:a.y+r+14/VZ,fill:isF?"#b9e0dc":"#b9b8c9",
         "font-size":((isF?14:11)/VZ).toFixed(2),"font-family":"sans-serif","text-anchor":"middle",
         opacity:(faded?.5:.95)*(LOD===1?0.85:1)});
       nm.textContent=p.name; g.appendChild(nm);
@@ -743,7 +743,7 @@ function paintHov(){
   var sc=focus&&focus!==p.id ? scoreFor(focus,p) : null;
   var row=function(it){
     var dead=!it.linked, low=it.t[2]<0.6;
-    var c=it.d==="n"?"#f5a524":"#a78bfa";
+    var c=it.d==="n"?"#f5a524":"#93f2ea";
     var note=dead?'<span style="color:#ff6b6b">✕ 無人對接</span>'
             :(low?'<span style="color:#f471b5">資料 '+Math.round(it.t[2]*100)+'%</span>'
                  : it.partners.length+' 個對接');
@@ -757,7 +757,7 @@ function paintHov(){
   h+='<div class="hr"><span style="color:#8b949e">bridge_feature</span><span>'+brN+' 條</span></div>';
   if(dN) h+='<div class="hr"><span style="color:#ff6b6b">落空觸手</span><span style="color:#ff6b6b">'+dN+' 根</span></div>';
   if(need.length) h+='<div class="hs" style="color:#f5a524">NEED — 缺</div>'+need.map(row).join("");
-  if(off.length)  h+='<div class="hs" style="color:#a78bfa">OFFER — 有</div>'+off.map(row).join("");
+  if(off.length)  h+='<div class="hs" style="color:#93f2ea">OFFER — 有</div>'+off.map(row).join("");
   if(sc && sc.st!=="EXCLUDED"){
     h+='<div class="hs">對焦點專案</div>'
       +'<div class="hr"><span>Fit</span><span style="color:#f5a524">'+(sc.fit*100).toFixed(0)+'</span></div>'

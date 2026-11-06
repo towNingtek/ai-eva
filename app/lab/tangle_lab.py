@@ -44,13 +44,32 @@ def _quote(p, code):
     return f"> 「{i['quote']}」\n> — {p['name']}・公開計畫理念{tail}"
 
 
+def _mode_actions():
+    return [cl.Action(name=MODE_ACTION["match"], payload={"mode": "match"}, label="🤝 媒合分析"),
+            cl.Action(name=MODE_ACTION["law"], payload={"mode": "law"}, label="⚖ 法規檢核")]
+
+
+async def resume():
+    """回到舊對話（重新整理、點左側紀錄）時，舊訊息上的按鈕已失效 → 補一組可用的入口。
+
+    on_chat_resume 跑完後 Chainlit 才把舊訊息整批送到前端（會蓋掉先送的訊息），
+    所以稍等再送，讓它排在還原內容之後。
+    """
+    import asyncio
+
+    async def later():
+        await asyncio.sleep(1.2)
+        await cl.Message(content="要繼續分析嗎？", actions=_mode_actions()).send()
+
+    asyncio.create_task(later())
+
+
 async def start():
     await cl.Message(
         content=("## 把判斷說清楚，讓下一步有依據。\n\n"
                  "雲林 10 個農村再生計畫（公開計畫理念固定快照）。要做哪一種分析？\n\n"
                  "_試作環境：不連線正式系統、不呼叫 AI，說明為示範文字，不作法規適用或合作判定。_"),
-        actions=[cl.Action(name=MODE_ACTION["match"], payload={"mode": "match"}, label="🤝 媒合分析"),
-                 cl.Action(name=MODE_ACTION["law"], payload={"mode": "law"}, label="⚖ 法規檢核")],
+        actions=_mode_actions(),
     ).send()
 
 
