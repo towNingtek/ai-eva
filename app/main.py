@@ -6,6 +6,11 @@ import tempfile
 from typing import Optional
 
 import chainlit as cl
+
+# feat/tangle-lab：雲林星圖試作。只在 TANGLE_LAB=1 時啟用，預設完全不影響原行為。
+TANGLE_LAB = os.getenv("TANGLE_LAB") == "1"
+if TANGLE_LAB:
+    from app.lab import tangle_lab
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
@@ -346,6 +351,9 @@ async def on_start():
     # （CMS 進來的承辦人）在**新對話**永遠看不到工具選單，只有 resume 舊對話才有
     # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
     # #308：先載 SSO（拿到 manifest 的角色開關）再註冊，否則選單會漏掉角色過濾。
+    if TANGLE_LAB:
+        await tangle_lab.start()
+        return
     idn = await _load_sso_runtime()
     await _register_commands()
     if idn:
@@ -549,6 +557,8 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
 
 @cl.on_message
 async def on_message(msg: cl.Message):
+    if TANGLE_LAB and await tangle_lab.handle_message(msg):
+        return
     content = (msg.content or "").strip()
 
     # Chainlit can retain the selected command on the next message. Once
