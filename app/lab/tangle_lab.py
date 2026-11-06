@@ -1,10 +1,11 @@
 """Tangle lab — 雲林 10 案星圖試作（feat/tangle-lab，不合併）。
 
 只在 TANGLE_LAB=1 時由 app/main.py 載入：
-- 取代首頁，提供「法規檢核／媒合分析」兩個入口（v17 同流程）
-- 星圖以 CustomElement(TangleOrbit) 放在 Chainlit 右側欄（ElementSidebar）
-- 點衛星 → tangle_pick → 對話顯示原文與提問；輸入 → 草稿 → 確認後才記錄
-- 補充存在 user_session（伺服器端），收合再開側欄會重送標示
+- 首頁仍是 Chainlit 預設聊天畫面，只多「媒合分析／法規檢核」兩個按鈕
+- 按下後 CopilotFunction("tangle_workspace") 讓頁面在左側打開 v17 工作區、收合 session list；
+  這個聊天視窗就是工作區的副駕。工作區右上「收合」恢復原狀
+- 工作區事件（開啟分析、點衛星）經 Chainlit window_message → on_window_message
+- 輸入 → 草稿 → 確認後才記錄；CopilotFunction("tangle_mark") 標記星圖
 
 資料：雲林社區 AI 知識系統公開計畫理念固定快照；不連正式系統、不呼叫 AI。
 """
@@ -43,121 +44,31 @@ def _quote(p, code):
     return f"> 「{i['quote']}」\n> — {p['name']}・公開計畫理念{tail}"
 
 
-def _sessions():
-    s = cl.user_session.get("tangle_sessions")
-    if s is None:
-        s = {}
-        cl.user_session.set("tangle_sessions", s)
-    return s
-
-
 async def start():
     await cl.Message(
         content=("## 把判斷說清楚，讓下一步有依據。\n\n"
                  "雲林 10 個農村再生計畫（公開計畫理念固定快照）。要做哪一種分析？\n\n"
                  "_試作環境：不連線正式系統、不呼叫 AI，說明為示範文字，不作法規適用或合作判定。_"),
-        actions=[cl.Action(name="tangle_mode", payload={"mode": "match"}, label="🤝 媒合分析"),
-                 cl.Action(name="tangle_mode", payload={"mode": "law"}, label="⚖ 法規檢核")],
+        actions=[cl.Action(name=MODE_ACTION["match"], payload={"mode": "match"}, label="🤝 媒合分析"),
+                 cl.Action(name=MODE_ACTION["law"], payload={"mode": "law"}, label="⚖ 法規檢核")],
     ).send()
 
 
-def _setup_actions(mode):
-    return [cl.Action(name="tangle_project", payload={"mode": mode, "p": pid},
-                      label=PROJECTS[pid]["name"]) for pid in ORDER]
+# Chainlit 用第一個 action 的名稱當對話標題（左側 session list），所以取可讀的名字。
+MODE_ACTION = {"match": "雲林 10 案・媒合分析", "law": "雲林 10 案・法規檢核"}
 
 
-@cl.action_callback("tangle_mode")
 async def on_mode(action: cl.Action):
+    """選了法規／媒合 → 左邊打開 v17 工作區，這個聊天視窗變成它的副駕。"""
     mode = action.payload["mode"]
-    await cl.Message(content=f"**{NAMES[mode]}**：請選擇分析專案。",
-                     actions=_setup_actions(mode)).send()
-
-
-@cl.action_callback("tangle_project")
-async def on_project(action: cl.Action):
-    mode, pid = action.payload["mode"], action.payload["p"]
-    if mode == "law":
-        return await _open(mode, pid, None)
-    acts = [cl.Action(name="tangle_partner", payload={"p": pid, "q": q},
-                      label=f"{PROJECTS[q]['name']}（共同議題 {_shared(PROJECTS[pid], PROJECTS[q])}）")
-            for q in _partners(pid)]
-    await cl.Message(content=f"分析專案：**{PROJECTS[pid]['name']}**\n\n請選擇合作對象（依共同議題多寡排序）。",
-                     actions=acts).send()
-
-
-@cl.action_callback("tangle_partner")
-async def on_partner(action: cl.Action):
-    await _open("match", action.payload["p"], action.payload["q"])
-
-
-async def _open(mode, pid, qid):
-    sid = uuid.uuid4().hex[:8]
-    title = PROJECTS[pid]["name"] + (f" × {PROJECTS[qid]['name']}" if qid else "")
-    _sessions()[sid] = {"mode": mode, "p": pid, "q": qid, "title": title, "supp": {}}
-    cl.user_session.set("tangle_active", sid)
     cl.user_session.set("tangle_focus", None)
-    await _show(sid)
-    await cl.Message(
-        content=f"已開啟 **{NAMES[mode]}**：{title}\n\n右側是星圖。點一顆衛星，我會在這裡列出原文依據與要先確認的事。",
-        actions=[cl.Action(name="tangle_reopen", payload={"sid": sid}, label=f"↗ 重新開啟{NAMES[mode]}工作區")],
-    ).send()
-
-
-def _element(sid):
-    s = _sessions()[sid]
-    supp = [{"subject": int(k.split(":", 1)[0]), "code": k.split(":", 1)[1], "text": v} for k, v in s["supp"].items()]
-    el = cl.CustomElement(name="TangleOrbit", display="side",
-                            props={"sid": sid, "mode": s["mode"], "p": s["p"], "q": s["q"] or "",
-                                   "v": ASSET_V, "supplements": supp})
-    return el
-
-
-async def _show(sid):
-    s = _sessions()[sid]
-    el = _element(sid)
-    cl.user_session.set("tangle_element", el)
-    # Chainlit 2.12: set_elements keeps the previous title, so elements first, then title.
-    await cl.ElementSidebar.set_elements([el], key=f"tangle-{sid}-{len(s['supp'])}")
-    await cl.ElementSidebar.set_title(f"{NAMES[s['mode']]} / {s['title']}")
-
-
-@cl.action_callback("tangle_reopen")
-async def on_reopen(action: cl.Action):
-    sid = action.payload["sid"]
-    if sid not in _sessions():
-        await cl.Message(content="這份分析已不在本次對話中（重新整理後會清除）。").send()
+    res = await cl.CopilotFunction(name="tangle_workspace", args={"mode": mode, "v": ASSET_V}).acall()
+    if not (res and res.get("ok")):
+        await cl.Message(content="工作區沒有打開，請重新整理後再試一次。").send()
         return
-    cl.user_session.set("tangle_active", sid)
-    await _show(sid)
-
-
-@cl.action_callback("tangle_pick")
-async def on_pick(action: cl.Action):
-    d = action.payload or {}
-    sid = d.get("sid")
-    s = _sessions().get(sid)
-    if not s or not d.get("code"):
-        return
-    code, subject = d["code"], int(d.get("subject") or 1)
-    T = THEMES.get(code)
-    if not T:
-        return
-    focus = {"sid": sid, "code": code, "subject": subject, "label": T["label"]}
-    cl.user_session.set("tangle_active", sid)
-    cl.user_session.set("tangle_focus", focus)
-    A = PROJECTS[s["p"]]
-    B = PROJECTS[s["q"]] if s["q"] else None
-    who = B if (subject == 2 and B) else A
-    prev = s["supp"].get(f"{subject}:{code}")
-    if s["mode"] == "law":
-        body = f"{_quote(A, code)}\n\n**可能要留意**\n{T['law']}\n\n**想先確認**\n{T['lawQ']}"
-    elif d.get("kind") == "relation" and B:
-        body = (f"{_quote(A, code)}\n\n{_quote(B, code)}\n\n**可以從這裡談**\n{T['match']}。\n\n"
-                "**還不知道**\n雙方意願與可投入的人力、時間，原文沒有寫。")
-    else:
-        body = f"{_quote(who, code)}\n\n這項有更具體的人力、時間或資源嗎？知道的話可以補充，「還不知道」也可以。"
-    note = f"\n\n本次已確認補充（未查證）：{prev}" if prev else "\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認，不會直接記錄。_"
-    await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
+    await cl.Message(content=(f"已打開 **{NAMES[mode]}** 工作區。在左邊選專案、按「確認並開始分析」。\n\n"
+                              "之後**點星圖上的衛星，我會在這裡回應；你在這裡補充，確認後我會改星圖**。"
+                              "做完按工作區右上角「收合」，就回到原本的畫面。")).send()
 
 
 async def handle_message(msg: cl.Message) -> bool:
@@ -191,18 +102,9 @@ async def on_confirm(action: cl.Action):
     if not action.payload.get("ok"):
         await cl.Message(content="已取消，沒有納入這段補充。").send()
         return
-    if d.get("cop"):
-        ok = await copilot_confirmed(d)
-        await cl.Message(content=(f"已確認補充到「{d['label']}」，" + ("星圖上的衛星已標示「已補充・未查證」。" if ok else "但星圖沒有回應，請重新開啟分析後再看一次。")) +
-                         "\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
-        return
-    s = _sessions().get(d["sid"])
-    if not s:
-        return
-    s["supp"][f"{d['subject']}:{d['code']}"] = d["text"]
-    await cl.Message(content=f"已確認補充到「{d['label']}」，衛星標示「已補充・未查證」。\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
-    if cl.user_session.get("tangle_active") == d["sid"]:
-        await _show(d["sid"])
+    ok = await copilot_confirmed(d)
+    await cl.Message(content=(f"已確認補充到「{d['label']}」，" + ("星圖上的衛星已標示「已補充・未查證」。" if ok else "但工作區沒有回應（可能已收合），補充已記在本次對話。")) +
+                     "\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
 
 
 # ── Copilot mode：v17 工作區是主畫面，Eva 以 copilot 掛在旁邊 ─────────────
@@ -216,17 +118,22 @@ def _copilot_state():
     return st
 
 
-async def copilot_start():
-    await cl.Message(content=("我是 **Eva**，這次的副駕。\n\n"
-                              "在左邊工作區選好專案、按「確認並開始分析」，星圖會出現。"
-                              "**點星圖上的衛星，我會在這裡列出原文與要確認的事；你在這裡補充，確認後我會改星圖上的標示。**\n\n"
-                              "_試作：不連線正式系統、不呼叫 AI，說明為示範文字，不作法規適用或合作判定。_")).send()
+@cl.on_window_message
+async def on_window_message(data):
+    meta = (data or {}).get("tangle") if isinstance(data, dict) else None
+    if meta:
+        await _dispatch(meta)
 
 
 async def copilot_event(msg: cl.Message) -> bool:
     meta = (msg.metadata or {}).get("tangle")
     if not meta:
         return False
+    await _dispatch(meta)
+    return True
+
+
+async def _dispatch(meta) -> bool:
     ev = meta.get("event")
     if ev == "open":
         cl.user_session.set("tangle_focus", None)
@@ -234,7 +141,7 @@ async def copilot_event(msg: cl.Message) -> bool:
         if pid not in PROJECTS:
             return True
         title = PROJECTS[pid]["name"] + (f" × {PROJECTS[qid]['name']}" if qid in PROJECTS else "")
-        await cl.Message(content=f"已開啟 **{NAMES.get(mode, mode)}**：{title}\n\n點一顆衛星，我們從那裡開始。").send()
+        await cl.Message(content=f"已開啟 **{NAMES.get(mode, mode)}**：{title}\n\n點星圖上的一顆衛星，我們從那裡開始。").send()
         return True
     if ev == "pick":
         await _copilot_pick(meta)
@@ -271,3 +178,7 @@ async def copilot_confirmed(d) -> bool:
     res = await cl.CopilotFunction(name="tangle_mark", args={
         "id": d["id"], "subject": d["subject"], "code": d["code"], "text": d["text"]}).acall()
     return bool(res and res.get("ok"))
+
+
+for _name in MODE_ACTION.values():
+    cl.action_callback(_name)(on_mode)
