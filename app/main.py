@@ -11,6 +11,7 @@ import chainlit as cl
 TANGLE_LAB = os.getenv("TANGLE_LAB") == "1"
 if TANGLE_LAB:
     from app.lab import tangle_lab
+    from app.lab import tangle_page  # noqa: F401  # /workspace（copilot 工作區頁）
 import chainlit.data as cl_data
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
 from langchain_core.messages import AIMessage, HumanMessage
@@ -352,7 +353,10 @@ async def on_start():
     # （on_chat_resume 有叫）。法規檢核 / 知識庫都掛在選單上，不註冊就點不到。
     # #308：先載 SSO（拿到 manifest 的角色開關）再註冊，否則選單會漏掉角色過濾。
     if TANGLE_LAB:
-        await tangle_lab.start()
+        if cl.context.session.client_type == "copilot":
+            await tangle_lab.copilot_start()
+        else:
+            await tangle_lab.start()
         return
     idn = await _load_sso_runtime()
     await _register_commands()
@@ -557,6 +561,8 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
 
 @cl.on_message
 async def on_message(msg: cl.Message):
+    if TANGLE_LAB and await tangle_lab.copilot_event(msg):
+        return
     if TANGLE_LAB and await tangle_lab.handle_message(msg):
         return
     content = (msg.content or "").strip()

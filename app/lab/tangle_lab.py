@@ -191,6 +191,11 @@ async def on_confirm(action: cl.Action):
     if not action.payload.get("ok"):
         await cl.Message(content="已取消，沒有納入這段補充。").send()
         return
+    if d.get("cop"):
+        ok = await copilot_confirmed(d)
+        await cl.Message(content=(f"已確認補充到「{d['label']}」，" + ("星圖上的衛星已標示「已補充・未查證」。" if ok else "但星圖沒有回應，請重新開啟分析後再看一次。")) +
+                         "\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
+        return
     s = _sessions().get(d["sid"])
     if not s:
         return
@@ -198,3 +203,71 @@ async def on_confirm(action: cl.Action):
     await cl.Message(content=f"已確認補充到「{d['label']}」，衛星標示「已補充・未查證」。\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
     if cl.user_session.get("tangle_active") == d["sid"]:
         await _show(d["sid"])
+
+
+# ── Copilot mode：v17 工作區是主畫面，Eva 以 copilot 掛在旁邊 ─────────────
+# 頁面 → Eva：sendChainlitMessage(type=system_message, metadata.tangle=...)
+# Eva → 頁面：CopilotFunction("tangle_mark") 讓頁面標記衛星
+def _copilot_state():
+    st = cl.user_session.get("tangle_cop")
+    if st is None:
+        st = {"supp": {}}
+        cl.user_session.set("tangle_cop", st)
+    return st
+
+
+async def copilot_start():
+    await cl.Message(content=("我是 **Eva**，這次的副駕。\n\n"
+                              "在左邊工作區選好專案、按「確認並開始分析」，星圖會出現。"
+                              "**點星圖上的衛星，我會在這裡列出原文與要確認的事；你在這裡補充，確認後我會改星圖上的標示。**\n\n"
+                              "_試作：不連線正式系統、不呼叫 AI，說明為示範文字，不作法規適用或合作判定。_")).send()
+
+
+async def copilot_event(msg: cl.Message) -> bool:
+    meta = (msg.metadata or {}).get("tangle")
+    if not meta:
+        return False
+    ev = meta.get("event")
+    if ev == "open":
+        cl.user_session.set("tangle_focus", None)
+        mode, pid, qid = meta.get("mode"), meta.get("p"), meta.get("q")
+        if pid not in PROJECTS:
+            return True
+        title = PROJECTS[pid]["name"] + (f" × {PROJECTS[qid]['name']}" if qid in PROJECTS else "")
+        await cl.Message(content=f"已開啟 **{NAMES.get(mode, mode)}**：{title}\n\n點一顆衛星，我們從那裡開始。").send()
+        return True
+    if ev == "pick":
+        await _copilot_pick(meta)
+        return True
+    return True
+
+
+async def _copilot_pick(m):
+    code, pid, qid = m.get("code"), m.get("p"), m.get("q")
+    T = THEMES.get(code)
+    if not T or pid not in PROJECTS:
+        return
+    subject = int(m.get("subject") or 1)
+    A = PROJECTS[pid]
+    B = PROJECTS.get(qid) if m.get("mode") == "match" else None
+    who = B if (subject == 2 and B) else A
+    key = f"{m.get('id')}:{subject}:{code}"
+    cl.user_session.set("tangle_focus", {"cop": True, "id": m.get("id"), "code": code, "subject": subject, "label": T["label"], "key": key})
+    prev = _copilot_state()["supp"].get(key)
+    if m.get("mode") == "law":
+        body = f"{_quote(A, code)}\n\n**可能要留意**\n{T['law']}\n\n**想先確認**\n{T['lawQ']}"
+    elif m.get("kind") == "relation" and B:
+        body = (f"{_quote(A, code)}\n\n{_quote(B, code)}\n\n**可以從這裡談**\n{T['match']}。\n\n"
+                "**還不知道**\n雙方意願與可投入的人力、時間，原文沒有寫。")
+    else:
+        body = f"{_quote(who, code)}\n\n這項有更具體的人力、時間或資源嗎？知道的話可以補充，「還不知道」也可以。"
+    note = f"\n\n本次已確認補充（未查證）：{prev}" if prev else "\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認。_"
+    await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
+
+
+async def copilot_confirmed(d) -> bool:
+    """草稿確認後：存伺服器端，並請頁面標記星圖。回傳頁面是否成功標記。"""
+    _copilot_state()["supp"][d["key"]] = d["text"]
+    res = await cl.CopilotFunction(name="tangle_mark", args={
+        "id": d["id"], "subject": d["subject"], "code": d["code"], "text": d["text"]}).acall()
+    return bool(res and res.get("ok"))
