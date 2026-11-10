@@ -6,10 +6,16 @@
  const S=document.createElement('style');
  S.textContent='.sidebar,.main>header,.chat-pane,.mobile-toggle{display:none!important}.shell{grid-template-columns:1fr!important}'
   +'.stage-layout,.workspace-open .stage-layout{grid-template-columns:minmax(0,1fr)!important}.desk{display:block!important;grid-column:1!important;padding:22px 26px}'
-  +'.desk-actions{display:none!important}.original-tangle{height:calc(100dvh - 250px)!important;min-height:380px}.desk-top{margin-bottom:16px;padding-right:110px}';
+  +'.desk-top small,.analysis-head,.desk .source-note,.desk .warning,.desk .field+p.muted,.desk .actions:has(button[onclick^="restartOriginal"]){display:none!important}'+'.desk-actions{display:none!important}.original-tangle{height:calc(100dvh - 250px)!important;min-height:380px}.desk-top{margin-bottom:16px;padding-right:110px}';
  document.head.append(S);
  const toEva=(text,payload)=>window.parent.postMessage({tangle:payload,text},location.origin);
 
+ // Copy that is not removed outright is rewritten to what is true for this lab.
+ // Only write when the text differs, otherwise the observer re-triggers itself forever.
+ const FOOT='資料來源：雲林社區 AI 知識系統公開計畫理念（固定快照）',HINT='點衛星，在右邊對話補充。';
+ const tidy=()=>{const f=document.querySelector('.desk-foot');if(f&&f.textContent!==FOOT)f.textContent=FOOT;
+  document.querySelectorAll('.desk .body > p.muted').forEach(e=>{if(/拖曳大節點/.test(e.textContent))e.textContent=HINT})};
+ new MutationObserver(tidy).observe(document.documentElement,{subtree:true,childList:true});
  window.addEventListener('load',()=>{document.body.classList.add('workspace-open');
   currentMode=MODE;const id=++seq;const tmp=document.createElement('div');tmp.innerHTML=frame(MODE,id,'setup');
   const slot=document.createElement('div');slot.dataset.slot=id;slot.hidden=true;slot.append(tmp.firstElementChild);document.body.append(slot);openDesk(MODE,id)});
