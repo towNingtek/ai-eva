@@ -29,6 +29,36 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
      for(const [t,r] of labels){for(const [s,f] of fixed)if(X(r,f))out.push(t+" × "+s);if(r.left<0||r.top<0||r.right>innerWidth||r.bottom>innerHeight)out.push(t+" clipped")}
      for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++)if(X(labels[i][1],labels[j][1]))out.push(labels[i][0]+" × "+labels[j][0]);const bodies=[...document.querySelectorAll("[data-kv-key]")].map(g=>{const b=R(g.querySelector("image,circle[stroke]")||g);return[g.getAttribute("data-kv-key"),b.left+b.width/2,b.top+b.height/2,Math.max(b.width,b.height)/2]});document.querySelectorAll('path[stroke^="url(#kv-route"]').forEach(pth=>{const L=pth.getTotalLength(),m=pth.getScreenCTM();const end=pth.getPointAtLength(L),ex=end.x*m.a+m.e,ey=end.y*m.d+m.f;for(let k=1;k<40;k++){const q=pth.getPointAtLength(L*k/40),x=q.x*m.a+m.e,y=q.y*m.d+m.f;for(const [name,bx,by,br] of bodies){if(Math.hypot(ex-bx,ey-by)<br+30)continue;if(Math.hypot(x-bx,y-by)<br+4){out.push("route crosses "+name);return}}}});return [...new Set(out)]});
    if(hits.length)fail(`${pr.short} @${vp.width}x${vp.height}: ${hits.slice(0,4).join(" | ")}`);await p.close()}n++}}
+ else if(arg==="--ring"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
+   for(const k of Object.keys(m.law).filter(k=>m.law[k].state==="hit"||m.law[k].state==="gap")){
+    await p.evaluate(k=>{kvSel=k;render()},k);await p.waitForTimeout(80);
+    const hit=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),ring=document.querySelector("[data-kv-ring]")||document.querySelector("[data-kv-selected] circle[stroke=\"#a9e3dc\"]");if(!ring)return"no ring";const r=R(ring),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;
+      for(const t of document.querySelectorAll("svg text")){const b=R(t),nx=Math.max(b.left,Math.min(cx,b.right)),ny=Math.max(b.top,Math.min(cy,b.bottom));if(Math.hypot(nx-cx,ny-cy)<rad+1)return"ring touches '"+t.textContent+"'"}return""});
+    if(hit)fail(`${pr.short} ${k}: ${hit}`)}
+   n++;await p.close()}}
+ else if(arg==="--select"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];
+   // click a satellite by its real on-screen centre (the graph redraws continuously, so pause motion first)
+   await p.evaluate(()=>{orbitPaused=true});await p.waitForTimeout(150);
+   const clickKey=async k=>{const c=await p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`),b=(g.querySelector("image,circle[stroke]")||g).getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}},k);await p.mouse.click(c.x,c.y);await p.waitForTimeout(250)};
+   const state=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key]")].map(g=>({k:g.getAttribute("data-kv-key"),sel:g.hasAttribute("data-kv-selected"),o:+g.getAttribute("opacity")})));
+   const hit=Object.keys(m.law).find(k=>m.law[k].state==="hit"),gap=Object.keys(m.law).find(k=>m.law[k].state==="gap"),na=Object.keys(m.law).find(k=>m.law[k].state==="na");
+   for(const k of [hit,gap]){await clickKey(k);const S=await state(),me=S.find(x=>x.k===k),others=S.filter(x=>x.k!==k);
+    if(!me.sel)fail(`${pr.short} ${k} not selected`);if(others.some(x=>x.sel))fail(`${pr.short} more than one selected`);if(!others.every(x=>x.o<me.o))fail(`${pr.short} ${k}: others not faded`)}
+   const b=await p.evaluate(()=>{const s=document.getElementById("svg").getBoundingClientRect();return{x:s.left+8,y:s.top+s.height/2}});await p.mouse.click(b.x,b.y);await p.waitForTimeout(250);
+   let S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} blank click did not clear selection`);
+   await clickKey(na);S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} clicking na (${na}) must not select or fade`);
+   if(m.uncovered.length){await p.waitForTimeout(800);await clickKey(m.uncovered[0]);S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} clicking uncovered must not select or fade`)}
+   n++;await p.close()}}
+ else if(arg==="--supplement"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id],gap=Object.keys(m.law).find(k=>m.law[k].state==="gap");
+   const before=await p.evaluate(()=>Object.fromEntries([...document.querySelectorAll("[data-kv-key]")].map(g=>[g.getAttribute("data-kv-key"),g.getAttribute("data-kv-state")])));
+   // simulate Eva's confirmation exactly as the parent frame delivers it
+   await p.evaluate(k=>window.dispatchEvent(new MessageEvent("message",{data:{type:"dd-confirmed",subject:1,code:k,text:"測試補充"},origin:location.origin,source:window.parent})),gap);await p.waitForTimeout(300);
+   const r=await p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`);return{state:g.getAttribute("data-kv-state"),text:g.textContent,glow:!!g.querySelector('circle[fill="url(#kv-glow)"]'),fog:!!g.querySelector('circle[fill="url(#kv-fog)"]'),
+     all:Object.fromEntries([...document.querySelectorAll("[data-kv-key]")].map(x=>[x.getAttribute("data-kv-key"),x.getAttribute("data-kv-state")]))}},gap);
+   if(r.state!=="supplemented")fail(`${pr.short} ${gap} state ${r.state}`);if(!r.text.includes("已補充・待重判"))fail(`${pr.short} ${gap} missing 已補充・待重判`);
+   if(/風險|提醒/.test(r.text))fail(`${pr.short} ${gap} supplemented must not show risk/note counts`);if(r.glow)fail(`${pr.short} ${gap} supplemented must not get the 對上了 glow`);if(r.fog)fail(`${pr.short} ${gap} fog not cleared`);
+   for(const [k,v] of Object.entries(before))if(k!==gap&&r.all[k]!==v)fail(`${pr.short} ${k} changed ${v}->${r.all[k]}`);
+   n++;await p.close()}}
  else if(arg==="--hygiene"){for(const pr of P){const p=await open(pr.id);let s=await snap(p);if(s.dash)fail(pr.short+" dashes in topic view");await toDomain(p);s=await snap(p);if(s.dash)fail(pr.short+" dashes in domain view");
    if(p._errs.length)fail(pr.short+" page errors: "+p._errs.join(";"));if(p._ext.length)fail(pr.short+" external requests: "+p._ext.join(","));n++;await p.close()}}
  else{console.error("flags: --record-baseline | --default-unchanged | --domain | --toggle-back | --no-overlap | --hygiene");process.exitCode=2}

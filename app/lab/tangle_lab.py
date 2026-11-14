@@ -22,6 +22,57 @@ THEMES = _DATA["themes"]
 NAMES = {"law": "法規檢核", "match": "媒合分析"}
 ASSET_V = "lab1"
 
+# 第 2a 步：法領域衛星的回覆。示範資料與星圖共用 public/tangle/kv-law-mock.js（不另存一份）。
+_KV_JS = Path(__file__).resolve().parents[2] / "public" / "tangle" / "kv-law-mock.js"
+
+
+def load_kv_law(path=_KV_JS):
+    s = Path(path).read_text(encoding="utf-8")
+    return json.loads(s[s.index("{"):s.rindex("}") + 1])
+
+
+KV_LAW = load_kv_law() if _KV_JS.exists() else {"domains": [], "projects": {}}
+DEMO = "_示範資料：狀態與數字是假設值，不是實際判定結果。_"
+
+
+def reply_for(mode, project_id, key, kv=None):
+    """法領域衛星被點時，Eva 要說什麼。純函式，不依賴 Chainlit。
+
+    回傳 {"state", "title", "quotes", "body", "question"}；查不到回 None。
+    """
+    kv = kv or KV_LAW
+    if mode != "law":
+        return None
+    p = kv["projects"].get(project_id)
+    if not p:
+        return None
+    if key in p.get("uncovered", []):
+        return {"state": "uncovered", "title": key, "quotes": [], "question": None,
+                "body": f"「{key}」不在目前的條文庫裡，這一項沒有檢查。**沒檢查不代表合規**，需要另外查相關法規。"}
+    v = p["law"].get(key)
+    if not v:
+        return None
+    st, quotes = v["state"], list(v.get("evidence", []))
+    if st == "hit":
+        c = v["count"]
+        parts = ([f"{c['risk']} 條可能的風險"] if c["risk"] else []) + ([f"{c['note']} 條提醒"] if c["note"] else [])
+        return {"state": st, "title": key, "quotes": quotes, "question": None,
+                "body": f"計畫書裡有內容和「{key}」相關，對上 {'、'.join(parts)}。下一步可以點進去看是哪幾條（之後的版本）。"}
+    if st == "gap":
+        return {"state": st, "title": key, "quotes": quotes, "question": v["question"],
+                "body": f"「{key}」要看一個計畫書沒寫的資訊才能判斷。"}
+    return {"state": "na", "title": key, "quotes": [], "question": None,
+            "body": f"計畫書裡沒有和「{key}」相關的內容。"}
+
+
+def _reply_markdown(r, project_name, prev=None):
+    q = "\n\n".join(f"> 「{x}」" for x in r["quotes"])
+    src = f"\n> — {project_name}・公開計畫理念" if r["quotes"] else ""
+    ask = f"\n\n**想先確認**\n{r['question']}\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認。_" if r["question"] else ""
+    if prev:
+        ask = f"\n\n本次已補充（未查證、待重判）：{prev}"
+    return f"**{r['title']}**・{project_name}\n\n{(q + src + chr(10) + chr(10)) if q else ''}{r['body']}{ask}\n\n{DEMO}"
+
 
 def _theme(p, code):
     return next((i for i in p["issues"] if i["theme"] == code), None)
@@ -122,7 +173,9 @@ async def on_confirm(action: cl.Action):
         await cl.Message(content="已取消，沒有納入這段補充。").send()
         return
     ok = await copilot_confirmed(d)
-    await cl.Message(content=(f"已確認補充到「{d['label']}」，" + ("星圖上的衛星已標示「已補充・未查證」。" if ok else "但工作區沒有回應（可能已收合），補充已記在本次對話。")) +
+    mark = "已補充・待重判" if d.get("kv") else "已補充・未查證"
+    tail = "示範版不會重新判斷。" if d.get("kv") else ""
+    await cl.Message(content=(f"已記下「{d['label']}」的補充，" + (f"星圖上這一項標成「{mark}」。{tail}" if ok else "但工作區沒有回應（可能已收合），補充已記在本次對話。")) +
                      "\n\n_補了資訊，不代表驗證完成、法規符合或合作成立。_").send()
 
 
@@ -170,6 +223,9 @@ async def _dispatch(meta) -> bool:
 
 async def _copilot_pick(m):
     code, pid, qid = m.get("code"), m.get("p"), m.get("q")
+    if m.get("mode") == "law" and m.get("kind") == "domain":
+        await _law_domain_pick(m)
+        return
     T = THEMES.get(code)
     if not T or pid not in PROJECTS:
         return
@@ -191,11 +247,24 @@ async def _copilot_pick(m):
     await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
 
 
+async def _law_domain_pick(m):
+    pid, key = m.get("p"), m.get("code")
+    r = reply_for("law", pid, key)
+    if not r or pid not in PROJECTS:
+        return
+    fkey = f"{m.get('id')}:1:{key}"
+    # 只有缺資料可以補充；其他狀態點了不進入補充模式
+    cl.user_session.set("tangle_focus", {"cop": True, "id": m.get("id"), "code": key, "subject": 1, "label": key, "key": fkey,
+                                         "kv": True} if r["state"] == "gap" else None)
+    prev = _copilot_state()["supp"].get(fkey)
+    await cl.Message(content=_reply_markdown(r, PROJECTS[pid]["name"], prev)).send()
+
+
 async def copilot_confirmed(d) -> bool:
     """草稿確認後：存伺服器端，並請頁面標記星圖。回傳頁面是否成功標記。"""
     _copilot_state()["supp"][d["key"]] = d["text"]
     res = await cl.CopilotFunction(name="tangle_mark", args={
-        "id": d["id"], "subject": d["subject"], "code": d["code"], "text": d["text"]}).acall()
+        "id": d["id"], "subject": d["subject"], "code": d["code"], "text": d["text"], "kv": bool(d.get("kv"))}).acall()
     return bool(res and res.get("ok"))
 
 
