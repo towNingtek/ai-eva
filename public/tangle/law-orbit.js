@@ -34,7 +34,8 @@ const orbitStage=document.getElementById('svg');
 orbitStage.addEventListener('pointerenter',()=>{orbitHover=true});orbitStage.addEventListener('pointerleave',()=>{orbitHover=false});orbitStage.addEventListener('focusin',()=>{orbitHover=true});
 document.getElementById('bIdle').onclick=()=>{orbitPaused=!orbitPaused;flowOn=!orbitPaused&&!reducedMotion;};
 document.getElementById('bFlow').onclick=()=>{flowOn=!flowOn&&!reducedMotion;};
-let lastOrbit=0;function orbitLoop(now){if(now-lastOrbit>50){if(!orbitPaused&&!orbitHover&&!reducedMotion){orbitTime+=.05;render();buildParticles()}lastOrbit=now}requestAnimationFrame(orbitLoop)}
+let lastOrbit=0;function orbitLoop(now){if(now-lastOrbit>50){if(!orbitPaused&&!orbitHover&&!reducedMotion){orbitTime+=.05;render();buildParticles()}
+  else if(!reducedMotion&&Object.values(LAW_PULSE).some(t=>now-t<1000))render();lastOrbit=now}requestAnimationFrame(orbitLoop)}
 setTimeout(()=>{flowOn=!reducedMotion;buildParticles();requestAnimationFrame(orbitLoop)},1300);
 
 // ── Step 1: 法領域 view (added alongside the topic view; demo data from kv-law-mock.js) ──────────
@@ -47,6 +48,7 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
  const haze=el('radialGradient',{id:'planet-haze'});haze.appendChild(el('stop',{offset:0,'stop-color':'#70b8b0','stop-opacity':.18}));haze.appendChild(el('stop',{offset:1,'stop-color':'#70b8b0','stop-opacity':0}));defs.appendChild(haze);
  svg.appendChild(el('circle',{cx:center.x,cy:center.y,r:85,fill:'url(#planet-haze)','pointer-events':'none'}));
  const fog=el('radialGradient',{id:'kv-fog'});[[0,.26],[.55,.1],[1,0]].forEach(([o,a])=>fog.appendChild(el('stop',{offset:o,'stop-color':'#d5dfdc','stop-opacity':a})));defs.appendChild(fog);
+ const pg=el('radialGradient',{id:'kv-pulse'});pg.appendChild(el('stop',{offset:0,'stop-color':'#bff0e8','stop-opacity':.85}));pg.appendChild(el('stop',{offset:1,'stop-color':'#bff0e8','stop-opacity':0}));defs.appendChild(pg);
  const glow=el('radialGradient',{id:'kv-glow'});glow.appendChild(el('stop',{offset:0,'stop-color':'#a5e7df','stop-opacity':.5}));glow.appendChild(el('stop',{offset:1,'stop-color':'#a5e7df','stop-opacity':0}));defs.appendChild(glow);
  const fs=n=>(n/VZ).toFixed(2),STOPS={high:[[0,.3],[.5,.8],[1,.6]],mid:[[0,.22],[.45,.6],[1,.18]],low:[[0,.2],[.4,.45],[.82,.05],[1,0]],gap:[[0,.16],[.3,.36],[.62,0],[1,0]],unc:[[0,.2],[.5,.5],[1,.38]]};
   const PLACED=[],BODY=r=>(x,y)=>PLACED.push({x0:x-r,y0:y-r,x1:x+r,y1:y+r});(function(){const toW=(r,el)=>{if(!el)return;const b=el.getBoundingClientRect(),sb=document.getElementById('svg').getBoundingClientRect(),k=Wd/sb.width/VZ;
@@ -69,8 +71,9 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
  function route(i,from,to,kind,stop,dim){const dx=to.x-from.x,dy=to.y-from.y,L=Math.hypot(dx,dy)||1,ex=to.x-dx/L*stop,ey=to.y-dy/L*stop,mx=(from.x+ex)/2,my=(from.y+ey)/2-18;
   const gid='kv-route-'+i,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:from.x,y1:from.y,x2:ex,y2:ey});STOPS[kind].forEach(([o,a])=>gr.appendChild(el('stop',{offset:o,'stop-color':'#a9dad5','stop-opacity':a})));defs.appendChild(gr);
   svg.appendChild(el('path',{d:`M${from.x},${from.y} Q${mx},${my} ${ex},${ey}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.8,'pointer-events':'none',opacity:dim?'.25':'1'}));
-  if(!dim&&(kind==='high'||kind==='mid'))TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:'kv'+i,from:1,to:1});
-  else if(!dim&&kind==='gap'){const T=.6,m=1-T,B={x:m*m*from.x+2*m*T*mx+T*T*ex,y:m*m*from.y+2*m*T*my+T*T*ey},C={x:from.x+(mx-from.x)*T,y:from.y+(my-from.y)*T};TRACKS.push({A:from,B,cx:C.x,cy:C.y,st:.4,q:.65,tag:'kvg'+i,from:1,to:1})}}
+  const dn=KV_LAW.domains[i];
+  if(!dim&&(kind==='high'||kind==='mid'))TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:dn,from:1,to:1});
+  else if(!dim&&kind==='gap'){const T=.6,m=1-T,B={x:m*m*from.x+2*m*T*mx+T*T*ex,y:m*m*from.y+2*m*T*my+T*T*ey},C={x:from.x+(mx-from.x)*T,y:from.y+(my-from.y)*T};TRACKS.push({A:from,B,cx:C.x,cy:C.y,st:.4,q:.65,tag:null,from:1,to:1})}}
  function dots(ang,n,dim){for(let k=0;k<n;k++){const a=ang+(k-(n-1)/2)*.14;svg.appendChild(el('circle',{cx:center.x+Math.cos(a)*43,cy:center.y+Math.sin(a)*43,r:2,fill:'#b6bfcb','pointer-events':'none',opacity:dim?'.3':'1'}))}}
   if(KV_P){KV_LAW.domains.forEach((name,i)=>{const a=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,st=KV_P.law[name].state;BODY(kvSel===name?17:(st==='na'?8:13))(center.x+Math.cos(a)*R,center.y+Math.sin(a)*R)});
    KV_P.uncovered.forEach((name,j)=>{const a=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(a),uy=Math.sin(a),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9);BODY(13)(center.x+ux*R2,center.y+uy*R2)});
@@ -85,6 +88,8 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
    label(g,t.x,t.y,ang,name,'#b9c6c3','缺：'+v.missing,'#96a5a2',22,sel?16:0);}
   else{svg.appendChild(g);const inner=el('g',{opacity:kvPulse===name?.75:.26});drawMoon(inner,t.x,t.y,7,'rule',false);g.appendChild(inner);label(g,t.x,t.y,ang,name,kvPulse===name?'#a9bdb9':'#56625f',null,null,14);}
   if(sel)g.appendChild(el('circle',{cx:t.x,cy:t.y,r:15,fill:'none',stroke:'#a9e3dc','stroke-width':.8,opacity:.85,'pointer-events':'none','data-kv-ring':''}));
+  if(v.state==='hit'||st==='supplemented'){const t0=LAW_PULSE[name],age=t0?performance.now()-t0:1e9,pv=age<900?1-age/900:0;
+   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:14+12*(1-pv),fill:'url(#kv-pulse)',opacity:pv.toFixed(3),'pointer-events':'none','data-kv-pulse':''}))}
   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:16,fill:'transparent'}));kvBind(g,name,v.state);
  });
  if(KV_P)KV_P.uncovered.forEach((name,j)=>{const ang=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(ang),uy=Math.sin(ang),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9),t={x:center.x+ux*R2,y:center.y+uy*R2},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};

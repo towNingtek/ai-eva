@@ -36,7 +36,7 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    const pos=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key] image")].map(i=>{const r=i.getBoundingClientRect();return[r.x,r.y]}));
    const mv=(a,b)=>Math.max(...a.map((x,i)=>Math.hypot(x[0]-b[i][0],x[1]-b[i][1])));
    await leave();await p.waitForTimeout(300);let a=await pos();await p.waitForTimeout(3000);let b=await pos();const d=mv(a,b);
-   const want=Object.values(m.law).filter(v=>(v.state==="hit"&&v.confidence!=="low")||v.state==="gap").length,got=await p.evaluate(()=>PT.length);
+   const want=3*Object.values(m.law).filter(v=>(v.state==="hit"&&v.confidence!=="low")||v.state==="gap").length,got=await p.evaluate(()=>PT.length);
    if(d<16)fail(`${pr.short} satellites moved ${d.toFixed(1)}px in 3s (< 16)`);if(got!==want)fail(`${pr.short} flow particles ${got} != ${want}`);
    await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);a=await pos();await p.waitForTimeout(1500);b=await pos();
    if(mv(a,b)>0.5)fail(`${pr.short} still moving while the pointer is over the graph`);
@@ -79,6 +79,23 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
        return [...new Set(res)]});
       if(out.length){fail(`${pr.short} ${k} @${vp.width}x${vp.height} sway ${step*30}°: ${out.slice(0,3).join(" | ")}`);break}}await p.evaluate(()=>kvLeave());await p.waitForTimeout(800)}
     await p.close()}n++}}
+ else if(arg==="--flow"){for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));await p.waitForTimeout(300);
+   // pause the orbit so tracks are stable, keep the flow running
+   await p.evaluate(()=>{orbitPaused=true});await p.waitForTimeout(150);
+   const info=await p.evaluate(()=>({n:TRACKS.length,pts:PT.map(q=>({ti:q.ti,u:q.u})),col:typeof lawFlowColor==="function"?[lawFlowColor(0),lawFlowColor(1)]:null,
+     dir:TRACKS.map(t=>{const c=document.querySelector("[data-project-planet] image").getBoundingClientRect(),sv=document.getElementById("svg"),m=sv.getScreenCTM(),px=(c.left+c.width/2-m.e)/m.a,py=(c.top+c.height/2-m.f)/m.d;return Math.hypot(t.A.x-px,t.A.y-py)<Math.hypot(t.B.x-px,t.B.y-py)})}));
+   if(!info.n)fail(`${pr.short}: no flowing tracks`);
+   for(let i=0;i<info.n;i++){const c=info.pts.filter(q=>q.ti===i).length;if(c!==3)fail(`${pr.short}: track ${i} has ${c} particles (want 3)`)}
+   if(info.dir.some(x=>!x))fail(`${pr.short}: a track does not start at the plan (planet) end`);
+   await p.waitForTimeout(1500);const s2=await p.evaluate(()=>PT.map(q=>({ti:q.ti,u:q.u})));
+   info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du<.2)fail(`${pr.short}: particle ${i} moved only ${du.toFixed(3)} in 1.5s`)});
+   if(!info.col)fail(`${pr.short}: lawFlowColor(u) missing`);else{const [c0,c1]=info.col;const warm=c=>c[0]>c[2]+20;
+    if(warm(c0)||warm(c1))fail(`${pr.short}: law flow must not be warm (warm = risk): ${c0} ${c1}`);if(!(c0[0]+c0[1]+c0[2]>c1[0]+c1[1]+c1[2]))fail(`${pr.short}: flow should start lighter (plan) and end teal (domain)`);if(!(c1[1]>c1[0]))fail(`${pr.short}: flow should end teal ${c1}`)}
+   n++;await p.close()}}
+ else if(arg==="--pulse"){for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));
+   let seen=null;for(let k=0;k<40&&!seen;k++){seen=await p.evaluate(()=>{const g=[...document.querySelectorAll("[data-kv-pulse]")].find(x=>+x.getAttribute("opacity")>.15);return g?g.closest("[data-kv-key]").getAttribute("data-kv-state"):null});if(!seen)await p.waitForTimeout(150)}
+   if(!seen)fail(`${pr.short}: no satellite pulse seen within 6s`);else if(!["hit","gap","supplemented"].includes(seen))fail(`${pr.short}: pulse on a ${seen} satellite`);
+   n++;await p.close()}}
  else if(arg==="--ring"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
    for(const k of Object.keys(m.law).filter(k=>m.law[k].state==="hit"||m.law[k].state==="gap")){
     await p.evaluate(k=>{kvSel=k;render()},k);await p.waitForTimeout(80);

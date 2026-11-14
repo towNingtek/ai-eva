@@ -632,18 +632,21 @@ function initCanvas(){
   cvs.style.width=Wd+"px"; cvs.style.height=Hd+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
+// Law flow: plan text (light) -> law domain (teal). Never warm: warm means 風險 in this view.
+const LAW_PULSE={};
+function lawFlowColor(u){const A=[226,240,238],B=[120,214,202],m=Math.max(0,Math.min(1,u));return A.map((v,i)=>Math.round(v+(B[i]-v)*m))}
 function buildParticles(){
   // 軌道數不變時，保留粒子既有進度 u（否則每次重繪都重生，看起來速度錯亂）
   const prev=PT, same = prev.length && prev._nt===TRACKS.length;
   PT=[]; PT._nt=TRACKS.length;
   let idx=0;
   TRACKS.forEach((t,ti)=>{
-    if(t.q<.6)return; const n=1;
+    if(t.q<.6)return; const n=3;          // 3 staggered particles per route (same as the match view)
     for(let k=0;k<n;k++){
-      const keep = same && prev[idx] ? prev[idx].u : (k/n)+Math.random()*0.12;
+      const keep = same && prev[idx] ? prev[idx].u : (k/n)+Math.random()*0.04;
       idx++;
       PT.push({ti, u:keep,
-        sp:0.00018,                       // 約 90 秒／全程
+        sp:0.0026,                        // 約 6.5 秒／全程（60fps）
         q:t.q, st:t.st});
     }
   });
@@ -709,25 +712,28 @@ function frame(){
   if(flowOn){
     for(let i=0;i<PT.length;i++){
       const p=PT[i], t=TRACKS[p.ti]; if(!t) continue;
-      p.u+=p.sp; if(p.u>1) p.u-=1;
+      p.u+=p.sp; if(p.u>1){p.u-=1;if(t.tag)LAW_PULSE[t.tag]=performance.now()}   // arrived at the domain
       if(p.q<0.6 && ((p.u*7|0)%2===0)) continue;     // 資料不足 → 閃爍
       // 光條：長度 ∝ 強度，沿軌道滑動
-      const L=0.018;                        // 佔軌道比例
+      const L=0.12;                         // 佔軌道比例（拉長，看得出方向）
       const head=p.u, tail=Math.max(0,p.u-L);
-      const a=.24;
+      const a=.62;
       const SEG=7;
       for(let k=0;k<SEG;k++){
         const u0=tail+(head-tail)*(k/SEG), u1=tail+(head-tail)*((k+1)/SEG);
         const A=qbez(u0,t.A,{x:t.cx,y:t.cy},t.B), B2=qbez(u1,t.A,{x:t.cx,y:t.cy},t.B);
         const f=(k+1)/SEG;                            // 尾→頭漸亮
         ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B2.x,B2.y);
-        ctx.strokeStyle=`rgba(255,${205+Math.round(30*f)},${130+Math.round(80*f)},${(a*f*f).toFixed(3)})`;
-        ctx.lineWidth=.6*(0.45+0.55*f); ctx.lineCap="round"; ctx.stroke();
+        const c=lawFlowColor(u1);ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(a*f*f).toFixed(3)})`;
+        ctx.lineWidth=2.2*(0.35+0.65*f); ctx.lineCap="round"; ctx.stroke();
       }
       // 亮頭
       const H=qbez(head,t.A,{x:t.cx,y:t.cy},t.B);
-      ctx.beginPath(); ctx.arc(H.x,H.y,.55,0,6.283);
-      ctx.fillStyle=`rgba(255,240,200,${Math.min(1,a+0.2).toFixed(3)})`; ctx.fill();
+      const hc=lawFlowColor(head);
+      const hg=ctx.createRadialGradient(H.x,H.y,0,H.x,H.y,5);hg.addColorStop(0,`rgba(${hc[0]},${hc[1]},${hc[2]},.55)`);hg.addColorStop(1,`rgba(${hc[0]},${hc[1]},${hc[2]},0)`);
+      ctx.beginPath();ctx.arc(H.x,H.y,5,0,6.283);ctx.fillStyle=hg;ctx.fill();
+      ctx.beginPath(); ctx.arc(H.x,H.y,1.7,0,6.283);
+      ctx.fillStyle=`rgba(${hc[0]},${hc[1]},${hc[2]},${Math.min(1,a+0.3).toFixed(3)})`; ctx.fill();
     }
   }
   requestAnimationFrame(frame);
@@ -1004,5 +1010,5 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
  
 
  </script>
-<script src="./law-orbit.js?v=1794660267"></script></body>
+<script src="./law-orbit.js?v=1794678026"></script></body>
 </html>
