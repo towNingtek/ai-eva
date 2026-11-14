@@ -2,6 +2,8 @@
 const KV_P=(typeof KV_LAW!=='undefined'&&KV_LAW.projects[YP.id])||null;
 // Step 2a: click a domain satellite -> select it, fade the rest, tell Eva. Camera does not move.
 let kvSel=null,kvPulse=null;const kvSupp=new Set();
+// Orbit pace: same order as the pre-step-1 view (it used .018+i*.002 per moon). One shared value keeps the ring rigid so labels never collide.
+const KV_SPIN=.026;
 // Entrance copied from v16 app.js: each frame moves k=1-0.0015^dt of the remaining distance,
 // starting from where this project sits on the v16 overview (SPOT), small planet, flat small orbit.
 const ENT_RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -45,16 +47,33 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
  const fog=el('radialGradient',{id:'kv-fog'});[[0,.26],[.55,.1],[1,0]].forEach(([o,a])=>fog.appendChild(el('stop',{offset:o,'stop-color':'#d5dfdc','stop-opacity':a})));defs.appendChild(fog);
  const glow=el('radialGradient',{id:'kv-glow'});glow.appendChild(el('stop',{offset:0,'stop-color':'#a5e7df','stop-opacity':.5}));glow.appendChild(el('stop',{offset:1,'stop-color':'#a5e7df','stop-opacity':0}));defs.appendChild(glow);
  const fs=n=>(n/VZ).toFixed(2),STOPS={high:[[0,.3],[.5,.8],[1,.6]],mid:[[0,.22],[.45,.6],[1,.18]],low:[[0,.2],[.4,.45],[.82,.05],[1,0]],gap:[[0,.16],[.3,.36],[.62,0],[1,0]],unc:[[0,.2],[.5,.5],[1,.38]]};
- function label(g,x,y,ang,name,fill,sub,subFill,off,clear){const ux=Math.cos(ang),uy=Math.sin(ang),anchor=ux>.3?'start':ux<-.3?'end':'middle';let lx=x+ux*off,ly=y+uy*off+(Math.abs(ux)>.3?3:(uy<0?-(sub?14:4):10));
-  if(clear){if(anchor==='start')lx=Math.max(lx,x+clear+3);else if(anchor==='end')lx=Math.min(lx,x-clear-3);else if(uy<0)ly=Math.min(ly,y-clear-3-(sub?14:0));else ly=Math.max(ly,y+clear+12)}
-  const t=el('text',{x:lx,y:ly,'text-anchor':anchor,fill,'font-size':fs(12)});t.textContent=name;g.appendChild(t);
+  const PLACED=[],BODY=r=>(x,y)=>PLACED.push({x0:x-r,y0:y-r,x1:x+r,y1:y+r});(function(){const toW=(r,el)=>{if(!el)return;const b=el.getBoundingClientRect(),sb=document.getElementById('svg').getBoundingClientRect(),k=Wd/sb.width/VZ;
+    PLACED.push({x0:(b.left-sb.left)*k-VX/VZ,y0:(b.top-sb.top)*k-VY/VZ,x1:(b.right-sb.left)*k-VX/VZ,y1:(b.bottom-sb.top)*k-VY/VZ})};toW(0,document.getElementById('kvDemo'));toW(0,document.getElementById('zc'))})();
+  // Label placement: candidate spots around the moon (radial first, then the other sides, then further out).
+  // A spot is accepted only if the whole text block is on screen and touches no placed label, moon, planet or overlay.
+  function label(g,x,y,ang,name,fill,sub,subFill,off,clear){const ux=Math.cos(ang),uy=Math.sin(ang);
+   const f1=12/VZ,f2=10/VZ,w=Math.max(name.length*f1,sub?sub.length*f2:0),h=f1+(sub?f2*1.15+2:0),m=4/VZ,gap=Math.max(off-8,clear||0,6);
+   const X0=-VX/VZ+m,Y0=-VY/VZ+m,X1=-VX/VZ+Wd/VZ-m,Y1=-VY/VZ+Hd/VZ-m;
+   // a spot = text block's top-left; anchor decides how x maps back to the <text> x attribute
+   const spot=(side,d)=>side==='r'?{l:x+d,t:y-h/2,an:'start'}:side==='l'?{l:x-d-w,t:y-h/2,an:'end'}:side==='t'?{l:x-w/2,t:y-d-h,an:'middle'}:{l:x-w/2,t:y+d,an:'middle'};
+   const pref=Math.abs(ux)>.3?(ux>0?['r','t','b','l']:['l','t','b','r']):(uy<0?['t','r','l','b']:['b','r','l','t']);
+   const fits=s=>s.l>=X0&&s.t>=Y0&&s.l+w<=X1&&s.t+h<=Y1,free=s=>!PLACED.some(q=>s.l-2<q.x1&&q.x0<s.l+w+2&&s.t-2<q.y1&&q.y0<s.t+h+2);
+   let pick=null;search:for(const d of [gap,gap+8,gap+18,gap+30])for(const side of pref){const s=spot(side,d);if(fits(s)&&free(s)){pick=s;break search}}
+   if(!pick){const s=spot(pref[0],gap);s.l=Math.min(Math.max(s.l,X0),X1-w);s.t=Math.min(Math.max(s.t,Y0),Y1-h);pick=s}
+   PLACED.push({x0:pick.l-2,y0:pick.t-2,x1:pick.l+w+2,y1:pick.t+h+2});
+   const anchor=pick.an,lx=anchor==='start'?pick.l:anchor==='end'?pick.l+w:pick.l+w/2,ly=pick.t+f1;
+   const t=el('text',{x:lx,y:ly,'text-anchor':anchor,fill,'font-size':fs(12)});t.textContent=name;g.appendChild(t);
   if(sub){const t2=el('text',{x:lx,y:ly+12/VZ*1.15,'text-anchor':anchor,fill:subFill,'font-size':fs(10)});t2.textContent=sub;g.appendChild(t2)}}
  function route(i,from,to,kind,stop,dim){const dx=to.x-from.x,dy=to.y-from.y,L=Math.hypot(dx,dy)||1,ex=to.x-dx/L*stop,ey=to.y-dy/L*stop,mx=(from.x+ex)/2,my=(from.y+ey)/2-18;
   const gid='kv-route-'+i,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:from.x,y1:from.y,x2:ex,y2:ey});STOPS[kind].forEach(([o,a])=>gr.appendChild(el('stop',{offset:o,'stop-color':'#a9dad5','stop-opacity':a})));defs.appendChild(gr);
   svg.appendChild(el('path',{d:`M${from.x},${from.y} Q${mx},${my} ${ex},${ey}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.8,'pointer-events':'none',opacity:dim?'.25':'1'}));
-  if(!dim&&(kind==='high'||kind==='mid'))TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:'kv'+i,from:1,to:1});}
+  if(!dim&&(kind==='high'||kind==='mid'))TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:'kv'+i,from:1,to:1});
+  else if(!dim&&kind==='gap'){const T=.6,m=1-T,B={x:m*m*from.x+2*m*T*mx+T*T*ex,y:m*m*from.y+2*m*T*my+T*T*ey},C={x:from.x+(mx-from.x)*T,y:from.y+(my-from.y)*T};TRACKS.push({A:from,B,cx:C.x,cy:C.y,st:.4,q:.65,tag:'kvg'+i,from:1,to:1})}}
  function dots(ang,n,dim){for(let k=0;k<n;k++){const a=ang+(k-(n-1)/2)*.14;svg.appendChild(el('circle',{cx:center.x+Math.cos(a)*43,cy:center.y+Math.sin(a)*43,r:2,fill:'#b6bfcb','pointer-events':'none',opacity:dim?'.3':'1'}))}}
- if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*.012,t={x:center.x+Math.cos(ang)*R,y:center.y+Math.sin(ang)*R},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+  if(KV_P){KV_LAW.domains.forEach((name,i)=>{const a=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,st=KV_P.law[name].state;BODY(kvSel===name?17:(st==='na'?8:13))(center.x+Math.cos(a)*R,center.y+Math.sin(a)*R)});
+   KV_P.uncovered.forEach((name,j)=>{const a=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(a),uy=Math.sin(a),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9);BODY(13)(center.x+ux*R2,center.y+uy*R2)});
+   BODY(32)(center.x,center.y);{const nf=13/VZ,nw=YP.name.length*nf;PLACED.push({x0:center.x-nw/2-3,y0:center.y+62-nf-3,x1:center.x+nw/2+3,y1:center.y+62+4})}}
+ if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,t={x:center.x+Math.cos(ang)*R,y:center.y+Math.sin(ang)*R},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
   const st=kvSupp.has(name)?'supplemented':v.state,sel=kvSel===name,dim=!!(kvSel&&!sel);
   const g=el('g',{'data-kv-key':name,'data-kv-state':st,role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(sel)g.setAttribute('data-kv-selected','');if(dim)g.setAttribute('data-kv-dim','');
   if(st==='supplemented'){dots(ang,v.evidence.length,dim);route(i,from,t,'mid',15,dim);svg.appendChild(g);drawMoon(g,t.x,t.y,11,'rule',sel);label(g,t.x,t.y,ang,name,'#d5e1e0','已補充・待重判','#b8e0dd',19,sel?16:0);}
@@ -66,7 +85,7 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
   if(sel)g.appendChild(el('circle',{cx:t.x,cy:t.y,r:15,fill:'none',stroke:'#a9e3dc','stroke-width':.8,opacity:.85,'pointer-events':'none','data-kv-ring':''}));
   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:16,fill:'transparent'}));kvBind(g,name,v.state);
  });
- if(KV_P)KV_P.uncovered.forEach((name,j)=>{const ang=(j?.1:.9)*Math.PI+orbitTime*.012,R2=Math.min((Wd/(2*VZ)-74)/Math.abs(Math.cos(ang)),R*1.5),t={x:center.x+Math.cos(ang)*R2,y:center.y+Math.sin(ang)*R2},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+ if(KV_P)KV_P.uncovered.forEach((name,j)=>{const ang=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(ang),uy=Math.sin(ang),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9),t={x:center.x+ux*R2,y:center.y+uy*R2},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
   const dim=!!kvSel;dots(ang,1,dim);route(100+j,from,t,'unc',14,dim);const g=el('g',{'data-kv-key':name,'data-kv-state':'uncovered',role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(dim)g.setAttribute('data-kv-dim','');svg.appendChild(g);
   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:11,fill:'#9fb5b1','fill-opacity':kvPulse===name?.18:.04,stroke:'#a9bfbb','stroke-width':.8,opacity:.8}));label(g,t.x,t.y,ang,name,'#aebdba','未收錄','#7f8f8c',17);kvBind(g,name,'uncovered');});
  const planet=el('g',{'data-project-planet':'1'});drawPlanet(planet,center,28,1,true);svg.appendChild(planet);
