@@ -1,6 +1,5 @@
 // One project planet; rule satellites are not projects. UI-only fictional conditions.
-const lawRules=YL.lawRules();
-let kvView='topic';   // 'topic' = existing view (default) | 'domain' = 10 law domains (step 1, demo data)
+const KV_P=(typeof KV_LAW!=='undefined'&&KV_LAW.projects[YP.id])||null;
 // Entrance copied from v16 app.js: each frame moves k=1-0.0015^dt of the remaining distance,
 // starting from where this project sits on the v16 overview (SPOT), small planet, flat small orbit.
 const ENT_RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -8,32 +7,7 @@ const V16_SPOT={'台子':[.13,.72],'富琦':[.17,.36],'水尾':[.37,.22],'大庄
 let ENTC=null,ENT_DONE=ENT_RM;   // current animated state in screen space (VZ already applied)
 const ENT_Z=1.35;
 const lawPositions=new Map();let lawSelected=null;let orbitTime=0,orbitPaused=false,orbitHover=false;const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
-render=function(){if(kvView==='domain')return renderDomain();const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
- const bg=el('rect',{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:'#060a10'});svg.appendChild(bg);
- for(let j=0;j<45;j++){svg.appendChild(el('circle',{cx:(j*137.51)%Wd,cy:(j*j*33.7)%Hd,r:j%4===0?.65:.35,fill:'#a5a5c0',opacity:.08+.08*Math.sin(orbitTime*.4+j),'pointer-events':'none'}));}
- const cx=Wd/2,cy=Hd/2,radius0=Math.min(Wd,Hd)*.24,E=entGeom();
- const defs=el('defs',{});svg.appendChild(defs);
- // Only one planet, with a persistent independent drag position.
- let center=lawPositions.get('planet')||{x:E.x+Math.sin(orbitTime*.3)*4,y:E.y+Math.cos(orbitTime*.25)*3};
- const haze=el('radialGradient',{id:'planet-haze'});haze.appendChild(el('stop',{offset:0,'stop-color':'#75b3ad','stop-opacity':.18}));haze.appendChild(el('stop',{offset:1,'stop-color':'#75b3ad','stop-opacity':0}));defs.appendChild(haze);svg.appendChild(el('circle',{cx:center.x,cy:center.y,r:85,fill:'url(#planet-haze)','pointer-events':'none'}));
- lawRules.forEach((rule,i)=>{const radius=E.orbit,angle=-Math.PI/2+i*(Math.PI*2/lawRules.length)+orbitTime*(.018+i*.002)+E.spin;let target=lawPositions.get(rule.code)||{x:center.x+Math.cos(angle)*radius,y:center.y+Math.sin(angle)*radius*E.flat};
- const fact={x:center.x+Math.cos(angle)*43*E.f,y:center.y+Math.sin(angle)*43*E.f*E.flat},mx=(fact.x+target.x)/2,my=(fact.y+target.y)/2-24;
- const gid='law-route-'+i,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:fact.x,y1:fact.y,x2:target.x,y2:target.y});[[0,.1],[.3,.5],[.65,rule.q<.6?.1:.5],[1,rule.q<.6?0:.2]].forEach(([o,a])=>gr.appendChild(el('stop',{offset:o,'stop-color':'#add6d3','stop-opacity':a})));defs.appendChild(gr);
- if(rule.q>=.6)TRACKS.push({A:fact,B:target,cx:mx,cy:my,st:.55,q:1,tag:rule.code,from:1,to:1});
- const d=`M${fact.x},${fact.y} Q${mx},${my} ${target.x},${target.y}`;svg.appendChild(el('path',{d,fill:'none',stroke:'url(#'+gid+')','stroke-width':.8}));
- const path=el('path',{d,fill:'none',stroke:'transparent','stroke-width':12,role:'button',tabindex:0,'aria-label':rule.label});path.onpointerdown=e=>{e.stopPropagation();chooseRule(rule)};path.onkeydown=e=>{if(e.key==='Enter')chooseRule(rule)};svg.appendChild(path);
- const glow=el('radialGradient',{id:'law-glow-'+i});glow.appendChild(el('stop',{offset:0,'stop-color':'#aae2dd','stop-opacity':.5}));glow.appendChild(el('stop',{offset:1,'stop-color':'#aae2dd','stop-opacity':0}));defs.appendChild(glow);
- svg.appendChild(el('circle',{cx:fact.x,cy:fact.y,r:2,fill:'#b6bfcb','pointer-events':'none'}));
- const g=el('g',{'data-rule':rule.code,role:'button',tabindex:0,'aria-label':rule.label,style:'cursor:pointer',opacity:E.o.toFixed(3)});svg.appendChild(g);
- g.appendChild(el('circle',{cx:target.x,cy:target.y,r:15,fill:'url(#law-glow-'+i+')'}));drawMoon(g,target.x,target.y,11*E.moon,'rule',lawSelected===rule.code);
- const text=el('text',{x:target.x,y:target.y-25,'text-anchor':'middle',fill:'#cedfde','font-size':12/VZ,opacity:E.o.toFixed(3)});text.textContent=rule.label;g.appendChild(text);
- if(ddSupplements.has('1:'+rule.code)){const label=el('text',{x:target.x,y:target.y+25,'text-anchor':'middle',fill:'#b8e0dd','font-size':10/VZ});label.textContent='已補充・未查證';g.appendChild(label)}
- const hit=el('circle',{cx:target.x,cy:target.y,r:14,fill:'transparent'});g.appendChild(hit);
- bindDrag(g,rule.code,target,()=>chooseRule(rule));
- });
- const planet=el('g',{'data-project-planet':'1',style:'cursor:grab',opacity:E.o.toFixed(3)});drawPlanet(planet,center,28*E.r,1,true);svg.appendChild(planet);const name=el('text',{x:center.x,y:center.y+48,'text-anchor':'middle',fill:'#c9e1df','font-size':13/VZ,opacity:E.o.toFixed(3)});name.textContent=YP.name;planet.appendChild(name);bindDrag(planet,'planet',center,()=>{});
-};
-function chooseRule(rule){lawSelected=rule.code;parent.postMessage({type:'tangle-relation',mode:'law',code:rule.code,tag:rule.label,subject:1,kind:'rule',unknown:rule.q<.6},location.origin)}
+render=function(){return renderDomain()};
 function bindDrag(g,key,position,onClick){g.onpointerdown=e=>{e.stopPropagation();e.preventDefault();const svg=document.getElementById('svg'),pt=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());let moved=false;const move=ev=>{const p=new DOMPoint(ev.clientX,ev.clientY).matrixTransform(svg.getScreenCTM().inverse());if(Math.hypot(p.x-pt.x,p.y-pt.y)>3)moved=true;if(moved){lawPositions.set(key,{x:position.x+p.x-pt.x,y:position.y+p.y-pt.y});render()}};const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up);if(!moved)onClick()};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up,{once:true})};g.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();onClick()}}}
 // Prevent inherited two-project physics and graph hit testing from handling this view.
 IDLE=false;bang=null;flowOn=false;SPARK=[];focus=null;
@@ -59,7 +33,6 @@ setTimeout(()=>{flowOn=!reducedMotion;buildParticles();requestAnimationFrame(orb
 
 // ── Step 1: 法領域 view (added alongside the topic view; demo data from kv-law-mock.js) ──────────
 // key = 10 law domains, value.state = hit | gap | na, plus "uncovered" outer bodies. No click handling yet.
-const KV_P=(typeof KV_LAW!=='undefined'&&KV_LAW.projects[YP.id])||null;
 function renderDomain(){const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
  svg.appendChild(el('rect',{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:'#060a10'}));
  for(let j=0;j<45;j++){svg.appendChild(el('circle',{cx:(j*137.51)%Wd,cy:(j*j*33.7)%Hd,r:j%4===0?.65:.35,fill:'#a5a5c0',opacity:.08+.08*Math.sin(orbitTime*.4+j),'pointer-events':'none'}));}
@@ -92,15 +65,8 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
  const planet=el('g',{'data-project-planet':'1'});drawPlanet(planet,center,28,1,true);svg.appendChild(planet);
  const nm=el('text',{x:center.x,y:center.y+62,'text-anchor':'middle',fill:'#c7e3e1','font-size':fs(13),stroke:'#060a10','stroke-width':3/VZ,'paint-order':'stroke'});nm.textContent=YP.name;planet.appendChild(nm);
 }
-// View switch (議題｜法領域) next to the zoom buttons; the demo note shows only in the domain view.
+// Demo disclosure; domain satellites replace the previous fictional topic satellites.
 (function(){const zc=document.getElementById('zc');if(!zc||!KV_P)return;
- const st=document.createElement('style');st.textContent='#kvView{position:absolute;left:14px;bottom:74px;z-index:14;display:flex;gap:2px;padding:3px;background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px}'
-  +'#kvView button{background:transparent;border:0;color:#8b949e;font:12px inherit;font-family:inherit;padding:4px 10px;border-radius:6px;cursor:pointer}#kvView button.on{background:rgba(45,212,191,.15);color:#8fd8cf}'
-  +'#kvDemo{position:absolute;left:14px;top:12px;z-index:14;font-size:11px;color:#8b9aa0;display:none;pointer-events:none;background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px;padding:4px 10px}';document.head.appendChild(st);
- const box=document.createElement('div');box.id='kvView';box.setAttribute('role','group');box.setAttribute('aria-label','檢視方式');
- box.innerHTML='<button data-kv-view="topic" class="on" aria-pressed="true">議題</button><button data-kv-view="domain" aria-pressed="false">法領域</button>';zc.parentNode.insertBefore(box,zc);
+ const st=document.createElement('style');st.textContent='#kvDemo{position:absolute;left:14px;top:12px;z-index:14;font-size:11px;color:#8b9aa0;pointer-events:none;background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px;padding:4px 10px}';document.head.appendChild(st);
  const note=document.createElement('div');note.id='kvDemo';note.setAttribute('data-kv-demo-note','');note.textContent='示範資料：狀態與數字是假設值';zc.parentNode.insertBefore(note,zc);
- box.addEventListener('click',e=>{const b=e.target.closest('button[data-kv-view]');if(!b||b.dataset.kvView===kvView)return;kvView=b.dataset.kvView;
-  box.querySelectorAll('button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});note.style.display=kvView==='domain'?'block':'none';
-  render();buildParticles()});
 })();
