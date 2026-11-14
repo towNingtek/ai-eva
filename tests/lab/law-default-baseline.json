@@ -1,0 +1,298 @@
+{
+ "15080750": {
+  "rules": [
+   {
+    "code": "facility",
+    "label": "公共空間"
+   },
+   {
+    "code": "house",
+    "label": "傳統建築"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "env",
+    "label": "環境整理"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "18706788": {
+  "rules": [
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   },
+   {
+    "code": "youth",
+    "label": "青年返鄉"
+   },
+   {
+    "code": "facility",
+    "label": "公共空間"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "26791874": {
+  "rules": [
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   },
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "env",
+    "label": "環境整理"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "44023685": {
+  "rules": [
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "facility",
+    "label": "公共空間"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "care",
+    "label": "關懷照顧"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "48060125": {
+  "rules": [
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "env",
+    "label": "環境整理"
+   },
+   {
+    "code": "facility",
+    "label": "公共空間"
+   },
+   {
+    "code": "house",
+    "label": "傳統建築"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "62321018": {
+  "rules": [
+   {
+    "code": "env",
+    "label": "環境整理"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "youth",
+    "label": "青年返鄉"
+   },
+   {
+    "code": "care",
+    "label": "關懷照顧"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "72996038": {
+  "rules": [
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "facility",
+    "label": "公共空間"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "care",
+    "label": "關懷照顧"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "85457156": {
+  "rules": [
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   },
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "facility",
+    "label": "公共空間"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "care",
+    "label": "關懷照顧"
+   },
+   {
+    "code": "youth",
+    "label": "青年返鄉"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "97236457": {
+  "rules": [
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "participation",
+    "label": "居民參與"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   },
+   {
+    "code": "env",
+    "label": "環境整理"
+   },
+   {
+    "code": "youth",
+    "label": "青年返鄉"
+   },
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ },
+ "03212257": {
+  "rules": [
+   {
+    "code": "ecology",
+    "label": "生態水域"
+   },
+   {
+    "code": "industry",
+    "label": "農漁產業"
+   },
+   {
+    "code": "experience",
+    "label": "體驗遊程"
+   },
+   {
+    "code": "house",
+    "label": "傳統建築"
+   },
+   {
+    "code": "culture",
+    "label": "文化傳承"
+   }
+  ],
+  "planet": 1,
+  "vz": 1.35
+ }
+}

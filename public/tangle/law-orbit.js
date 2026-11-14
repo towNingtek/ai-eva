@@ -1,5 +1,6 @@
 // One project planet; rule satellites are not projects. UI-only fictional conditions.
 const lawRules=YL.lawRules();
+let kvView='topic';   // 'topic' = existing view (default) | 'domain' = 10 law domains (step 1, demo data)
 // Entrance copied from v16 app.js: each frame moves k=1-0.0015^dt of the remaining distance,
 // starting from where this project sits on the v16 overview (SPOT), small planet, flat small orbit.
 const ENT_RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -7,7 +8,7 @@ const V16_SPOT={'台子':[.13,.72],'富琦':[.17,.36],'水尾':[.37,.22],'大庄
 let ENTC=null,ENT_DONE=ENT_RM;   // current animated state in screen space (VZ already applied)
 const ENT_Z=1.35;
 const lawPositions=new Map();let lawSelected=null;let orbitTime=0,orbitPaused=false,orbitHover=false;const reducedMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
-render=function(){const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
+render=function(){if(kvView==='domain')return renderDomain();const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
  const bg=el('rect',{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:'#060a10'});svg.appendChild(bg);
  for(let j=0;j<45;j++){svg.appendChild(el('circle',{cx:(j*137.51)%Wd,cy:(j*j*33.7)%Hd,r:j%4===0?.65:.35,fill:'#a5a5c0',opacity:.08+.08*Math.sin(orbitTime*.4+j),'pointer-events':'none'}));}
  const cx=Wd/2,cy=Hd/2,radius0=Math.min(Wd,Hd)*.24,E=entGeom();
@@ -55,3 +56,51 @@ document.getElementById('bIdle').onclick=()=>{orbitPaused=!orbitPaused;flowOn=!o
 document.getElementById('bFlow').onclick=()=>{flowOn=!flowOn&&!reducedMotion;};
 let lastOrbit=0;function orbitLoop(now){if(now-lastOrbit>50){if(!orbitPaused&&!orbitHover&&!reducedMotion){orbitTime+=.05;render();buildParticles()}lastOrbit=now}requestAnimationFrame(orbitLoop)}
 setTimeout(()=>{flowOn=!reducedMotion;buildParticles();requestAnimationFrame(orbitLoop)},1300);
+
+// ── Step 1: 法領域 view (added alongside the topic view; demo data from kv-law-mock.js) ──────────
+// key = 10 law domains, value.state = hit | gap | na, plus "uncovered" outer bodies. No click handling yet.
+const KV_P=(typeof KV_LAW!=='undefined'&&KV_LAW.projects[YP.id])||null;
+function renderDomain(){const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
+ svg.appendChild(el('rect',{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:'#060a10'}));
+ for(let j=0;j<45;j++){svg.appendChild(el('circle',{cx:(j*137.51)%Wd,cy:(j*j*33.7)%Hd,r:j%4===0?.65:.35,fill:'#a5a5c0',opacity:.08+.08*Math.sin(orbitTime*.4+j),'pointer-events':'none'}));}
+ const defs=el('defs',{});svg.appendChild(defs);
+ const cx=Wd/2,cy=Hd/2-Hd*.035/VZ,R=Math.min(Wd,Hd)*.235,center={x:cx+Math.sin(orbitTime*.3)*4,y:cy+Math.cos(orbitTime*.25)*3};
+ const haze=el('radialGradient',{id:'planet-haze'});haze.appendChild(el('stop',{offset:0,'stop-color':'#70b8b0','stop-opacity':.18}));haze.appendChild(el('stop',{offset:1,'stop-color':'#70b8b0','stop-opacity':0}));defs.appendChild(haze);
+ svg.appendChild(el('circle',{cx:center.x,cy:center.y,r:85,fill:'url(#planet-haze)','pointer-events':'none'}));
+ const fog=el('radialGradient',{id:'kv-fog'});[[0,.26],[.55,.1],[1,0]].forEach(([o,a])=>fog.appendChild(el('stop',{offset:o,'stop-color':'#d5dfdc','stop-opacity':a})));defs.appendChild(fog);
+ const glow=el('radialGradient',{id:'kv-glow'});glow.appendChild(el('stop',{offset:0,'stop-color':'#a5e7df','stop-opacity':.5}));glow.appendChild(el('stop',{offset:1,'stop-color':'#a5e7df','stop-opacity':0}));defs.appendChild(glow);
+ const fs=n=>(n/VZ).toFixed(2),STOPS={high:[[0,.3],[.5,.8],[1,.6]],mid:[[0,.22],[.45,.6],[1,.18]],low:[[0,.2],[.4,.45],[.82,.05],[1,0]],gap:[[0,.16],[.3,.36],[.62,0],[1,0]],unc:[[0,.2],[.5,.5],[1,.38]]};
+ function label(g,x,y,ang,name,fill,sub,subFill,off){const ux=Math.cos(ang),uy=Math.sin(ang),anchor=ux>.3?'start':ux<-.3?'end':'middle',lx=x+ux*off,ly=y+uy*off+(Math.abs(ux)>.3?3:(uy<0?-(sub?14:4):10));
+  const t=el('text',{x:lx,y:ly,'text-anchor':anchor,fill,'font-size':fs(12)});t.textContent=name;g.appendChild(t);
+  if(sub){const t2=el('text',{x:lx,y:ly+12/VZ*1.15,'text-anchor':anchor,fill:subFill,'font-size':fs(10)});t2.textContent=sub;g.appendChild(t2)}}
+ function route(i,from,to,kind,stop){const dx=to.x-from.x,dy=to.y-from.y,L=Math.hypot(dx,dy)||1,ex=to.x-dx/L*stop,ey=to.y-dy/L*stop,mx=(from.x+ex)/2,my=(from.y+ey)/2-18;
+  const gid='kv-route-'+i,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:from.x,y1:from.y,x2:ex,y2:ey});STOPS[kind].forEach(([o,a])=>gr.appendChild(el('stop',{offset:o,'stop-color':'#a9dad5','stop-opacity':a})));defs.appendChild(gr);
+  svg.appendChild(el('path',{d:`M${from.x},${from.y} Q${mx},${my} ${ex},${ey}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.8,'pointer-events':'none'}));
+  if(kind==='high'||kind==='mid')TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:'kv'+i,from:1,to:1});}
+ function dots(ang,n){for(let k=0;k<n;k++){const a=ang+(k-(n-1)/2)*.14;svg.appendChild(el('circle',{cx:center.x+Math.cos(a)*43,cy:center.y+Math.sin(a)*43,r:2,fill:'#b6bfcb','pointer-events':'none'}))}}
+ if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*.012,t={x:center.x+Math.cos(ang)*R,y:center.y+Math.sin(ang)*R},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+  const g=el('g',{'data-kv-key':name,'data-kv-state':v.state});
+  if(v.state==='hit'){dots(ang,v.evidence.length);route(i,from,t,v.confidence,15);svg.appendChild(g);g.appendChild(el('circle',{cx:t.x,cy:t.y,r:17,fill:'url(#kv-glow)'}));drawMoon(g,t.x,t.y,11,'rule',false);
+   const parts=[];if(v.count.risk)parts.push(v.count.risk+' 風險');if(v.count.note)parts.push(v.count.note+' 提醒');label(g,t.x,t.y,ang,name,'#d5e1e0',parts.join('・'),v.count.risk?'#e3c79c':'#8fcfc5',19);}
+  else if(v.state==='gap'){dots(ang,v.evidence.length);route(i,from,t,'gap',15);svg.appendChild(g);g.appendChild(el('circle',{cx:t.x,cy:t.y,r:27,fill:'url(#kv-fog)'}));const inner=el('g',{opacity:.5});drawMoon(inner,t.x,t.y,11,'rule',false);g.appendChild(inner);
+   label(g,t.x,t.y,ang,name,'#b9c6c3','缺：'+v.missing,'#96a5a2',22);}
+  else{svg.appendChild(g);const inner=el('g',{opacity:.26});drawMoon(inner,t.x,t.y,7,'rule',false);g.appendChild(inner);label(g,t.x,t.y,ang,name,'#56625f',null,null,14);}
+ });
+ if(KV_P)KV_P.uncovered.forEach((name,j)=>{const ang=(j?.1:.9)*Math.PI+orbitTime*.012,R2=Math.min((Wd/(2*VZ)-74)/Math.abs(Math.cos(ang)),R*1.5),t={x:center.x+Math.cos(ang)*R2,y:center.y+Math.sin(ang)*R2},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+  dots(ang,1);route(100+j,from,t,'unc',14);const g=el('g',{'data-kv-key':name,'data-kv-state':'uncovered'});svg.appendChild(g);
+  g.appendChild(el('circle',{cx:t.x,cy:t.y,r:11,fill:'#9fb5b1','fill-opacity':.04,stroke:'#a9bfbb','stroke-width':.8,opacity:.8}));label(g,t.x,t.y,ang,name,'#aebdba','未收錄','#7f8f8c',17);});
+ const planet=el('g',{'data-project-planet':'1'});drawPlanet(planet,center,28,1,true);svg.appendChild(planet);
+ const nm=el('text',{x:center.x,y:center.y+62,'text-anchor':'middle',fill:'#c7e3e1','font-size':fs(13),stroke:'#060a10','stroke-width':3/VZ,'paint-order':'stroke'});nm.textContent=YP.name;planet.appendChild(nm);
+}
+// View switch (議題｜法領域) next to the zoom buttons; the demo note shows only in the domain view.
+(function(){const zc=document.getElementById('zc');if(!zc||!KV_P)return;
+ const st=document.createElement('style');st.textContent='#kvView{position:absolute;left:14px;bottom:74px;z-index:14;display:flex;gap:2px;padding:3px;background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px}'
+  +'#kvView button{background:transparent;border:0;color:#8b949e;font:12px inherit;font-family:inherit;padding:4px 10px;border-radius:6px;cursor:pointer}#kvView button.on{background:rgba(45,212,191,.15);color:#8fd8cf}'
+  +'#kvDemo{position:absolute;left:14px;top:12px;z-index:14;font-size:11px;color:#8b9aa0;display:none;pointer-events:none;background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px;padding:4px 10px}';document.head.appendChild(st);
+ const box=document.createElement('div');box.id='kvView';box.setAttribute('role','group');box.setAttribute('aria-label','檢視方式');
+ box.innerHTML='<button data-kv-view="topic" class="on" aria-pressed="true">議題</button><button data-kv-view="domain" aria-pressed="false">法領域</button>';zc.parentNode.insertBefore(box,zc);
+ const note=document.createElement('div');note.id='kvDemo';note.setAttribute('data-kv-demo-note','');note.textContent='示範資料：狀態與數字是假設值';zc.parentNode.insertBefore(note,zc);
+ box.addEventListener('click',e=>{const b=e.target.closest('button[data-kv-view]');if(!b||b.dataset.kvView===kvView)return;kvView=b.dataset.kvView;
+  box.querySelectorAll('button').forEach(x=>{const on=x===b;x.classList.toggle('on',on);x.setAttribute('aria-pressed',on)});note.style.display=kvView==='domain'?'block':'none';
+  render();buildParticles()});
+})();
