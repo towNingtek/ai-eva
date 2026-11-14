@@ -47,6 +47,17 @@ KV_MATCH = load_kv_match() if _KVM_JS.exists() else {"keys": {}, "projects": {}}
 MATCH_DEMO = "_示範資料：需要／能提供是依計畫理念寫得具體或只寫方向推估的假設，不是媒合判定。_"
 
 
+def peer_reply_for(a_id, b_id, key, kvm=None):
+    """兩邊都能提供同一類（淡線）被點時，Eva 要說什麼。不是互補，只作經驗交流。查不到回 None。"""
+    kvm = kvm or KV_MATCH
+    A, B = kvm["projects"].get(a_id), kvm["projects"].get(b_id)
+    if not A or not B or key not in A["match"] or A["match"][key]["role"] != "offer" or B["match"][key]["role"] != "offer":
+        return None
+    name = kvm["keys"][key]
+    return {"title": f"{key} {name}", "quotes": {a_id: list(A["match"][key]["evidence"]), b_id: list(B["match"][key]["evidence"])},
+            "body": f"兩個計畫在「{name}」都寫得具體，都已經在做。這條淡線表示**可以交流經驗**，彼此學習做法；兩邊都有，所以不是一方補另一方的缺口。"}
+
+
 def match_reply_for(project_id, key, partner_id=None, kvm=None):
     """B1–B8 衛星被點時，Eva 要說什麼。純函式，不依賴 Chainlit。查不到回 None。"""
     kvm = kvm or KV_MATCH
@@ -261,6 +272,9 @@ async def _copilot_pick(m):
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
         return
+    if m.get("mode") == "match" and m.get("kind") == "peer" and code in KV_MATCH.get("keys", {}):
+        await _match_peer_pick(m)
+        return
     if m.get("mode") == "match" and code in KV_MATCH.get("keys", {}):
         await _match_key_pick(m)
         return
@@ -283,6 +297,18 @@ async def _copilot_pick(m):
         body = f"{_quote(who, code)}\n\n這項有更具體的人力、時間或資源嗎？知道的話可以補充，「還不知道」也可以。"
     note = f"\n\n本次已確認補充（未查證）：{prev}" if prev else "\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認。_"
     await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
+
+
+async def _match_peer_pick(m):
+    pid, qid = m.get("p"), m.get("q")
+    r = peer_reply_for(pid, qid, m.get("code"))
+    if not r or pid not in PROJECTS or qid not in PROJECTS:
+        return
+    parts = []
+    for x in (pid, qid):
+        q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
+        parts.append(f"{q}\n> — {PROJECTS[x]['name']}・公開計畫理念")
+    await cl.Message(content=f"**{r['title']}**・兩邊都能提供\n\n" + "\n\n".join(parts) + f"\n\n{r['body']}\n\n{MATCH_DEMO}").send()
 
 
 async def _match_key_pick(m):

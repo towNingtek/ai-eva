@@ -454,11 +454,12 @@ function render(){
    <radialGradient id="gR"><stop offset="0" stop-color="#f5a524" stop-opacity=".30"/><stop offset="1" stop-color="#f5a524" stop-opacity="0"/></radialGradient>
    <radialGradient id="gC"><stop offset="0" stop-color="#f471b5" stop-opacity=".30"/><stop offset="1" stop-color="#f471b5" stop-opacity="0"/></radialGradient>
    <radialGradient id="gE"><stop offset="0" stop-color="#4ade80" stop-opacity=".26"/><stop offset="1" stop-color="#4ade80" stop-opacity="0"/></radialGradient>
+   <radialGradient id="pulse-grad"><stop offset="0" stop-color="#f1d6a6" stop-opacity=".9"/><stop offset="1" stop-color="#f1d6a6" stop-opacity="0"/></radialGradient>
    <radialGradient id="vg" cx="50%" cy="48%" r="76%"><stop offset="56%" stop-color="#060a10" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".62"/></radialGradient>`;
   svg.appendChild(d);
   svg.appendChild(el("rect",{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:"#060a10"}));
 
-  TRACKS.length=0; ORPH.length=0; const NEEDLIT={},LBL=[];
+  TRACKS.length=0; ORPH.length=0; const NEEDLIT={},LBL=[],PEERHIT=[];
   const sc = focus? P.reduce((m,p)=>{if(p.id!==focus)m[p.id]=scoreFor(focus,p);return m;},{}) : null;
   const TA={}; P.forEach(p=>TA[p.id]=tentAngles(p));
   const tipLen=(p,it)=>{const isF=p.id===focus;return (65+it.t[1]*5)*(.25+.75*ENT);};
@@ -467,6 +468,16 @@ function render(){
     return {x:pos[p.id].x+Math.cos(it.ang)*L, y:pos[p.id].y+Math.sin(it.ang)*L};};
 
   // ── 邊：每條 bridge 獨立，從觸手末端連到觸手末端 ──
+  // Step 3a+: both plans OFFER the same B -> faint still line = 可交流經驗 (SH-METHOD-02: similarity is peer learning, not complementarity).
+  if(P.length===2){const [p1,p2]=P;p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
+    const A=tipOf(p1,tag,'o'),B=tipOf(p2,tag,'o'),mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,cx=mx+dy*.12,cy=my-dx*.12;
+    const gid='peer-'+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
+    [[0,.04],[.2,.2],[.5,.24],[.8,.2],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#8fcfc5','stop-opacity':o})));d.appendChild(gr);
+    const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-peer':tag});svg.appendChild(line);
+    TRACKS.push({A,B,cx,cy,st:.3,q:1,tag,from:p1.id,to:p2.id,peer:true});
+    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都能提供'});
+    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'peer',mode:'match'},location.origin)};
+    hit.setAttribute('stroke-width',6);hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};PEERHIT.push(hit)})}
   BR.forEach((b,bi)=>{
     if(!VIS.has(bi)) return;
     if(focus && b.from!==focus && b.to!==focus) return;
@@ -492,6 +503,7 @@ function render(){
 
   });
 
+  PEERHIT.forEach(h=>svg.appendChild(h));   // peer click zones above the route click zones
   // ── 節點 ──
   P.forEach(p=>{
     const a=pos[p.id], isF=p.id===focus, s=sc&&sc[p.id];
@@ -531,7 +543,9 @@ function render(){
         const L=Math.hypot(lx,ly)||1,ux=lx/L,uy=ly/L,sh=lit?.55:.18,cid='cl-'+p.id+'-'+it.t[0];
         const cp=el('clipPath',{id:cid});cp.appendChild(el('circle',{cx:ex,cy:ey,r:mr*.98}));d.appendChild(cp);
         sg.appendChild(el('circle',{cx:ex-ux*mr*sh*2,cy:ey-uy*mr*sh*2,r:mr*1.05,fill:'#05080c',opacity:lit?.82:.9,'clip-path':'url(#'+cid+')','pointer-events':'none','data-need-shadow':lit?'met':'unmet'}));
-        if(!lit)sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*1.02,fill:'#05080c',opacity:.35,'pointer-events':'none'}))}
+        if(!lit)sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*1.02,fill:'#05080c',opacity:.35,'pointer-events':'none'}))
+        else{const t0=PULSE[p.id+':'+it.t[0]],age=t0?performance.now()-t0:1e9,pv=age<900?1-age/900:0;
+          sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*(1.8+1.6*(1-pv)),fill:'url(#pulse-grad)',opacity:pv.toFixed(3),'pointer-events':'none','data-need-pulse':''}))}}
       const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
       target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
       target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
@@ -631,18 +645,21 @@ function initCanvas(){
   cvs.style.width=Wd+"px"; cvs.style.height=Hd+"px";
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
+// Step 3a+: flow colour from the offer end (teal) to the need end (warm sand); arrival time per need for the pulse.
+const PULSE={};
+function flowColor(u){const A=[147,242,234],B=[236,204,150],m=Math.max(0,Math.min(1,u));return A.map((v,i)=>Math.round(v+(B[i]-v)*m))}
 function buildParticles(){
   // 軌道數不變時，保留粒子既有進度 u（否則每次重繪都重生，看起來速度錯亂）
   const prev=PT, same = prev.length && prev._nt===TRACKS.length;
   PT=[]; PT._nt=TRACKS.length;
   let idx=0;
   TRACKS.forEach((t,ti)=>{
-    if(t.q<.6)return; const n=1;
+    if(t.q<.6||t.peer)return; const n=3;   // step 3a+: 3 staggered particles per need×offer route; peer lines stay still
     for(let k=0;k<n;k++){
-      const keep = same && prev[idx] ? prev[idx].u : (k/n)+Math.random()*0.12;
+      const keep = same && prev[idx] ? prev[idx].u : (k/n)+Math.random()*0.04;
       idx++;
       PT.push({ti, u:keep,
-        sp:0.00018,                       // 約 90 秒／全程
+        sp:0.0026,                        // 約 6.5 秒／全程（60fps）
         q:t.q, st:t.st});
     }
   });
@@ -673,6 +690,9 @@ function frame(){
   } else if(IDLE && !drag){
     idleT++;
     if(idleT%2===0){ tick(1); render(); buildParticles(); }  // 30fps 更新，省效能
+  } else if(!drag && flowOn){
+    idleT++;const now=performance.now();
+    if(idleT%6===0&&Object.values(PULSE).some(t=>now-t<800)) render();   // pulse fade while the pointer is over the graph
   }
 
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -708,25 +728,28 @@ function frame(){
   if(flowOn){
     for(let i=0;i<PT.length;i++){
       const p=PT[i], t=TRACKS[p.ti]; if(!t) continue;
-      p.u+=p.sp; if(p.u>1) p.u-=1;
+      p.u+=p.sp; if(p.u>1){p.u-=1;const k=t.to+':'+t.tag;PULSE[k]=performance.now()}   // arrived at the need end
       if(p.q<0.6 && ((p.u*7|0)%2===0)) continue;     // 資料不足 → 閃爍
       // 光條：長度 ∝ 強度，沿軌道滑動
-      const L=0.018;                        // 佔軌道比例
+      const L=0.12;                         // 佔軌道比例（拉長，看得出方向）
       const head=p.u, tail=Math.max(0,p.u-L);
-      const a=.24;
+      const a=.62;
       const SEG=7;
       for(let k=0;k<SEG;k++){
         const u0=tail+(head-tail)*(k/SEG), u1=tail+(head-tail)*((k+1)/SEG);
         const A=qbez(u0,t.A,{x:t.cx,y:t.cy},t.B), B2=qbez(u1,t.A,{x:t.cx,y:t.cy},t.B);
         const f=(k+1)/SEG;                            // 尾→頭漸亮
         ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B2.x,B2.y);
-        ctx.strokeStyle=`rgba(255,${205+Math.round(30*f)},${130+Math.round(80*f)},${(a*f*f).toFixed(3)})`;
-        ctx.lineWidth=.6*(0.45+0.55*f); ctx.lineCap="round"; ctx.stroke();
+        const c=flowColor(u1);ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(a*f*f).toFixed(3)})`;
+        ctx.lineWidth=2.2*(0.35+0.65*f); ctx.lineCap="round"; ctx.stroke();
       }
       // 亮頭
       const H=qbez(head,t.A,{x:t.cx,y:t.cy},t.B);
-      ctx.beginPath(); ctx.arc(H.x,H.y,.55,0,6.283);
-      ctx.fillStyle=`rgba(255,240,200,${Math.min(1,a+0.2).toFixed(3)})`; ctx.fill();
+      const hc=flowColor(head);
+      const hg=ctx.createRadialGradient(H.x,H.y,0,H.x,H.y,5);hg.addColorStop(0,`rgba(${hc[0]},${hc[1]},${hc[2]},.55)`);hg.addColorStop(1,`rgba(${hc[0]},${hc[1]},${hc[2]},0)`);
+      ctx.beginPath();ctx.arc(H.x,H.y,5,0,6.283);ctx.fillStyle=hg;ctx.fill();          // soft glow around the head
+      ctx.beginPath(); ctx.arc(H.x,H.y,1.7,0,6.283);
+      ctx.fillStyle=`rgba(${hc[0]},${hc[1]},${hc[2]},${Math.min(1,a+0.3).toFixed(3)})`; ctx.fill();
     }
   }
   requestAnimationFrame(frame);

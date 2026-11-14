@@ -21,8 +21,8 @@ BANNED = ("通過", "已判定", "建議合作")
 def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for")]
-    if len(keep) != 5:
+    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for")]
+    if len(keep) != 6:
         raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for, _reply_markdown, load_kv_match and match_reply_for")
     mod = types.ModuleType("reply")
     mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
@@ -100,6 +100,22 @@ def match_problems(mod):
                     linked = (v["role"] == "need" and other == "offer") or (v["role"] == "offer" and other == "need")
                     if linked != ("航跡" in r["body"]):
                         out.append(f"{pid} {k} vs {q}: route mention does not match need×offer")
+    # peer lines: both offer the same B -> reply says 交流經驗, never 互補 or 需要; anything else -> no peer reply
+    for a in ids:
+        for b in ids:
+            if a == b:
+                continue
+            for k in kvm["keys"]:
+                both = kvm["projects"][a]["match"][k]["role"] == "offer" and kvm["projects"][b]["match"][k]["role"] == "offer"
+                r = mod.peer_reply_for(a, b, k, kvm)
+                if both != (r is not None):
+                    out.append(f"{a}×{b} {k}: peer reply exists={r is not None} but both-offer={both}"); continue
+                if r:
+                    n += 1
+                    if "交流經驗" not in r["body"] or "互補" in r["body"] or "需要" in r["body"]:
+                        out.append(f"{a}×{b} {k}: peer reply must say 交流經驗 and not 互補/需要")
+                    if r["quotes"][a] != kvm["projects"][a]["match"][k]["evidence"] or r["quotes"][b] != kvm["projects"][b]["match"][k]["evidence"]:
+                        out.append(f"{a}×{b} {k}: peer quotes differ from evidence")
     return out, n
 
 
