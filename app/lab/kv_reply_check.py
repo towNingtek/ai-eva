@@ -21,13 +21,16 @@ BANNED = ("通過", "已判定", "建議合作")
 def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown")]
-    if len(keep) != 3:
-        raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for and _reply_markdown")
+    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for")]
+    if len(keep) != 5:
+        raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for, _reply_markdown, load_kv_match and match_reply_for")
     mod = types.ModuleType("reply")
     mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
+    mod._KVM_JS = ROOT / "public/tangle/kv-match-mock.js"
     exec(compile(ast.Module(body=keep, type_ignores=[]), "tangle_lab.py", "exec"), mod.__dict__)
     mod.KV_LAW = mod.load_kv_law()
+    mod._KVM_JS = ROOT / "public/tangle/kv-match-mock.js"
+    mod.KV_MATCH = mod.load_kv_match()
     return mod
 
 
@@ -71,6 +74,35 @@ def problems(mod, kv):
     return out, n
 
 
+def match_problems(mod):
+    """Every need/offer key of every project, against every other project as partner."""
+    kvm, out, n = mod.KV_MATCH, [], 0
+    ids = list(kvm["projects"])
+    for pid in ids:
+        for k, v in kvm["projects"][pid]["match"].items():
+            for q in [None] + [x for x in ids if x != pid]:
+                r = mod.match_reply_for(pid, k, q, kvm)
+                if v["role"] == "none":
+                    if r is not None:
+                        out.append(f"{pid} {k}: none must give no reply")
+                    continue
+                n += 1
+                if not r:
+                    out.append(f"{pid} {k}: no reply"); continue
+                if r["quotes"] != v["evidence"]:
+                    out.append(f"{pid} {k}: quotes differ from evidence")
+                if r["role"] != v["role"] or ("需要" if v["role"] == "need" else "能提供") not in r["body"]:
+                    out.append(f"{pid} {k}: role not stated")
+                if any(b in r["body"] for b in BANNED):
+                    out.append(f"{pid} {k}: banned conclusion word")
+                if q:
+                    other = kvm["projects"][q]["match"][k]["role"]
+                    linked = (v["role"] == "need" and other == "offer") or (v["role"] == "offer" and other == "need")
+                    if linked != ("航跡" in r["body"]):
+                        out.append(f"{pid} {k} vs {q}: route mention does not match need×offer")
+    return out, n
+
+
 if __name__ == "__main__":
     mod = load_reply_for()
     kv = mod.KV_LAW
@@ -84,8 +116,12 @@ if __name__ == "__main__":
         print("self-test:", "tampered quote rejected" if caught else "NOT rejected")
         sys.exit(0 if caught and not problems(mod, kv)[0] else 1)
     errs, n = problems(mod, kv)
-    for m in errs:
+    merrs, mn = match_problems(mod)
+    for m in errs + merrs:
         print("FAIL", m)
-    if errs:
+    if errs or merrs:
         sys.exit(1)
+    if "MATCH_DEMO" not in (HERE / "tangle_lab.py").read_text(encoding="utf-8"):
+        print("FAIL match replies must carry the demo note"); sys.exit(1)
     print(f"OK {n} replies")
+    print(f"OK {mn} match replies")

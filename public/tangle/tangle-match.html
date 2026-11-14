@@ -219,7 +219,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./yunlin-frame.js?v=1793943178"></script>
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794670424"></script><script src="./yunlin-frame.js?v=1794670424"></script>
 <script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
@@ -229,7 +229,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
 <script>
 const NS="http://www.w3.org/2000/svg";
 const BN0={B1:"空間與場域",B2:"產品與生產",B3:"服務與體驗",B4:"內容與品牌",
-          B5:"人才與專業",B6:"社群與關係",B7:"市場與通路",B8:"治理與平台"};const BN={...BN0,...YL.BN};
+          B5:"人才與專業",B6:"社群與關係",B7:"市場與通路",B8:"治理與平台"};const BN=BN0;   // step 3a: satellites are B1–B8, not the old topic labels
 const DIMS=[["needOffer","Need–Offer 互補",true],["cap","B1–B8 能力互補",true],
             ["mutual","互惠性（雙向）",true],
             ["topic","議題與目標對象",false],["exec","合作可執行性",false],
@@ -405,7 +405,8 @@ function tentAngles(p){
  const items=[...p.n.map(t=>({t,d:'n'})),...p.o.map(t=>({t,d:'o'}))];
  // Allocate an entire orbit rather than aiming every satellite at the same partner.
  return items.map((it,i)=>{const partners=it.d==='n'?BR.filter(b=>b.to===p.id&&b.tag===it.t[0]).map(b=>b.from):BR.filter(b=>b.from===p.id&&b.tag===it.t[0]).map(b=>b.to);
- return {...it,ang:-Math.PI/2+i/items.length*Math.PI*2+(p.id===2?.25:0),linked:partners.length>0,partners};});
+ const FREE=Math.PI*70/180,span=Math.PI*2-2*FREE,step=span/items.length;
+ return {...it,ang:Math.PI/2+FREE+(i+.5)*step,linked:partners.length>0,partners};});
 }
 
 const ddSupplements=new Map();
@@ -457,7 +458,7 @@ function render(){
   svg.appendChild(d);
   svg.appendChild(el("rect",{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:"#060a10"}));
 
-  TRACKS.length=0; ORPH.length=0;
+  TRACKS.length=0; ORPH.length=0; const NEEDLIT={},LBL=[];
   const sc = focus? P.reduce((m,p)=>{if(p.id!==focus)m[p.id]=scoreFor(focus,p);return m;},{}) : null;
   const TA={}; P.forEach(p=>TA[p.id]=tentAngles(p));
   const tipLen=(p,it)=>{const isF=p.id===focus;return (65+it.t[1]*5)*(.25+.75*ENT);};
@@ -477,6 +478,7 @@ function render(){
     const bend=(bi%2===0?1:-1)*(.18+.10*(b.fanI||0));
     const cx=mx-dy*bend, cy=my+dx*bend;   // 微弧，避免重疊
     TRACKS.push({A,B,cx,cy,st,q:b.q,tag:b.tag,from:b.from,to:b.to});
+    (NEEDLIT[b.to+':'+b.tag]=NEEDLIT[b.to+':'+b.tag]||[]).push(A);   // the need end is lit from its provider
     // 兩端淡出：分三段畫，端點段降低透明度，線不「釘」在節點上
     // Continuous orbital route. Unknown evidence fades out instead of dashes.
     const gid='route-'+bi,grad=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
@@ -513,32 +515,40 @@ function render(){
       const L=tipLen(p,it), ex=a.x+Math.cos(it.ang)*L, ey=a.y+Math.sin(it.ang)*L;
       const dead=!it.linked, low=it.t[2]<.6;
       // Satellites float independently; no stalk from planet surface.
+      const isN=it.d==='n',lit=isN?NEEDLIT[p.id+':'+it.t[0]]:null,mr=isF?7.5:5.5;
       const glow=el('radialGradient',{id:'moon-'+p.id+'-'+it.d+'-'+it.t[0]});
-      glow.appendChild(el('stop',{offset:0,'stop-color':low||dead?'#b4b1c8':c,'stop-opacity':low||dead?.18:.55}));
-      glow.appendChild(el('stop',{offset:1,'stop-color':c,'stop-opacity':0}));d.appendChild(glow);
-      g.appendChild(el('circle',{cx:ex,cy:ey,r:7,fill:'url(#'+glow.id+')','pointer-events':'none'}));
+      const gc=isN?'#e3c79c':'#93f2ea',ga=isN?(lit?.5:0):(it.linked?.55:.32);
+      glow.appendChild(el('stop',{offset:0,'stop-color':gc,'stop-opacity':ga}));glow.appendChild(el('stop',{offset:1,'stop-color':gc,'stop-opacity':0}));d.appendChild(glow);
+      g.appendChild(el('circle',{cx:ex,cy:ey,r:isN?8:10,fill:'url(#'+glow.id+')','pointer-events':'none'}));
       if(ddSupplements.has(p.id+':'+it.t[0])){
  const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#bae8e4','stroke-width':.6,opacity:.5});g.appendChild(halo);
  const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
  }
-      drawMoon(g,ex,ey,isF?7.5:5.5,it.d==='n'?'need':'offer',false);
+      const sg=el('g',{'data-kv-key':it.t[0],'data-kv-role':isN?'need':'offer','data-kv-owner':p.pid||p.id});g.appendChild(sg);
+      drawMoon(sg,ex,ey,mr,isN?'need':'offer',false);
+      if(isN){ // shadow side faces away from the light: the provider when met, the own planet when unmet
+        let lx,ly;if(lit){lx=lit.reduce((s,q)=>s+q.x,0)/lit.length-ex;ly=lit.reduce((s,q)=>s+q.y,0)/lit.length-ey}else{lx=ex-a.x;ly=ey-a.y}
+        const L=Math.hypot(lx,ly)||1,ux=lx/L,uy=ly/L,sh=lit?.55:.18,cid='cl-'+p.id+'-'+it.t[0];
+        const cp=el('clipPath',{id:cid});cp.appendChild(el('circle',{cx:ex,cy:ey,r:mr*.98}));d.appendChild(cp);
+        sg.appendChild(el('circle',{cx:ex-ux*mr*sh*2,cy:ey-uy*mr*sh*2,r:mr*1.05,fill:'#05080c',opacity:lit?.82:.9,'clip-path':'url(#'+cid+')','pointer-events':'none','data-need-shadow':lit?'met':'unmet'}));
+        if(!lit)sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*1.02,fill:'#05080c',opacity:.35,'pointer-events':'none'}))}
       const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
       target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
       target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
       target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
-      if(true){const tx=el('text',{x:ex,y:ey-9,fill:'#bacdcc','font-size':(10/VZ).toFixed(2),'text-anchor':'middle'});tx.textContent=BN[it.t[0]];g.appendChild(tx);}
+      LBL.push({g:sg,x:ex,y:ey,ang:it.ang,mr,name:BN[it.t[0]]+(isN?'・需要':'・能提供'),sub:isN&&!lit?'沒有對象':null,fill:isN&&!lit?'#8a9592':'#bacdcc'});
 
     });
     const col=isF?"#2dd4bf":(s?COL[s.st]:"#5f6b7a");
     const r=(isF?24:21)*(.45+.55*ENT);
-    drawPlanet(g,a,r,p.id,isF);
+    drawPlanet(g,a,r,p.id,isF);LBL.push({body:true,x:a.x,y:a.y,r:r+3});
     if(a.pin) g.appendChild(el("circle",{cx:a.x,cy:a.y,r:r+5,fill:"none",stroke:"#2dd4bf",
       "stroke-width":.5,opacity:".16"}));
     if(LOD>=1||isF){
       const nm=el("text",{x:a.x,y:a.y+r+14/VZ,fill:isF?"#b9e0dc":"#b9b8c9",
         "font-size":((isF?14:11)/VZ).toFixed(2),"font-family":"sans-serif","text-anchor":"middle",
         opacity:(faded?.5:.95)*(LOD===1?0.85:1)});
-      nm.textContent=p.name; g.appendChild(nm);
+      nm.textContent=p.name; g.appendChild(nm);LBL.push({fixed:true,x:a.x,y:a.y+r+14/VZ,w:p.name.length*(isF?14:11)/VZ,h:(isF?14:11)/VZ});
     }
     if(focus&&s&&!isF&&s.st!=="EXCLUDED"&&LOD>=2){
       const sb=el("text",{x:a.x,y:a.y+r+26/VZ,fill:"#5f6b7a","font-size":(10/VZ).toFixed(2),
@@ -559,6 +569,21 @@ function render(){
     };
     svg.appendChild(g);
   });
+  // Step 3a: place satellite labels last, so each one avoids every planet, moon, project name and earlier label.
+  // Candidate spots around the moon (outward first, then the other sides, then further out); first free, on-screen spot wins.
+  (function(){const f1=10/VZ,f2=9/VZ,X0=-VX/VZ+4/VZ,Y0=-VY/VZ+4/VZ,X1=-VX/VZ+Wd/VZ-4/VZ,Y1=-VY/VZ+Hd/VZ-4/VZ,PL=[];
+   const tw=(t,f)=>{let w=0;for(const ch of t)w+=ch.charCodeAt(0)>255?f:f*.6;return w};
+   LBL.forEach(o=>{if(o.fixed)PL.push({x0:o.x-o.w/2-3,y0:o.y-o.h-2,x1:o.x+o.w/2+3,y1:o.y+4});else if(o.body)PL.push({x0:o.x-o.r,y0:o.y-o.r,x1:o.x+o.r,y1:o.y+o.r});else PL.push({x0:o.x-o.mr-1,y0:o.y-o.mr-1,x1:o.x+o.mr+1,y1:o.y+o.mr+1})});
+   const LH=1.6;LBL.filter(o=>o.g).forEach(o=>{const w=Math.max(tw(o.name,f1),o.sub?tw(o.sub,f2):0),h=f1*LH+(o.sub?f2*LH:0),ux=Math.cos(o.ang),uy=Math.sin(o.ang);
+    const spot=(side,d)=>side==='r'?{l:o.x+d,t:o.y-h/2,an:'start'}:side==='l'?{l:o.x-d-w,t:o.y-h/2,an:'end'}:side==='t'?{l:o.x-w/2,t:o.y-d-h,an:'middle'}:{l:o.x-w/2,t:o.y+d,an:'middle'};
+    const pref=Math.abs(ux)>.35?(ux>0?['r','t','b','l']:['l','t','b','r']):(uy<0?['t','r','l','b']:['b','r','l','t']);
+    const fits=q=>q.l>=X0&&q.t>=Y0&&q.l+w<=X1&&q.t+h<=Y1,free=q=>!PL.some(b=>q.l-1<b.x1&&b.x0<q.l+w+1&&q.t-1<b.y1&&b.y0<q.t+h+1);
+    let pick=null;search:for(const d of [o.mr+3,o.mr+8,o.mr+15,o.mr+24])for(const side of pref){const q=spot(side,d);if(fits(q)&&free(q)){pick=q;break search}}
+    if(!pick){pick=spot(pref[0],o.mr+3);pick.l=Math.min(Math.max(pick.l,X0),X1-w);pick.t=Math.min(Math.max(pick.t,Y0),Y1-h)}
+    PL.push({x0:pick.l-1,y0:pick.t-1,x1:pick.l+w+1,y1:pick.t+h+1});
+    const lx=pick.an==='start'?pick.l:pick.an==='end'?pick.l+w:pick.l+w/2;
+    const tx=el('text',{x:lx,y:pick.t+f1*1.2,fill:o.fill,'font-size':f1.toFixed(2),'text-anchor':pick.an});tx.textContent=o.name;o.g.appendChild(tx);
+    if(o.sub){const t2=el('text',{x:lx,y:pick.t+f1*LH+f2*1.2,fill:'#7c8784','font-size':f2.toFixed(2),'text-anchor':pick.an});t2.textContent=o.sub;o.g.appendChild(t2)}})})();
   svg.appendChild(el("rect",{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:"url(#vg)","pointer-events":"none"}));
   svg.onclick=()=>{if(justDragged){justDragged=false;return;} if(focus){focus=null;syncMode();draw();}};
 

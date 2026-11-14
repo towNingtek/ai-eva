@@ -34,6 +34,37 @@ def load_kv_law(path=_KV_JS):
 KV_LAW = load_kv_law() if _KV_JS.exists() else {"domains": [], "projects": {}}
 DEMO = "_示範資料：狀態與數字是假設值，不是實際判定結果。_"
 
+# 第 3a 步：媒合衛星是 B1–B8，示範資料與星圖共用 public/tangle/kv-match-mock.js。
+_KVM_JS = Path(__file__).resolve().parents[2] / "public" / "tangle" / "kv-match-mock.js"
+
+
+def load_kv_match(path=_KVM_JS):
+    s = Path(path).read_text(encoding="utf-8")
+    return json.loads(s[s.index("{"):s.rindex("}") + 1])
+
+
+KV_MATCH = load_kv_match() if _KVM_JS.exists() else {"keys": {}, "projects": {}}
+MATCH_DEMO = "_示範資料：需要／能提供是依計畫理念寫得具體或只寫方向推估的假設，不是媒合判定。_"
+
+
+def match_reply_for(project_id, key, partner_id=None, kvm=None):
+    """B1–B8 衛星被點時，Eva 要說什麼。純函式，不依賴 Chainlit。查不到回 None。"""
+    kvm = kvm or KV_MATCH
+    p = kvm["projects"].get(project_id)
+    if not p or key not in p["match"]:
+        return None
+    v, name = p["match"][key], kvm["keys"][key]
+    if v["role"] == "none":
+        return None
+    q = kvm["projects"].get(partner_id, {}).get("match", {}).get(key) if partner_id else None
+    if v["role"] == "need":
+        other = "對方能提供這一類，左邊有航跡連過去。" if q and q["role"] == "offer" else "選中的合作對象沒有能提供這一類的內容（沒有對象）。"
+        body = f"這個計畫在「{name}」只寫了方向，視為**需要**。{other}"
+    else:
+        other = "對方需要這一類，左邊有航跡連過去。" if q and q["role"] == "need" else "選中的合作對象沒有寫需要這一類。"
+        body = f"這個計畫在「{name}」寫得具體，視為**能提供**。{other}"
+    return {"role": v["role"], "title": f"{key} {name}", "quotes": list(v["evidence"]), "body": body}
+
 
 def reply_for(mode, project_id, key, kv=None):
     """法領域衛星被點時，Eva 要說什麼。純函式，不依賴 Chainlit。
@@ -230,6 +261,9 @@ async def _copilot_pick(m):
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
         return
+    if m.get("mode") == "match" and code in KV_MATCH.get("keys", {}):
+        await _match_key_pick(m)
+        return
     T = THEMES.get(code)
     if not T or pid not in PROJECTS:
         return
@@ -249,6 +283,18 @@ async def _copilot_pick(m):
         body = f"{_quote(who, code)}\n\n這項有更具體的人力、時間或資源嗎？知道的話可以補充，「還不知道」也可以。"
     note = f"\n\n本次已確認補充（未查證）：{prev}" if prev else "\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認。_"
     await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
+
+
+async def _match_key_pick(m):
+    subject = int(m.get("subject") or 1)
+    pid, qid = m.get("p"), m.get("q")
+    who, other = (qid, pid) if subject == 2 else (pid, qid)
+    r = match_reply_for(who, m.get("code"), other)
+    if not r or who not in PROJECTS:
+        return
+    name = PROJECTS[who]["name"]
+    q = "\n\n".join(f"> 「{x}」" for x in r["quotes"])
+    await cl.Message(content=f"**{r['title']}**・{name}\n\n{q}\n> — {name}・公開計畫理念\n\n{r['body']}\n\n{MATCH_DEMO}").send()
 
 
 async def _law_domain_pick(m):
