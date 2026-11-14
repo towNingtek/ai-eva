@@ -12,7 +12,7 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
  try{
   await p.goto(U+"/");await p.waitForTimeout(1500);
   await p.locator('input[type="text"],input#email,input[type="email"]').first().fill("tangle-lab");await p.locator('input[type="password"]').fill(PW);await p.locator('button[type="submit"]').click();await p.waitForTimeout(6000);
-  await p.getByRole("button",{name:/法規檢核/}).last().click();await p.waitForTimeout(5000);
+  await p.getByRole("button",{name:/⚖ 法規檢核/}).last().click();await p.waitForTimeout(5000);
   const W=p.frames().find(f=>f.url().includes("/public/workspace/embed.html"));ok(!!W,"法規 workspace opened");
   await W.selectOption('select[aria-label="分析專案"]',PID);await W.locator(".primary",{hasText:"確認並開始分析"}).click();await p.waitForTimeout(6000);
   const G=()=>p.frames().find(f=>f.url().includes("tangle-law"));ok(!!G(),"law graph loaded");
@@ -27,16 +27,18 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   const hit="農村再生";await click(hit);
   ok(await G().evaluate(k=>document.querySelector(`[data-kv-key="${k}"]`).hasAttribute("data-kv-selected"),hit),"對上了 satellite is selected");
   ok((await G().evaluate(()=>document.querySelectorAll("[data-kv-dim]").length))>=9,"other satellites fade");
+  // step 2b: hit/gap walk in; go back to the ring view so the rest of this 2a flow runs as before
+  const leave=async()=>{if(await G().evaluate(()=>!!document.querySelector("[data-focus]"))){await p.frameLocator("#tangle-ws iframe").frameLocator("iframe.original-tangle").locator("#kvBack").click();await p.waitForTimeout(1200)}};
   let t=await chat();ok(t.includes(M.law[hit].evidence[0]),"Eva quotes the plan text for 對上了");
   ok(t.includes("9 條提醒")&&t.includes("示範資料"),"Eva states the demo count and the demo disclaimer");
 
   // 缺資料 -> supplement -> cancel (no change) -> supplement -> confirm (supplemented)
-  const gap="開發審議";await click(gap);t=await chat();ok(t.includes(M.law[gap].question),"Eva asks the gap question from the data");
+  await leave();const gap="開發審議";await click(gap);t=await chat();ok(t.includes(M.law[gap].question),"Eva asks the gap question from the data");
   const box=p.locator("#chat-input, textarea").first();
   await box.click();await p.keyboard.type("先取消這一則");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
   await p.getByRole("button",{name:"取消"}).last().click();await p.waitForTimeout(2500);
   ok(await kvState(gap)==="gap","cancel leaves the satellite unchanged");
-  await click(gap);await box.click();await p.keyboard.type("基地約 0.3 公頃，社區活動中心旁");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
+  await leave();await click(gap);await box.click();await p.keyboard.type("基地約 0.3 公頃，社區活動中心旁");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
   ok((await chat()).includes("確認補充到「開發審議」"),"Eva asks to confirm the supplement first");
   await p.getByRole("button",{name:"確認納入"}).last().click();await p.waitForTimeout(3500);
   ok(await kvState(gap)==="supplemented","confirmed supplement turns the satellite into supplemented");
@@ -45,7 +47,7 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   ok((await chat()).includes("示範版不會重新判斷"),"Eva says the demo will not re-judge");
 
   // 不適用 / 未收錄: flash only, fixed wording
-  const na=Object.keys(M.law).find(k=>M.law[k].state==="na");await click(na);
+  await leave();const na=Object.keys(M.law).find(k=>M.law[k].state==="na");await click(na);
   ok((await G().evaluate(()=>document.querySelectorAll("[data-kv-dim],[data-kv-selected]").length))===0,"clicking 不適用 neither selects nor fades");
   ok((await chat()).includes(`沒有和「${na}」相關的內容`),"Eva's 不適用 wording");
   await p.waitForTimeout(800);await click(M.uncovered[0]);

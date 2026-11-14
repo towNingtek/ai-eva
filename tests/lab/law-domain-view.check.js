@@ -41,6 +41,44 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);a=await pos();await p.waitForTimeout(1500);b=await pos();
    if(mv(a,b)>0.5)fail(`${pr.short} still moving while the pointer is over the graph`);
    n++;await p.close()}}
+ else if(arg==="--focus"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
+   const centre=k=>p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`),b=(g.querySelector("image,circle[stroke]")||g).getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}},k);
+   const ring=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key] image")].map(i=>{const r=i.getBoundingClientRect();return[Math.round(r.x),Math.round(r.y)]}));
+   const view=()=>p.evaluate(()=>({focus:document.querySelector("[data-focus]")?.getAttribute("data-focus")||null,debris:document.querySelectorAll("[data-clause]").length,
+     risk:document.querySelectorAll('[data-clause-kind="risk"]').length,dim:document.querySelectorAll("[data-kv-dim]").length,back:getComputedStyle(document.getElementById("kvBack")).display!=="none",
+     sel:[...document.querySelectorAll("[data-kv-selected]")].map(g=>g.getAttribute("data-kv-key")),gapTxt:document.querySelector("[data-focus]")?.textContent||""}));
+   const click=async k=>{const c=await centre(k);await p.mouse.click(c.x,c.y);await p.waitForTimeout(900)};
+   const blank=async()=>{const b=await p.evaluate(()=>{const s=document.getElementById("svg").getBoundingClientRect();return{x:s.left+s.width*.42,y:s.top+12}});await p.mouse.click(b.x,b.y);await p.waitForTimeout(900)};
+   const before=await ring();
+   for(const k of Object.keys(m.law).filter(k=>m.law[k].state==="hit")){await click(k);const V=await view(),v=m.law[k];
+    if(V.focus!==k)fail(`${pr.short} ${k}: did not walk in`);if(V.debris!==v.clauses.length)fail(`${pr.short} ${k}: debris ${V.debris} != ${v.clauses.length}`);
+    if(V.risk!==v.count.risk)fail(`${pr.short} ${k}: risk debris ${V.risk} != ${v.count.risk}`);if(V.dim<9)fail(`${pr.short} ${k}: other domains not in background (${V.dim})`);if(!V.back)fail(`${pr.short} ${k}: no back button`);
+    await p.locator("#kvBack").click();await p.waitForTimeout(900);const A=await view(),after=await ring();
+    if(A.focus||A.back)fail(`${pr.short} ${k}: back did not leave the focus view`);if(JSON.stringify(after)!==JSON.stringify(before))fail(`${pr.short} ${k}: ring not back in place`);
+    if(A.sel.join()!==k)fail(`${pr.short} ${k}: after back it should still be selected (got ${A.sel.join()})`);await blank()}
+   const gap=Object.keys(m.law).find(k=>m.law[k].state==="gap");await click(gap);let V=await view();
+   if(V.focus!==gap||V.debris!==0||!V.gapTxt.includes("缺："))fail(`${pr.short} ${gap}: gap focus wrong ${JSON.stringify(V)}`);
+   await p.keyboard.press("Escape");await p.waitForTimeout(900);V=await view();if(V.focus)fail(`${pr.short}: Esc did not leave`);
+   await blank();await blank();
+   const na=Object.keys(m.law).find(k=>m.law[k].state==="na");await click(na);V=await view();if(V.focus)fail(`${pr.short} ${na}: na must not walk in`);
+   if(m.uncovered.length){await p.waitForTimeout(800);await click(m.uncovered[0]);V=await view();if(V.focus)fail(`${pr.short}: uncovered must not walk in`)}
+   n++;await p.close()}}
+ else if(arg==="--focus-layout"){const M=mock();for(const pr of P){const m=M.projects[pr.id],keys=Object.keys(m.law).filter(k=>m.law[k].state==="hit");
+   for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(pr.id);await p.setViewportSize(vp);await p.waitForTimeout(400);await p.evaluate(()=>{orbitPaused=true});
+    for(const k of keys){await p.evaluate(k=>kvPick(k,"hit"),k);await p.waitForTimeout(800);if(!(await p.evaluate(()=>!!document.querySelector("[data-focus]"))))fail(`${pr.short} ${k}: focus view did not open in layout check`);
+     for(let step=0;step<12;step++){await p.evaluate(st=>{orbitTime=kvFocusT0+st*(Math.PI*2/12)/KV_DEB_W;render()},step);if(step===0&&!(await p.evaluate(()=>document.querySelectorAll("[data-clause] text").length)))fail(`${pr.short} ${k}: no debris labels rendered`);
+      const out=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom,res=[];
+       const T=[...document.querySelectorAll("svg text")].map(t=>[t.textContent,R(t)]);
+       for(const [t,r] of T)if(r.left<0||r.top<0||r.right>innerWidth||r.bottom>innerHeight)res.push(t+" clipped");
+       for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++)if(X(T[i][1],T[j][1]))res.push(T[i][0]+" × "+T[j][0]);
+       for(const s of ["#kvDemo","#zc","#kvBack"]){const b=R(document.querySelector(s));for(const [t,r] of T)if(X(r,b))res.push(t+" × "+s)}
+       const B=[...document.querySelectorAll("[data-kv-key] image,[data-kv-key] circle[stroke],[data-project-planet] image,[data-clause] image")].map(i=>{const r=R(i);return{left:r.left+1,top:r.top+1,right:r.right-1,bottom:r.bottom-1}});
+       for(const [t,r] of T)for(const b of B)if(X(r,b)){res.push(t+" covers a body");break}
+       const f=R(document.querySelector("[data-focus] image")),fx=f.left+f.width/2,fy=f.top+f.height/2,fr=f.width/2;
+       document.querySelectorAll("[data-fx-route]").forEach(pth=>{const L=pth.getTotalLength(),mm=pth.getScreenCTM();for(let q=0;q<=54;q++){const pt=pth.getPointAtLength(L*q/60);if(Math.hypot(pt.x*mm.a+mm.e-fx,pt.y*mm.d+mm.f-fy)<fr-2){res.push("route crosses the focused satellite");break}}});
+       return [...new Set(res)]});
+      if(out.length){fail(`${pr.short} ${k} @${vp.width}x${vp.height} sway ${step*30}°: ${out.slice(0,3).join(" | ")}`);break}}await p.evaluate(()=>kvLeave());await p.waitForTimeout(800)}
+    await p.close()}n++}}
  else if(arg==="--ring"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
    for(const k of Object.keys(m.law).filter(k=>m.law[k].state==="hit"||m.law[k].state==="gap")){
     await p.evaluate(k=>{kvSel=k;render()},k);await p.waitForTimeout(80);
@@ -54,7 +92,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    const clickKey=async k=>{const c=await p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`),b=(g.querySelector("image,circle[stroke]")||g).getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}},k);await p.mouse.click(c.x,c.y);await p.waitForTimeout(250)};
    const state=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key]")].map(g=>({k:g.getAttribute("data-kv-key"),sel:g.hasAttribute("data-kv-selected"),o:+g.getAttribute("opacity")})));
    const hit=Object.keys(m.law).find(k=>m.law[k].state==="hit"),gap=Object.keys(m.law).find(k=>m.law[k].state==="gap"),na=Object.keys(m.law).find(k=>m.law[k].state==="na");
-   for(const k of [hit,gap]){await clickKey(k);const S=await state(),me=S.find(x=>x.k===k),others=S.filter(x=>x.k!==k);
+   const leaveFocus=async()=>{if(await p.evaluate(()=>!!document.querySelector("[data-focus]"))){await p.locator("#kvBack").click();await p.waitForTimeout(900)}};
+   for(const k of [hit,gap]){await clickKey(k);await p.waitForTimeout(800);await leaveFocus();const S=await state(),me=S.find(x=>x.k===k),others=S.filter(x=>x.k!==k);
     if(!me.sel)fail(`${pr.short} ${k} not selected`);if(others.some(x=>x.sel))fail(`${pr.short} more than one selected`);if(!others.every(x=>x.o<me.o))fail(`${pr.short} ${k}: others not faded`)}
    const b=await p.evaluate(()=>{const s=document.getElementById("svg").getBoundingClientRect();return{x:s.left+8,y:s.top+s.height/2}});await p.mouse.click(b.x,b.y);await p.waitForTimeout(250);
    let S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} blank click did not clear selection`);

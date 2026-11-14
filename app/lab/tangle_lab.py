@@ -47,7 +47,7 @@ def reply_for(mode, project_id, key, kv=None):
     if not p:
         return None
     if key in p.get("uncovered", []):
-        return {"state": "uncovered", "title": key, "quotes": [], "question": None,
+        return {"state": "uncovered", "title": key, "quotes": [], "clauses": [], "question": None,
                 "body": f"「{key}」不在目前的條文庫裡，這一項沒有檢查。**沒檢查不代表合規**，需要另外查相關法規。"}
     v = p["law"].get(key)
     if not v:
@@ -56,12 +56,12 @@ def reply_for(mode, project_id, key, kv=None):
     if st == "hit":
         c = v["count"]
         parts = ([f"{c['risk']} 條可能的風險"] if c["risk"] else []) + ([f"{c['note']} 條提醒"] if c["note"] else [])
-        return {"state": st, "title": key, "quotes": quotes, "question": None,
-                "body": f"計畫書裡有內容和「{key}」相關，對上 {'、'.join(parts)}。下一步可以點進去看是哪幾條（之後的版本）。"}
+        return {"state": st, "title": key, "quotes": quotes, "question": None, "clauses": list(v.get("clauses", [])),
+                "body": f"計畫書裡有內容和「{key}」相關，對上 {'、'.join(parts)}。左邊已展開這幾條條文。"}
     if st == "gap":
-        return {"state": st, "title": key, "quotes": quotes, "question": v["question"],
+        return {"state": st, "title": key, "quotes": quotes, "clauses": [], "question": v["question"],
                 "body": f"「{key}」要看一個計畫書沒寫的資訊才能判斷。"}
-    return {"state": "na", "title": key, "quotes": [], "question": None,
+    return {"state": "na", "title": key, "quotes": [], "clauses": [], "question": None,
             "body": f"計畫書裡沒有和「{key}」相關的內容。"}
 
 
@@ -71,7 +71,11 @@ def _reply_markdown(r, project_name, prev=None):
     ask = f"\n\n**想先確認**\n{r['question']}\n\n_直接在下方輸入你知道的情況；送出後會先讓你確認。_" if r["question"] else ""
     if prev:
         ask = f"\n\n本次已補充（未查證、待重判）：{prev}"
-    return f"**{r['title']}**・{project_name}\n\n{(q + src + chr(10) + chr(10)) if q else ''}{r['body']}{ask}\n\n{DEMO}"
+    cl_md = ""
+    if r.get("clauses"):
+        rows = "\n".join(f"- {'⚠ 風險' if c['kind'] == 'risk' else '提醒'}｜{c['law']} {c['no']}：{c['situation']}" for c in r["clauses"])
+        cl_md = f"\n\n**條文**（條文是真的；哪幾條對上是示範假設，還沒有實際判斷）\n{rows}"
+    return f"**{r['title']}**・{project_name}\n\n{(q + src + chr(10) + chr(10)) if q else ''}{r['body']}{cl_md}{ask}\n\n{DEMO}"
 
 
 def _theme(p, code):

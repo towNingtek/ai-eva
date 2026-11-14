@@ -21,11 +21,11 @@ BANNED = ("通過", "已判定", "建議合作")
 def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for")]
-    if len(keep) != 2:
-        raise SystemExit("FAIL tangle_lab.py must define load_kv_law and reply_for")
+    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown")]
+    if len(keep) != 3:
+        raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for and _reply_markdown")
     mod = types.ModuleType("reply")
-    mod.json, mod.Path, mod._KV_JS = json, Path, ROOT / "public/tangle/kv-law-mock.js"
+    mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
     exec(compile(ast.Module(body=keep, type_ignores=[]), "tangle_lab.py", "exec"), mod.__dict__)
     mod.KV_LAW = mod.load_kv_law()
     return mod
@@ -54,6 +54,14 @@ def problems(mod, kv):
                 out.append(f"{pid} {key}: state {r['state']} != data {v['state']}")
             if v["state"] == "hit" and r["quotes"] != v["evidence"]:
                 out.append(f"{pid} {key}: quotes differ from evidence")
+            if v["state"] == "hit":
+                if r.get("clauses") != v.get("clauses"):
+                    out.append(f"{pid} {key}: reply clauses differ from data clauses")
+                md = mod._reply_markdown(r, "P")
+                if not all(f"{c['law']} {c['no']}" in md for c in v.get("clauses", [])) or "示範假設" not in md:
+                    out.append(f"{pid} {key}: shown reply must list every clause and say 示範假設")
+            elif r.get("clauses"):
+                out.append(f"{pid} {key}: only 對上了 replies list clauses")
             if v["state"] == "gap" and r["question"] != v["question"]:
                 out.append(f"{pid} {key}: question differs from data")
             if v["state"] == "na" and (r["quotes"] or r["question"]):
