@@ -14,7 +14,7 @@ const logSince=m=>execSync(`docker logs ai-eva-tangle-lab 2>&1 | tail -n +${m+1}
   await p.locator('input[type="text"],input#email,input[type="email"]').first().fill("tangle-lab");await p.locator('input[type="password"]').fill(PW);await p.locator('button[type="submit"]').click();await p.waitForTimeout(6000);
   const prompts=async()=>(await p.locator("#root").innerText()).split("要繼續分析嗎？").length-1;
   await p.getByRole("button",{name:/⚖ 法規檢核/}).last().click();await p.waitForTimeout(5000);await p.locator("#tangle-ws-close").click();await p.waitForTimeout(1500);
-  for(let i=1;i<=3;i++){await p.reload();await p.waitForTimeout(8000);ok(await prompts()===1,`A: after reload ${i}, exactly one 要繼續分析嗎？ (${await prompts()})`)}
+  for(let i=1;i<=3;i++){await p.reload();let c=0;for(let k=0;k<40;k++){await p.waitForTimeout(500);c=await prompts();if(c>=1&&k>=12)break}ok(await prompts()===1,`A: after reload ${i}, exactly one 要繼續分析嗎？ (${await prompts()})`)}
   await p.getByRole("button",{name:/⚖ 法規檢核/}).last().click();await p.waitForTimeout(5000);
   ok(await p.evaluate(()=>document.body.classList.contains("tangle-ws-on")),"A: the remaining prompt's button opens the workspace");
   await p.locator("#tangle-ws-close").click();await p.waitForTimeout(1500);

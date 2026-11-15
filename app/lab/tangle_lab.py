@@ -58,6 +58,40 @@ def peer_reply_for(a_id, b_id, key, kvm=None):
             "body": f"兩個計畫在「{name}」都寫得具體，都已經在做。這條淡線表示**可以交流經驗**，彼此學習做法；兩邊都有，所以不是一方補另一方的缺口。"}
 
 
+def pair_reply_for(a_id, b_id, key, kvm=None):
+    """B1：走進一對「需要 × 能提供」時，列出兩邊原文並說明為什麼互補。不是互補回 None。"""
+    kvm = kvm or KV_MATCH
+    A, B = kvm["projects"].get(a_id), kvm["projects"].get(b_id)
+    if not A or not B or key not in A["match"]:
+        return None
+    ra, rb = A["match"][key]["role"], B["match"][key]["role"]
+    if (ra, rb) == ("need", "offer"):
+        need, offer = a_id, b_id
+    elif (ra, rb) == ("offer", "need"):
+        need, offer = b_id, a_id
+    else:
+        return None
+    name = kvm["keys"][key]
+    return {"title": f"{key} {name}", "need": need, "offer": offer,
+            "quotes": {need: list(kvm["projects"][need]["match"][key]["evidence"]), offer: list(kvm["projects"][offer]["match"][key]["evidence"])},
+            "body": f"一方在「{name}」只寫了方向（**需要**），另一方寫得具體（**能提供**），所以算互補：能提供的一方可以補需要的一方。"}
+
+
+def planet_summary_for(project_id, partner_id=None, kvm=None):
+    """B2：點行星時，列出這個計畫的 B1–B8 需要／能提供，以及和對方對上幾條、可交流經驗幾條。"""
+    kvm = kvm or KV_MATCH
+    p = kvm["projects"].get(project_id)
+    if not p:
+        return None
+    m, keys = p["match"], kvm["keys"]
+    need = [k for k in keys if m[k]["role"] == "need"]
+    offer = [k for k in keys if m[k]["role"] == "offer"]
+    q = kvm["projects"].get(partner_id, {}).get("match") if partner_id else None
+    links = [k for k in keys if q and ((m[k]["role"] == "need" and q[k]["role"] == "offer") or (m[k]["role"] == "offer" and q[k]["role"] == "need"))]
+    peers = [k for k in keys if q and m[k]["role"] == "offer" and q[k]["role"] == "offer"]
+    return {"need": need, "offer": offer, "links": links, "peers": peers}
+
+
 def match_reply_for(project_id, key, partner_id=None, kvm=None):
     """B1–B8 衛星被點時，Eva 要說什麼。純函式，不依賴 Chainlit。查不到回 None。"""
     kvm = kvm or KV_MATCH
@@ -303,6 +337,12 @@ async def _copilot_pick(m):
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
         return
+    if m.get("mode") == "match" and m.get("kind") == "planet":
+        await _match_planet_pick(m)
+        return
+    if m.get("mode") == "match" and m.get("kind") in ("relation", "pair") and code in KV_MATCH.get("keys", {}):
+        await _match_pair_pick(m)
+        return
     if m.get("mode") == "match" and m.get("kind") == "peer" and code in KV_MATCH.get("keys", {}):
         await _match_peer_pick(m)
         return
@@ -340,6 +380,34 @@ async def _match_peer_pick(m):
         q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
         parts.append(f"{q}\n> — {PROJECTS[x]['name']}・公開計畫理念")
     await cl.Message(content=f"**{r['title']}**・兩邊都能提供\n\n" + "\n\n".join(parts) + f"\n\n{r['body']}\n\n{MATCH_DEMO}").send()
+
+
+async def _match_pair_pick(m):
+    pid, qid = m.get("p"), m.get("q")
+    r = pair_reply_for(pid, qid, m.get("code"))
+    if not r or pid not in PROJECTS or qid not in PROJECTS:
+        return
+    parts = []
+    for x, role in ((r["need"], "需要"), (r["offer"], "能提供")):
+        q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
+        parts.append(f"**{role}**・{PROJECTS[x]['name']}\n\n{q}\n> — 公開計畫理念")
+    await cl.Message(content=f"**{r['title']}**・對上了\n\n" + "\n\n".join(parts) + f"\n\n{r['body']}\n\n{MATCH_DEMO}").send()
+
+
+async def _match_planet_pick(m):
+    subject = int(m.get("subject") or 1)
+    pid, qid = m.get("p"), m.get("q")
+    who, other = (qid, pid) if subject == 2 else (pid, qid)
+    r = planet_summary_for(who, other)
+    if not r or who not in PROJECTS:
+        return
+    K = KV_MATCH["keys"]
+    fmt = lambda ks: "、".join(f"{k} {K[k]}" for k in ks) or "（無）"
+    oname = PROJECTS[other]["name"] if other in PROJECTS else "對方"
+    body = (f"**需要**：{fmt(r['need'])}\n\n**能提供**：{fmt(r['offer'])}\n\n"
+            f"和 {oname}：**對上 {len(r['links'])} 條**（{fmt(r['links'])}）；兩邊都能提供、可交流經驗 {len(r['peers'])} 條（{fmt(r['peers'])}）。"
+            "\n\n點一顆有航跡的衛星，可以走進那一對看兩邊的原文。")
+    await cl.Message(content=f"**{PROJECTS[who]['name']}**・B1–B8\n\n{body}\n\n{MATCH_DEMO}").send()
 
 
 async def _match_key_pick(m):

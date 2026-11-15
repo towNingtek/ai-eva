@@ -21,8 +21,8 @@ BANNED = ("通過", "已判定", "建議合作")
 def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for")]
-    if len(keep) != 6:
+    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for", "pair_reply_for", "planet_summary_for")]
+    if len(keep) != 8:
         raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for, _reply_markdown, load_kv_match and match_reply_for")
     mod = types.ModuleType("reply")
     mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
@@ -116,6 +116,30 @@ def match_problems(mod):
                         out.append(f"{a}×{b} {k}: peer reply must say 交流經驗 and not 互補/需要")
                     if r["quotes"][a] != kvm["projects"][a]["match"][k]["evidence"] or r["quotes"][b] != kvm["projects"][b]["match"][k]["evidence"]:
                         out.append(f"{a}×{b} {k}: peer quotes differ from evidence")
+    # B1 pair replies: exist exactly for need×offer, quote both sides; B2 planet summary = counts from the data
+    for a in ids:
+        for b in ids:
+            if a == b:
+                continue
+            for k in kvm["keys"]:
+                ra, rb = kvm["projects"][a]["match"][k]["role"], kvm["projects"][b]["match"][k]["role"]
+                comp = {ra, rb} == {"need", "offer"}
+                r = mod.pair_reply_for(a, b, k, kvm)
+                if comp != (r is not None):
+                    out.append(f"{a}×{b} {k}: pair reply exists={r is not None} but complementary={comp}"); continue
+                if r:
+                    n += 1
+                    if r["quotes"][r["need"]] != kvm["projects"][r["need"]]["match"][k]["evidence"] or r["quotes"][r["offer"]] != kvm["projects"][r["offer"]]["match"][k]["evidence"]:
+                        out.append(f"{a}×{b} {k}: pair quotes differ")
+                    if kvm["projects"][r["need"]]["match"][k]["role"] != "need" or "建議合作" in r["body"]:
+                        out.append(f"{a}×{b} {k}: pair roles or wording wrong")
+            s = mod.planet_summary_for(a, b, kvm)
+            m, q = kvm["projects"][a]["match"], kvm["projects"][b]["match"]
+            want_links = sorted(k for k in kvm["keys"] if {m[k]["role"], q[k]["role"]} == {"need", "offer"})
+            want_peers = sorted(k for k in kvm["keys"] if m[k]["role"] == q[k]["role"] == "offer")
+            if sorted(s["links"]) != want_links or sorted(s["peers"]) != want_peers or sorted(s["need"]) != sorted(k for k in m if m[k]["role"] == "need"):
+                out.append(f"{a}×{b}: planet summary counts wrong")
+            n += 1
     return out, n
 
 

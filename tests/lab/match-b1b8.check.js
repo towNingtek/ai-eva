@@ -62,6 +62,46 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
      if(hidden/tot>.25)out.push(tag+" "+hidden+"/"+tot)});return out});
    if(blocked.length)fail(`${a}×${c}: peer line not clickable along its length: ${blocked.join(", ")}`);
    n++;await p.close()}}
+ else if(arg==="--pair"){for(const [a,c] of PAIRS.filter(([a,c])=>want(a,c).length).slice(0,12)){const p=await open(a,c);
+   const centre=(k,o)=>p.evaluate(([k,o])=>{const g=document.querySelector(`[data-kv-key="${k}"][data-kv-owner="${o}"]`);if(!g)return null;const r=g.querySelector("image").getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}},[k,o]);
+   const ring=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key] image")].map(i=>{const r=i.getBoundingClientRect();return[Math.round(r.x),Math.round(r.y)]}));
+   const view=()=>p.evaluate(()=>({f:[...document.querySelectorAll("[data-mf-focus]")].map(g=>g.getAttribute("data-mf-focus")+":"+g.getAttribute("data-mf-role")),pts:typeof PT!=="undefined"?PT.length:0,
+     dir:TRACKS.filter(t=>t.mf).map(t=>{const f=P.find(x=>x.id===t.from),o=P.find(x=>x.id===t.to);return f.o.some(x=>x[0]===t.tag)&&o.n.some(x=>x[0]===t.tag)}),back:getComputedStyle(document.getElementById("mfBack")).display!=="none"}));
+   const W=want(a,c),tag=W[0].split(":")[1],needOwner=W[0].split(">")[1].split(":")[0];
+   await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);
+   const before=await ring(),pt=await centre(tag,needOwner);await p.mouse.click(pt.x,pt.y);await p.waitForTimeout(1200);let v=await view();
+   if(v.f.sort().join()!==[tag+":need",tag+":offer"].sort().join())fail(`${a}×${c} ${tag}: walk-in shows ${v.f.join()}`);
+   if(!v.back)fail(`${a}×${c}: no back button`);if(v.pts!==3||!v.dir.length||v.dir.some(x=>!x))fail(`${a}×${c}: pair flow wrong (particles ${v.pts}, offer→need ${v.dir})`);
+   await p.locator("#mfBack").click();await p.waitForTimeout(1200);v=await view();const after=await ring();
+   if(v.f.length||v.back)fail(`${a}×${c}: back did not leave`);if(after.length!==before.length||after.some((x,i)=>Math.hypot(x[0]-before[i][0],x[1]-before[i][1])>2))fail(`${a}×${c}: satellites not back in place`);
+   // Esc also leaves
+   const pt2=await centre(tag,needOwner);await p.mouse.click(pt2.x,pt2.y);await p.waitForTimeout(1200);await p.keyboard.press("Escape");await p.waitForTimeout(1200);v=await view();if(v.f.length)fail(`${a}×${c}: Esc did not leave`);
+   // a satellite with no counterpart does not walk in
+   const lone=await p.evaluate(()=>{const g=[...document.querySelectorAll("[data-kv-key]")].find(x=>x.querySelector('[data-need-shadow="unmet"]'));return g?[g.getAttribute("data-kv-key"),g.getAttribute("data-kv-owner")]:null});
+   if(lone){const q=await centre(lone[0],lone[1]);await p.mouse.click(q.x,q.y);await p.waitForTimeout(900);v=await view();if(v.f.length)fail(`${a}×${c}: unmet need ${lone[0]} must not walk in`)}
+   n++;await p.close()}}
+ else if(arg==="--pair-peer"){const pairs=PAIRS.filter(([a,c])=>Object.keys(M.keys).some(k=>role(a,k)==="offer"&&role(c,k)==="offer")).slice(0,8);for(const [a,c] of pairs){const p=await open(a,c);
+   await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);
+   const m=await p.evaluate(()=>{const pth=document.querySelector("[data-kv-peer]"),L=pth.getTotalLength(),pt=pth.getPointAtLength(L*.5),mm=pth.getScreenCTM();return{x:pt.x*mm.a+mm.e,y:pt.y*mm.d+mm.f,tag:pth.getAttribute("data-kv-peer")}});
+   await p.mouse.click(m.x,m.y);await p.waitForTimeout(1200);
+   const v=await p.evaluate(()=>({f:[...document.querySelectorAll("[data-mf-focus]")].map(g=>g.getAttribute("data-mf-role")),pts:PT.length,cap:(document.querySelector("[data-mf-caption]")||{}).textContent||""}));
+   if(v.f.join()!=="offer,offer")fail(`${a}×${c} ${m.tag}: peer walk-in roles ${v.f.join()}`);if(v.pts!==0)fail(`${a}×${c}: peer walk-in must have no flow (${v.pts})`);if(!v.cap.includes("可交流經驗"))fail(`${a}×${c}: caption ${v.cap}`);
+   n++;await p.close()}}
+ else if(arg==="--planet"){for(const [a,c] of PAIRS.slice(0,10)){const p=await open(a,c);
+   await p.addInitScript(()=>{});await p.evaluate(()=>{window.__pm=[];const o=window.parent.postMessage.bind(window.parent);window.parent.postMessage=(m,t)=>{window.__pm.push(m);try{o(m,t)}catch(e){}}});
+   const big=()=>p.evaluate(()=>[...document.querySelectorAll("#svg image")].map(i=>{const r=i.getBoundingClientRect();return{w:r.width,x:r.x+r.width/2,y:r.y+r.height/2}}).sort((x,y)=>y.w-x.w)[0]);
+   let b0=await big();
+   // a drag is not a click: no message
+   await p.mouse.move(b0.x,b0.y);await p.mouse.down();for(let k=1;k<=8;k++){await p.mouse.move(b0.x+5*k,b0.y+3*k);await p.waitForTimeout(16)}await p.mouse.up();await p.waitForTimeout(500);
+   let msgs=await p.evaluate(()=>window.__pm.filter(m=>m&&m.kind==="planet").length);if(msgs)fail(`${a}×${c}: dragging a planet sent a planet message`);
+   await p.close();const q=await open(a,c);await q.evaluate(()=>{window.__pm=[];const o=window.parent.postMessage.bind(window.parent);window.parent.postMessage=(m,t)=>{window.__pm.push(m);try{o(m,t)}catch(e){}}});
+   b0=await q.evaluate(()=>[...document.querySelectorAll("#svg image")].map(i=>{const r=i.getBoundingClientRect();return{w:r.width,x:r.x+r.width/2,y:r.y+r.height/2}}).sort((x,y)=>y.w-x.w)[0]);
+   await q.mouse.click(b0.x,b0.y);await q.waitForTimeout(1500);
+   const after=await q.evaluate(()=>({f:typeof focus!=="undefined"?focus:null,big:[...document.querySelectorAll("#svg image")].map(i=>{const r=i.getBoundingClientRect();return{w:r.width,x:r.x+r.width/2,y:r.y+r.height/2}}).sort((x,y)=>y.w-x.w)[0],msgs:window.__pm.filter(m=>m&&m.kind==="planet")}));
+   const toC=Math.hypot(b0.x-550,b0.y-370)-Math.hypot(after.big.x-550,after.big.y-370);
+   if(!(after.f&&after.big.w>b0.w*1.08&&toC>80))fail(`${a}×${c}: original planet focus did not happen (focus ${after.f}, ${b0.w.toFixed(0)}→${after.big.w.toFixed(0)}px, toward centre ${toC.toFixed(0)})`);
+   if(after.msgs.length!==1)fail(`${a}×${c}: planet click must send exactly one planet message (${after.msgs.length})`);
+   n++;await q.close()}}
  else if(arg==="--no-overlap"){for(const [a,c] of PAIRS)for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(a,c,vp);
    const hits=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom,out=[];
     const T=[...document.querySelectorAll("#svg text")].filter(t=>t.textContent.trim()&&getComputedStyle(t).display!=="none"&&+(t.getAttribute("opacity")??1)>.05).map(t=>[t.textContent,R(t)]);
@@ -74,5 +114,5 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
  else if(arg==="--hygiene"){for(const [a,c] of PAIRS.slice(0,10)){const p=await open(a,c);
    if(await p.evaluate(()=>document.querySelectorAll('[stroke-dasharray]:not([stroke-dasharray=""])').length))fail(`${a}×${c}: dashed lines`);
    if(p._errs.length)fail(`${a}×${c}: page errors ${p._errs.join(";")}`);if(p._ext.length)fail(`${a}×${c}: external requests ${p._ext.join(",")}`);n++;await p.close()}}
- else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --no-overlap | --hygiene");process.exitCode=2}
+ else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --pair | --pair-peer | --planet | --no-overlap | --hygiene");process.exitCode=2}
  await b.close();srv.close();if(!process.exitCode)console.log("OK",arg,n+" pairs")})().catch(e=>{console.error("ERROR",e.message);process.exit(1)});
