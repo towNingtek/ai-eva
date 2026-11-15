@@ -1,12 +1,12 @@
 """Build public/tangle/kv-match-mock.js — DEMO data for the B1–B8 matching view (step 3).
 
-key   = B1–B8 (names from Tangle v11; formal definitions in SH-METHOD-02 are not available here).
-value = role need / offer / none + state + evidence.
+key   = B1–B8 (SH-METHOD-02 §6; app/matching/standard_yunlin_v1.yaml capability_registry).
+value = role need / offer / both / none + evidence.
 
 evidence: verbatim quotes already verified against each plan's public philosophy (tangle_data.json).
 Everything else is an illustrative assumption, NOT a matching judgement:
   - topic -> B key: fixed mapping below (by category name only).
-  - role: a concrete quote = "能提供" (the plan already does it); direction-only = "需要" (wants to get there).
+  - role (standard v1.1 Q1): concrete quote = OFFER; direction-only = NEED; both kinds in one B = BOTH.
   - B7 市場與通路 has no topic of its own; plans whose 農漁產業 quote is direction-only are given B7 需要.
 """
 import json
@@ -29,15 +29,19 @@ def build(data):
                 continue
             v = keys[k]
             role = "offer" if it["concrete"] else "need"
-            # offer wins over need inside one plan (it already has some of it)
-            v["role"] = "offer" if "offer" in (v["role"], role) else "need"
+            # standard v1.1 Q1: both a concrete and a direction-only quote in the same B = BOTH
+            v["role"] = role if v["role"] in ("none", role) else "both"
             v["evidence"].append(it["quote"])
+            v.setdefault("kinds", []).append(role)
         ind = next((i for i in p["issues"] if i["theme"] == "industry"), None)
         if ind and not ind["concrete"]:
             keys["B7"] = {"role": "need", "evidence": [ind["quote"]]}
+        for v in keys.values():
+            v.pop("kinds", None)
         out[p["id"]] = {"name": p["name"], "match": keys}
     return {"demo": True,
-            "note": "示範資料：需要／能提供與歸類是假設值，不是媒合判定；evidence 是計畫理念原文。",
+            "note": "示範資料：需要／能提供／兩者皆是與歸類是 AI 推論的假設值（未經 Owner 確認），不是媒合判定；evidence 是計畫理念原文。",
+            "standard": "match.yunlin.rural-regen v0.1.1-r0",
             "keys": B, "projects": out}
 
 

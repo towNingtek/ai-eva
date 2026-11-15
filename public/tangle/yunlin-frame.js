@@ -8,7 +8,7 @@ const YL={
  primary:YP,partner:YQ2,
  // Step 3a: satellites are B1–B8. need/offer come from kv-match-mock.js (demo roles, real quotes).
  // Routes are built by the page from need × offer; same-side (need↔need) never connects.
- matchP(){const sim={topic:.5,exec:.5,stage:.5,xborder:0},pick=(pr,role)=>{const m=KV_MATCH.projects[pr.id].match;return Object.keys(m).filter(k=>m[k].role===role).map(k=>[k,.8,1])};
+ matchP(){const sim={topic:.5,exec:.5,stage:.5,xborder:0},pick=(pr,role)=>{const m=KV_MATCH.projects[pr.id].match;return Object.keys(m).filter(k=>m[k].role===role||m[k].role==='both').map(k=>[k,.8,1])};   // standard v1.1: BOTH = need and offer
   return[YP,YQ2].map((pr,i)=>({id:i+1,pid:pr.id,name:pr.name,n:pick(pr,'need'),o:pick(pr,'offer'),sim}))},
  lawRules(){return YP.issues.map(i=>({code:i.theme,label:THEMES[i.theme].label,q:i.concrete?1:.3}))}
 };

@@ -28,6 +28,6 @@
    e.stopImmediatePropagation();const id=found[0],s=ylSel.get(id)||{},r=records.find(x=>x.id===id);
    toEva('pick',{event:'pick',id,mode:r?r.mode:currentMode,p:s.p,q:s.q,code:d.code,subject:d.subject,kind:d.kind});return}
   if(d.type==='tangle-mark'&&e.source===window.parent){const a=d.args||{},f=frames.get(a.id);
-   if(f&&f.contentWindow)f.contentWindow.postMessage({type:'dd-confirmed',subject:a.subject,code:a.code,text:a.text},location.origin)}
+   if(f&&f.contentWindow){if(a.mfStatus)f.contentWindow.postMessage({type:'mf-status',status:a.mfStatus,filled:a.filled||{}},location.origin);else f.contentWindow.postMessage({type:'dd-confirmed',subject:a.subject,code:a.code,text:a.text},location.origin)}}
  },true);
 })();

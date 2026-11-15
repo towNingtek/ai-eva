@@ -46,6 +46,89 @@ def load_kv_match(path=_KVM_JS):
 KV_MATCH = load_kv_match() if _KVM_JS.exists() else {"keys": {}, "projects": {}}
 MATCH_DEMO = "_示範資料：需要／能提供是依計畫理念寫得具體或只寫方向推估的假設，不是媒合判定。_"
 
+# Step C：媒合標準 v1.1（HackMD BkKiUSPRMl → app/matching/standard_yunlin_v1.yaml）。規則照 YAML，不靠 AI。
+_STD_YAML = Path(__file__).resolve().parents[1] / "matching" / "standard_yunlin_v1.yaml"
+
+
+def load_match_standard(path=_STD_YAML):
+    import yaml
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+MATCH_STD = load_match_standard() if _STD_YAML.exists() else {}
+STATUS_TEXT = {"EXPLORE": "可探索", "CLARIFY_FIRST": "先補資料", "ELIGIBLE": "可排序・未建議", "EXCLUDED": "不在範圍"}
+SEM = {"FACT": "**事實**", "INFERENCE": "**推論（AI，未經 Owner 確認）**", "SUGGESTION": "**建議**"}
+
+
+def _is_need(r):
+    return r in ("need", "both")
+
+
+def _is_offer(r):
+    return r in ("offer", "both")
+
+
+def complement_pairs(a_id, b_id, kvm=None):
+    """互補候選：(need_pid, offer_pid, key)，BOTH 兩邊都算（標準 v1.1 bridge_rules）。"""
+    kvm = kvm or KV_MATCH
+    A, B = kvm["projects"][a_id]["match"], kvm["projects"][b_id]["match"]
+    out = []
+    for k in kvm["keys"]:
+        if _is_need(A[k]["role"]) and _is_offer(B[k]["role"]):
+            out.append((a_id, b_id, k))
+        if _is_need(B[k]["role"]) and _is_offer(A[k]["role"]):
+            out.append((b_id, a_id, k))
+    return out
+
+
+def match_status_for(a_id, b_id, filled=None, kvm=None, std=None):
+    """一組計畫的狀態（SH-COLLAB-03 §5；標準 v1.1 status_rules＋status_transition）。只用規則。RECOMMEND 第一期不開放。"""
+    kvm, std, filled = kvm or KV_MATCH, std or MATCH_STD, filled or {}
+    mf = std["status_transition"]["minimum_fields"]
+    comp = complement_pairs(a_id, b_id, kvm)
+    if comp:
+        done = any(filled.get(f"{n}:{k}:{mf['NEED']}") and filled.get(f"{o}:{k}:{mf['OFFER']}") for n, o, k in comp)
+        return "EXPLORE" if done else "CLARIFY_FIRST"
+    A, B = kvm["projects"][a_id]["match"], kvm["projects"][b_id]["match"]
+    if any(A[k]["role"] == "offer" and B[k]["role"] == "offer" for k in kvm["keys"]):
+        return "EXPLORE"
+    return "ELIGIBLE"
+
+
+def next_question_for(a_id, b_id, answered=None, kvm=None, std=None, key=None):
+    """下一題主動補問（標準 v1.1 clarify_questions）：先問 minimum_fields，再問其他；一次一題。沒有就回 None。
+    answered：已答或跳過的 "pid:key:field"。key：只問這一類（走進一對時）。"""
+    kvm, std, answered = kvm or KV_MATCH, std or MATCH_STD, answered or set()
+    cq, mf = std["clarify_questions"], std["status_transition"]["minimum_fields"]
+    comp = [c for c in complement_pairs(a_id, b_id, kvm) if key is None or c[2] == key]
+    names = {pid: kvm["projects"][pid]["name"] for pid in (a_id, b_id)}
+    order = []
+    for n, o, k in comp:   # minimum fields first, across all candidates
+        order += [(n, k, "NEED", mf["NEED"], o), (o, k, "OFFER", mf["OFFER"], n)]
+    for n, o, k in comp:
+        order += [(n, k, "NEED", f, o) for f in cq["NEED"] if f != mf["NEED"]]
+        order += [(o, k, "OFFER", f, n) for f in cq["OFFER"] if f != mf["OFFER"]]
+    for pid, k, side, field, other in order:
+        qid = f"{pid}:{k}:{field}"
+        if qid in answered:
+            continue
+        b = kvm["keys"][k]
+        text = cq[side][field].format(need=names[pid] if side == "NEED" else names[other], offer=names[pid] if side == "OFFER" else names[other], b=b)
+        return {"id": qid, "pid": pid, "key": k, "side": side, "field": field, "text": text,
+                "minimum": field == mf[side]}
+    return None
+
+
+def third_reply_for(a_id, b_id, key, kvm=None):
+    """兩方都只 NEED 同一類（SH-METHOD-02 §7）：可推薦共同尋找第三方，不得標示為互補完成。"""
+    kvm = kvm or KV_MATCH
+    A, B = kvm["projects"].get(a_id), kvm["projects"].get(b_id)
+    if not A or not B or A["match"][key]["role"] != "need" or B["match"][key]["role"] != "need":
+        return None
+    name = kvm["keys"][key]
+    return {"title": f"{key} {name}", "quotes": {a_id: list(A["match"][key]["evidence"]), b_id: list(B["match"][key]["evidence"])},
+            "body": f"兩個計畫在「{name}」都只寫了方向（都是需要），彼此補不上。依 SH-METHOD-02，可以**共同尋找第三方**，但不算互補。"}
+
 
 def peer_reply_for(a_id, b_id, key, kvm=None):
     """兩邊都能提供同一類（淡線）被點時，Eva 要說什麼。不是互補，只作經驗交流。查不到回 None。"""
@@ -55,7 +138,7 @@ def peer_reply_for(a_id, b_id, key, kvm=None):
         return None
     name = kvm["keys"][key]
     return {"title": f"{key} {name}", "quotes": {a_id: list(A["match"][key]["evidence"]), b_id: list(B["match"][key]["evidence"])},
-            "body": f"兩個計畫在「{name}」都寫得具體，都已經在做。這條淡線表示**可以交流經驗**，彼此學習做法；兩邊都有，所以不是一方補另一方的缺口。"}
+            "body": f"兩個計畫在「{name}」都寫得具體，都已經在做。依 SH-METHOD-02，適合**聯合市場、交流經驗或共同擴張**，但要另外判斷彼此會不會競爭；兩邊都有，所以不是一方補另一方的缺口。"}
 
 
 def pair_reply_for(a_id, b_id, key, kvm=None):
@@ -65,16 +148,16 @@ def pair_reply_for(a_id, b_id, key, kvm=None):
     if not A or not B or key not in A["match"]:
         return None
     ra, rb = A["match"][key]["role"], B["match"][key]["role"]
-    if (ra, rb) == ("need", "offer"):
+    if _is_need(ra) and _is_offer(rb):
         need, offer = a_id, b_id
-    elif (ra, rb) == ("offer", "need"):
+    elif _is_need(rb) and _is_offer(ra):
         need, offer = b_id, a_id
     else:
         return None
     name = kvm["keys"][key]
     return {"title": f"{key} {name}", "need": need, "offer": offer,
             "quotes": {need: list(kvm["projects"][need]["match"][key]["evidence"]), offer: list(kvm["projects"][offer]["match"][key]["evidence"])},
-            "body": f"一方在「{name}」只寫了方向（**需要**），另一方寫得具體（**能提供**），所以算互補：能提供的一方可以補需要的一方。"}
+            "body": f"一方在「{name}」只寫了方向（**需要**），另一方寫得具體（**能提供**），所以是**互補候選**。原文要求有可行合作形式才算成立，計畫書看不出來，所以還不能說成立。"}
 
 
 def planet_summary_for(project_id, partner_id=None, kvm=None):
@@ -84,10 +167,10 @@ def planet_summary_for(project_id, partner_id=None, kvm=None):
     if not p:
         return None
     m, keys = p["match"], kvm["keys"]
-    need = [k for k in keys if m[k]["role"] == "need"]
-    offer = [k for k in keys if m[k]["role"] == "offer"]
+    need = [k for k in keys if _is_need(m[k]["role"])]
+    offer = [k for k in keys if _is_offer(m[k]["role"])]
     q = kvm["projects"].get(partner_id, {}).get("match") if partner_id else None
-    links = [k for k in keys if q and ((m[k]["role"] == "need" and q[k]["role"] == "offer") or (m[k]["role"] == "offer" and q[k]["role"] == "need"))]
+    links = [k for k in keys if q and ((_is_need(m[k]["role"]) and _is_offer(q[k]["role"])) or (_is_offer(m[k]["role"]) and _is_need(q[k]["role"])))]
     peers = [k for k in keys if q and m[k]["role"] == "offer" and q[k]["role"] == "offer"]
     return {"need": need, "offer": offer, "links": links, "peers": peers}
 
@@ -102,11 +185,16 @@ def match_reply_for(project_id, key, partner_id=None, kvm=None):
     if v["role"] == "none":
         return None
     q = kvm["projects"].get(partner_id, {}).get("match", {}).get(key) if partner_id else None
-    if v["role"] == "need":
-        other = "對方能提供這一類，左邊有航跡連過去。" if q and q["role"] == "offer" else "選中的合作對象沒有能提供這一類的內容（沒有對象）。"
+    qr = q["role"] if q else "none"
+    if v["role"] == "both":   # standard v1.1 Q1
+        linked = qr != "none"
+        other = "和對方在這一類有互補候選，左邊有航跡連過去。" if linked else "選中的合作對象在這一類沒有寫。"
+        body = f"這個計畫在「{name}」同時有寫得具體的部分和只寫方向的部分，視為**需要＋能提供**（兩者皆是）。{other}"
+    elif v["role"] == "need":
+        other = "對方能提供這一類，左邊有航跡連過去。" if _is_offer(qr) else "選中的合作對象沒有能提供這一類的內容（沒有對象）。"
         body = f"這個計畫在「{name}」只寫了方向，視為**需要**。{other}"
     else:
-        other = "對方需要這一類，左邊有航跡連過去。" if q and q["role"] == "need" else "選中的合作對象沒有寫需要這一類。"
+        other = "對方需要這一類，左邊有航跡連過去。" if _is_need(qr) else "選中的合作對象沒有寫需要這一類。"
         body = f"這個計畫在「{name}」寫得具體，視為**能提供**。{other}"
     return {"role": v["role"], "title": f"{key} {name}", "quotes": list(v["evidence"]), "body": body}
 
@@ -283,6 +371,19 @@ async def on_confirm(action: cl.Action):
     if not action.payload.get("ok"):
         await cl.Message(content="已取消，沒有納入這段補充。").send()
         return
+    if d.get("mq"):
+        mq = d["mq"]
+        s_ = _mq_state(mq["p"], mq["q"])
+        before = match_status_for(mq["p"], mq["q"], s_["filled"])
+        if mq["qid"] not in s_["answered"]:
+            s_["answered"].append(mq["qid"])
+        s_["filled"][mq["qid"]] = True
+        _copilot_state()["supp"][d["key"]] = d["text"]
+        after = await _push_status(d, mq["p"], mq["q"])
+        moved = f"狀態照規則重算：**{STATUS_TEXT[before]} → {STATUS_TEXT[after]}**。" if after != before else f"狀態照規則重算：仍是 **{STATUS_TEXT[after]}**。"
+        await cl.Message(content=f"已記下「{d['label']}」：{d['text']}\n\n_使用者陳述・未查證。_ {moved}\n\n_補了資訊，不代表驗證完成或合作成立。_").send()
+        await _ask_next({"p": mq["p"], "q": mq["q"], "id": d.get("id")}, intro=False)
+        return
     ok = await copilot_confirmed(d)
     mark = "已補充・待重判" if d.get("kv") else "已補充・未查證"
     tail = "示範版不會重新判斷。" if d.get("kv") else ""
@@ -337,6 +438,12 @@ async def _copilot_pick(m):
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
         return
+    if m.get("mode") == "match" and m.get("kind") == "third" and code in KV_MATCH.get("keys", {}):
+        await _match_third_pick(m)
+        return
+    if m.get("mode") == "match" and m.get("kind") == "status":
+        await _match_status_pick(m)
+        return
     if m.get("mode") == "match" and m.get("kind") == "planet":
         await _match_planet_pick(m)
         return
@@ -370,6 +477,90 @@ async def _copilot_pick(m):
     await cl.Message(content=f"**{T['label']}**・{who['name']}\n\n{body}{note}").send()
 
 
+def _mq_state(pid, qid):
+    st = cl.user_session.get("tangle_mq") or {}
+    k = f"{pid}|{qid}"
+    st.setdefault(k, {"answered": [], "filled": {}})
+    cl.user_session.set("tangle_mq", st)
+    return st[k]
+
+
+def _status_line(pid, qid):
+    st = match_status_for(pid, qid, _mq_state(pid, qid)["filled"])
+    return st, f"**媒合狀態：{STATUS_TEXT[st]}**（依媒合標準 v1.1；不是合作決定）"
+
+
+async def _ask_next(m, key=None, intro=True):
+    """Eva 主動問下一題（一次一題，附「還不知道」「跳過」）。回答走原本的補充流程。"""
+    pid, qid = m.get("p"), m.get("q")
+    s_ = _mq_state(pid, qid)
+    q = next_question_for(pid, qid, set(s_["answered"]), key=key)
+    if not q:
+        if intro:
+            await cl.Message(content="這一組目前沒有要補問的項目。").send()
+        return
+    label = f"{q['key']} {KV_MATCH['keys'][q['key']]}・{q['field']}"
+    cl.user_session.set("tangle_focus", {"cop": True, "id": m.get("id"), "code": q["key"], "subject": 1, "label": label,
+                                         "key": f"mq:{pid}|{qid}:{q['id']}", "mq": {"p": pid, "q": qid, "qid": q["id"], "field": q["field"]}})
+    tag = "（補齊這項，狀態可以往前一步）" if q["minimum"] else ""
+    await cl.Message(content=f"{SEM['SUGGESTION']}・想先確認一件事{tag}\n\n**{q['text']}**\n\n_直接在下方輸入；送出後會先讓你確認。_",
+                     actions=[cl.Action(name="tangle_mq", payload={"p": pid, "q": qid, "qid": q["id"], "a": "unknown", "id": m.get("id"), "key": key}, label="還不知道"),
+                              cl.Action(name="tangle_mq", payload={"p": pid, "q": qid, "qid": q["id"], "a": "skip", "id": m.get("id"), "key": key}, label="跳過")]).send()
+
+
+async def _push_status(m_or_d, pid, qid):
+    """狀態重算後告訴星圖（經工作區轉給 iframe）。"""
+    s_ = _mq_state(pid, qid)
+    st = match_status_for(pid, qid, s_["filled"])
+    try:
+        await cl.CopilotFunction(name="tangle_mark", args={"id": m_or_d.get("id"), "mfStatus": st, "filled": s_["filled"]}).acall()
+    except Exception:
+        pass
+    return st
+
+
+@cl.action_callback("tangle_mq")
+async def on_mq(action: cl.Action):
+    p_ = action.payload
+    s_ = _mq_state(p_["p"], p_["q"])
+    if p_["qid"] not in s_["answered"]:
+        s_["answered"].append(p_["qid"])
+    await action.remove()
+    cl.user_session.set("tangle_focus", None)
+    await cl.Message(content="好，先記成「還不知道」，不算補齊。" if p_["a"] == "unknown" else "好，先跳過。").send()
+    await _ask_next({"p": p_["p"], "q": p_["q"], "id": p_.get("id")}, key=p_.get("key"), intro=False)
+
+
+async def _match_third_pick(m):
+    pid, qid = m.get("p"), m.get("q")
+    r = third_reply_for(pid, qid, m.get("code"))
+    if not r or pid not in PROJECTS or qid not in PROJECTS:
+        return
+    parts = []
+    for x in (pid, qid):
+        q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
+        parts.append(f"{q}\n> — {PROJECTS[x]['name']}・公開計畫理念")
+    await cl.Message(content=f"**{r['title']}**・兩邊都需要\n\n{SEM['FACT']}\n\n" + "\n\n".join(parts) +
+                     f"\n\n{SEM['INFERENCE']}　{r['body']}\n\n{SEM['SUGGESTION']}　一起找能提供這一類的第三個計畫或單位。\n\n{MATCH_DEMO}").send()
+
+
+async def _match_status_pick(m):
+    pid, qid = m.get("p"), m.get("q")
+    if pid not in PROJECTS or qid not in PROJECTS:
+        return
+    st, line = _status_line(pid, qid)
+    comp = complement_pairs(pid, qid)
+    K = KV_MATCH["keys"]
+    why = {"CLARIFY_FIRST": f"有 {len(comp)} 條互補候選，但都還缺最低必要資料（需要方的「用途」、能提供方的「可提供形式」）。補齊任一條，就會照規則轉成「可探索」。",
+           "EXPLORE": "已有互補候選補齊最低必要資料，或兩邊能提供同一類。建議先低成本交流（介紹、會議、資料交換）。",
+           "ELIGIBLE": "沒有互補，也沒有兩邊都能提供的類別；可以排序，但目前不建議。",
+           "EXCLUDED": "不在目前範圍。"}[st]
+    items = "、".join(sorted({f"{k} {K[k]}" for _, _, k in comp})) or "（無）"
+    await cl.Message(content=f"{line}\n\n{SEM['INFERENCE']}　{why}\n\n互補候選：{items}\n\n_第一期不顯示「推薦」：方向還沒經 Owner 確認，也看不出可行合作形式。_\n\n{MATCH_DEMO}").send()
+    if st == "CLARIFY_FIRST":
+        await _ask_next(m)
+
+
 async def _match_peer_pick(m):
     pid, qid = m.get("p"), m.get("q")
     r = peer_reply_for(pid, qid, m.get("code"))
@@ -379,7 +570,7 @@ async def _match_peer_pick(m):
     for x in (pid, qid):
         q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
         parts.append(f"{q}\n> — {PROJECTS[x]['name']}・公開計畫理念")
-    await cl.Message(content=f"**{r['title']}**・兩邊都能提供\n\n" + "\n\n".join(parts) + f"\n\n{r['body']}\n\n{MATCH_DEMO}").send()
+    await cl.Message(content=f"**{r['title']}**・兩邊都能提供\n\n{SEM['FACT']}\n\n" + "\n\n".join(parts) + f"\n\n{SEM['INFERENCE']}　{r['body']}\n\n{MATCH_DEMO}").send()
 
 
 async def _match_pair_pick(m):
@@ -391,7 +582,9 @@ async def _match_pair_pick(m):
     for x, role in ((r["need"], "需要"), (r["offer"], "能提供")):
         q = "\n\n".join(f"> 「{t}」" for t in r["quotes"][x])
         parts.append(f"**{role}**・{PROJECTS[x]['name']}\n\n{q}\n> — 公開計畫理念")
-    await cl.Message(content=f"**{r['title']}**・對上了\n\n" + "\n\n".join(parts) + f"\n\n{r['body']}\n\n{MATCH_DEMO}").send()
+    st, line = _status_line(pid, qid)
+    await cl.Message(content=f"**{r['title']}**・互補候選\n\n{SEM['FACT']}\n\n" + "\n\n".join(parts) + f"\n\n{SEM['INFERENCE']}　{r['body']}\n\n{line}\n\n{MATCH_DEMO}").send()
+    await _ask_next(m, key=m.get("code"), intro=False)
 
 
 async def _match_planet_pick(m):
@@ -405,9 +598,11 @@ async def _match_planet_pick(m):
     fmt = lambda ks: "、".join(f"{k} {K[k]}" for k in ks) or "（無）"
     oname = PROJECTS[other]["name"] if other in PROJECTS else "對方"
     body = (f"**需要**：{fmt(r['need'])}\n\n**能提供**：{fmt(r['offer'])}\n\n"
-            f"和 {oname}：**對上 {len(r['links'])} 條**（{fmt(r['links'])}）；兩邊都能提供、可交流經驗 {len(r['peers'])} 條（{fmt(r['peers'])}）。"
+            f"和 {oname}：**互補候選 {len(r['links'])} 條**（{fmt(r['links'])}）；兩邊都能提供、可聯合或交流 {len(r['peers'])} 條（{fmt(r['peers'])}）。"
             "\n\n點一顆有航跡的衛星，可以走進那一對看兩邊的原文。")
-    await cl.Message(content=f"**{PROJECTS[who]['name']}**・B1–B8\n\n{body}\n\n{MATCH_DEMO}").send()
+    st, line = _status_line(pid, qid)
+    await cl.Message(content=f"**{PROJECTS[who]['name']}**・B1–B8\n\n{SEM['INFERENCE']}\n\n{body}\n\n{line}\n\n{MATCH_DEMO}").send()
+    await _ask_next(m, intro=False)
 
 
 async def _match_key_pick(m):

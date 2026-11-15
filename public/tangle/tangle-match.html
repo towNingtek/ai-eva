@@ -219,7 +219,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794670424"></script><script src="./yunlin-frame.js?v=1794670424"></script>
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794759262"></script><script src="./yunlin-frame.js?v=1794759262"></script>
 <script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
@@ -408,6 +408,13 @@ function tentAngles(p){
  const FREE=Math.PI*70/180,span=Math.PI*2-2*FREE,step=span/items.length;
  return {...it,ang:Math.PI/2+FREE+(i+.5)*step,linked:partners.length>0,partners};});
 }
+// Step C (standard v1.1 BOTH): a key in both n and o is ONE satellite. Give its two entries the same slot;
+// the drawing loop draws it once (as 需要＋能提供). Original tentAngles above is unchanged.
+const _taBase=tentAngles;tentAngles=function(p){const it=_taBase(p),bothK=new Set(p.n.map(x=>x[0]).filter(k=>p.o.some(o=>o[0]===k)));if(!bothK.size)return it;
+ const slots=[];it.forEach(x=>{if(!(bothK.has(x.t[0])&&x.d==='o'))slots.push(x.t[0]+':'+x.d)});
+ const FREE=Math.PI*70/180,step=(Math.PI*2-2*FREE)/slots.length,angOf=k=>Math.PI/2+FREE+(slots.indexOf(k)+.5)*step;
+ return it.map(x=>{const both=bothK.has(x.t[0]),k=both?x.t[0]+':n':x.t[0]+':'+x.d,twin=both?it.find(y=>y.t[0]===x.t[0]&&y.d!==x.d):null;
+  return {...x,ang:angOf(k),both,linked:x.linked||!!(twin&&twin.linked)}})};
 
 const ddSupplements=new Map();
 const planetCache={ready:true};
@@ -468,8 +475,17 @@ function render(){
     return {x:pos[p.id].x+Math.cos(it.ang)*L, y:pos[p.id].y+Math.sin(it.ang)*L};};
 
   // ── 邊：每條 bridge 獨立，從觸手末端連到觸手末端 ──
+  // Step C: both plans only NEED the same B → 「可推薦共同尋找第三方，但不得標示為互補完成」(SH-METHOD-02 §7). Still, no flow.
+  if(P.length===2){const [p1,p2]=P;p1.n.forEach(([tag])=>{if(!p2.n.some(o=>o[0]===tag)||BR.some(b=>b.tag===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
+    const A=tipOf(p1,tag,'n'),B=tipOf(p2,tag,'n'),mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,cx=mx-dy*.14,cy=my+dx*.14;
+    const gid='third-'+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
+    [[0,.04],[.2,.18],[.5,.22],[.8,.18],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#d9b98a','stop-opacity':o})));d.appendChild(gr);
+    const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-third':tag,'pointer-events':'none'});svg.appendChild(line);
+    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':6,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都需要'});
+    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'third',mode:'match'},location.origin)};
+    hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(hit)})}
   // Step 3a+: both plans OFFER the same B -> faint still line = 可交流經驗 (SH-METHOD-02: similarity is peer learning, not complementarity).
-  if(P.length===2){const [p1,p2]=P;p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
+  if(P.length===2){const [p1,p2]=P;p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(BR.some(b=>b.tag===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
     const A=tipOf(p1,tag,'o'),B=tipOf(p2,tag,'o'),mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,cx=mx+dy*.12,cy=my-dx*.12;
     const gid='peer-'+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
     [[0,.04],[.2,.2],[.5,.24],[.8,.2],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#8fcfc5','stop-opacity':o})));d.appendChild(gr);
@@ -523,6 +539,7 @@ function render(){
 
     }
     TA[p.id].forEach(it=>{
+      if(it.both&&it.d==='o')return;   // Step C: BOTH drawn once (via its 'n' entry)
       const c=it.d==="n"?"#f5a524":"#93f2ea";
       const L=tipLen(p,it), ex=a.x+Math.cos(it.ang)*L, ey=a.y+Math.sin(it.ang)*L;
       const dead=!it.linked, low=it.t[2]<.6;
@@ -536,7 +553,7 @@ function render(){
  const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#bae8e4','stroke-width':.6,opacity:.5});g.appendChild(halo);
  const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
  }
-      const sg=el('g',{'data-kv-key':it.t[0],'data-kv-role':isN?'need':'offer','data-kv-owner':p.pid||p.id});g.appendChild(sg);
+      const sg=el('g',{'data-kv-key':it.t[0],'data-kv-role':isN?'need':'offer','data-kv-owner':p.pid||p.id});g.appendChild(sg);if(it.both){sg.setAttribute('data-kv-role','both');}
       drawMoon(sg,ex,ey,mr,isN?'need':'offer',false);
       if(isN){ // shadow side faces away from the light: the provider when met, the own planet when unmet
         let lx,ly;if(lit){lx=lit.reduce((s,q)=>s+q.x,0)/lit.length-ex;ly=lit.reduce((s,q)=>s+q.y,0)/lit.length-ey}else{lx=ex-a.x;ly=ey-a.y}
@@ -551,6 +568,8 @@ function render(){
       target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;if(it.linked&&window.mfEnter){mfEnter(it.t[0],'pair');parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:'pair',mode:'match'},location.origin);return}else if(window.mfFlash)mfFlash(p.id,it.t[0]);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
       target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
       LBL.push({g:sg,x:ex,y:ey,ang:it.ang,mr,name:BN[it.t[0]]+(isN?'・需要':'・能提供'),sub:isN&&!lit?'沒有對象':null,fill:isN&&!lit?'#8a9592':'#bacdcc'});
+      if(it.both){const o=LBL[LBL.length-1];o.name=BN[it.t[0]]+'・需要＋能提供';o.sub=null;o.fill='#cfe3dc';o.mr=mr*1.45;
+        sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*1.35,fill:'none',stroke:'#93f2ea','stroke-width':.7,opacity:.75,'pointer-events':'none','data-kv-both':''}))}
 
     });
     const col=isF?"#2dd4bf":(s?COL[s.st]:"#5f6b7a");
@@ -584,6 +603,14 @@ function render(){
     svg.appendChild(g);
   });
   // Step 3a: place satellite labels last, so each one avoids every planet, moon, project name and earlier label.
+  if(P.length===2&&window.MF_STATUS_TEXT){const [p1,p2]=P,a1=pos[p1.id],a2=pos[p2.id],st=mfStatus(),T=MF_STATUS_TEXT[st];
+   const x=(a1.x+a2.x)/2,y=Math.min(a1.y,a2.y)-58/VZ,f=10.5/VZ,w=T.length*f+14/VZ,h=f*1.9;
+   const sg2=el('g',{'data-mf-status':st,role:'button',tabindex:0,'aria-label':'媒合狀態：'+T,style:'cursor:pointer'});
+   sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,rx:h/2,fill:'rgba(16,24,30,.72)',stroke:st==='EXPLORE'?'#7fd6cb':st==='CLARIFY_FIRST'?'#d9b98a':'#5f6b7a','stroke-width':.6/VZ}));
+   const tx=el('text',{x,y,'text-anchor':'middle',fill:'#d3e6e2','font-size':f.toFixed(2)});tx.textContent=T;sg2.appendChild(tx);
+   const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:p1.id,kind:'status',mode:'match'},location.origin)};
+   sg2.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};sg2.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(sg2);
+   LBL.push({fixed:true,x,y:y+f*.45+h-f*1.2,w:w,h:h})}
   // Candidate spots around the moon (outward first, then the other sides, then further out); first free, on-screen spot wins.
   (function(){const f1=10/VZ,f2=9/VZ,X0=-VX/VZ+4/VZ,Y0=-VY/VZ+4/VZ,X1=-VX/VZ+Wd/VZ-4/VZ,Y1=-VY/VZ+Hd/VZ-4/VZ,PL=[];
    const tw=(t,f)=>{let w=0;for(const ch of t)w+=ch.charCodeAt(0)>255?f:f*.6;return w};
@@ -1109,10 +1136,30 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
   const lbl=(x,y,t,c,size,attr)=>{const n=el('text',Object.assign({x,y,'text-anchor':'middle',fill:c,'font-size':fs(size),opacity:e.toFixed(3)},attr||{}));n.textContent=t;svg.appendChild(n)};
   const name=BN[key];
   lbl(NS.x,NS.y-bigR-12/VZ,name+(peer?'・能提供':'・需要'),peer?'#bfe9e3':'#e8d5b5',13);lbl(OS.x,OS.y-bigR-12/VZ,name+'・能提供','#bfe9e3',13);
-  lbl(cx,cy-10/VZ,peer?'兩邊都能提供：可交流經驗':'對上了：能提供 → 需要','#cfe9e5',10.5,{'data-mf-caption':''});
+  lbl(cx,cy-10/VZ,peer?'兩邊都能提供：可聯合或交流（需另判競合）':'互補候選：能提供 → 需要','#cfe9e5',10.5,{'data-mf-caption':''});
   lbl(NS.x,NS.y+bigR+18/VZ,nEv.length+' 段原文','#93a4a0',10);lbl(OS.x,OS.y+bigR+18/VZ,oEv.length+' 段原文','#93a4a0',10);
  }
 })();
+</script>
+
+<script>
+// ── Step C: match status (SH-COLLAB-03 §5; standard v1.1 status_rules + status_transition). Added block. ──────────────
+// Computed from the same data + rules as the server; the server is the source of truth after a supplement
+// (Eva confirms → 'mf-status' message). RECOMMEND is never shown in phase 1 (Q4).
+window.MF_STATUS_TEXT={EXPLORE:'可探索',CLARIFY_FIRST:'先補資料',ELIGIBLE:'可排序・未建議',EXCLUDED:'不在範圍'};
+window.MF_FILLED=window.MF_FILLED||{};   // "pid:key:field" → true, set by the server after a confirmed answer
+let MF_SERVER_STATUS=null;
+window.mfStatus=function(){
+ if(MF_SERVER_STATUS)return MF_SERVER_STATUS;
+ if(P.length!==2)return 'ELIGIBLE';
+ const [a,b]=P,M=KV_MATCH.projects,A=M[a.pid].match,B=M[b.pid].match,N=r=>r==='need'||r==='both',O=r=>r==='offer'||r==='both';
+ const comp=[];Object.keys(A).forEach(k=>{if(N(A[k].role)&&O(B[k].role))comp.push([a.pid,b.pid,k]);if(N(B[k].role)&&O(A[k].role))comp.push([b.pid,a.pid,k])});
+ const filled=([n,o,k])=>MF_FILLED[n+':'+k+':用途']&&MF_FILLED[o+':'+k+':可提供形式'];
+ if(comp.length)return comp.some(filled)?'EXPLORE':'CLARIFY_FIRST';
+ const peer=Object.keys(A).some(k=>A[k].role==='offer'&&B[k].role==='offer');
+ return peer?'EXPLORE':'ELIGIBLE'};
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='mf-status')return;
+ MF_SERVER_STATUS=e.data.status||null;if(e.data.filled)Object.assign(MF_FILLED,e.data.filled);render();buildParticles()});
 </script>
 </body>
 </html>

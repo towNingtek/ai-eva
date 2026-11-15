@@ -3,7 +3,7 @@ const ylSel=new Map();
 const ylById=id=>PROJECTS.find(p=>p.id===id);
 const ylTheme=(p,t)=>p&&p.issues.find(i=>i.theme===t);
 // step 3a: rank partners by need × offer links (both directions) in kv-match-mock.js
-const ylShared=(a,b)=>{const M=window.KV_MATCH;if(!M||!M.projects[a.id]||!M.projects[b.id])return 0;const A=M.projects[a.id].match,B=M.projects[b.id].match;return Object.keys(A).filter(k=>(A[k].role==='need'&&B[k].role==='offer')||(A[k].role==='offer'&&B[k].role==='need')).length};
+const ylShared=(a,b)=>{const M=window.KV_MATCH;if(!M||!M.projects[a.id]||!M.projects[b.id])return 0;const A=M.projects[a.id].match,B=M.projects[b.id].match;const N=r=>r==='need'||r==='both',O=r=>r==='offer'||r==='both';return Object.keys(A).filter(k=>(N(A[k].role)&&O(B[k].role))||(O(A[k].role)&&N(B[k].role))).length};
 function ylPartners(pid){const a=ylById(pid);return PROJECTS.filter(p=>p.id!==pid).sort((x,y)=>ylShared(a,y)-ylShared(a,x))}
 function ylOptions(list,selected,withShared){const a=withShared&&ylById(withShared);return list.map(p=>'<option value="'+p.id+'"'+(p.id===selected?' selected':'')+'>'+esc(p.name)+(a?'（可對接 '+ylShared(a,p)+'）':'')+'</option>').join('')}
 setup=function(mode,id){const p0=PROJECTS[0].id,q0=ylPartners(p0)[0].id;ylSel.set(id,{p:p0,q:q0});
@@ -15,7 +15,7 @@ function ylTitle(id){if(currentId===id&&$('deskTitle'))$('deskTitle').textConten
 function ylDefault(mode){const a=PROJECTS[0];return a.name+(mode==='match'?' × '+ylPartners(a.id)[0].name:'')}
 const ylOpenDesk=openDesk;openDesk=function(mode,id){ylOpenDesk(mode,id);currentMode=mode;$('deskTitle').textContent=names[mode]+' / '+ylLabel(id)};
 const ylRun=run;run=function(mode,id){const ps=$('yl-p-'+id);if(ps){const qs=$('yl-q-'+id);ylSel.set(id,{p:ps.value,q:qs?qs.value:null})}ylRun(mode,id);ylTitle(id)};
-const ylFrame=originalFrame;originalFrame=function(mode,id){const fresh=!frames.has(id),f=ylFrame(mode,id);if(fresh){const s=ylSel.get(id)||{};f.src='/public/tangle/tangle-'+mode+'.html?v=1794741642&p='+encodeURIComponent(s.p||'')+'&q='+encodeURIComponent(s.q||'')}return f};
+const ylFrame=originalFrame;originalFrame=function(mode,id){const fresh=!frames.has(id),f=ylFrame(mode,id);if(fresh){const s=ylSel.get(id)||{};f.src='/public/tangle/tangle-'+mode+'.html?v=1794759262&p='+encodeURIComponent(s.p||'')+'&q='+encodeURIComponent(s.q||'')}return f};
 inputView=function(mode,id){const s=ylSel.get(id)||{p:PROJECTS[0].id},list=[ylById(s.p)].concat(mode==='match'&&s.q?[ylById(s.q)]:[]);
  ai('<p>本次輸入（公開計畫理念原文）：</p>'+list.map(p=>'<p><b>'+esc(p.name)+'</b></p><div class="evidence">'+esc(p.philosophy)+'</div>').join('')+'<p class="muted">固定快照，擷取自雲林社區 AI 知識系統公開頁面；後續引用都出自這段原文。</p>')};
 // DD content for the selected project; replaces the fictional evidence table.

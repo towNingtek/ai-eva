@@ -34,7 +34,7 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   await p.mouse.click(ib.x+c.x,ib.y+c.y);await p.waitForTimeout(3000);
   const t=await p.locator("#root").innerText(),v=M.projects[tgt.owner].match[tgt.k];
   ok(t.includes(v.evidence[0]),"Eva quotes the plan text for the clicked B satellite");
-  ok(t.includes("需要")&&t.includes("對上了")&&t.includes("示範資料"),"Eva states 需要, that it matches (對上了), and the demo note");
+  ok(t.includes("需要")&&t.includes("互補候選")&&t.includes("示範資料"),"Eva states 需要, that it is a 互補候選 (standard v1.1), and the demo note");
   // 3a+: flow is visible (3 particles per route) and a both-offer pair shows a faint, still peer line that Eva explains
   ok((await G().evaluate(()=>{const c={};PT.forEach(q=>c[q.ti]=(c[q.ti]||0)+1);return TRACKS.every((t,i)=>t.peer||c[i]===3)})),"every need×offer route carries 3 flow particles");
   await p.reload();await p.waitForTimeout(6000);

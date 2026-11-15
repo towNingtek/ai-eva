@@ -9,7 +9,7 @@ const fail=m=>{console.error("FAIL "+m);process.exitCode=1};
 function mock(){const f=path.join(ROOT,"tangle","kv-match-mock.js");if(!fs.existsSync(f))return null;const s=fs.readFileSync(f,"utf8");return JSON.parse(s.slice(s.indexOf("{"),s.lastIndexOf("}")+1))}
 const M=mock(),IDS=M?Object.keys(M.projects):["48060125","15080750"],PAIRS=[];for(let i=0;i<IDS.length;i++)for(let j=i+1;j<IDS.length;j++)PAIRS.push([IDS[i],IDS[j]]);
 const role=(pid,k)=>M.projects[pid].match[k].role;
-const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of Object.keys(M.keys))if(role(x,k)==="need"&&role(y,k)==="offer")out.push(`${y}>${x}:${k}`);return out.sort()};
+const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of Object.keys(M.keys))if(["need","both"].includes(role(x,k))&&["offer","both"].includes(role(y,k)))out.push(`${y}>${x}:${k}`);return out.sort()};
 (async()=>{await new Promise(r=>srv.listen(0,"127.0.0.1",r));const port=srv.address().port,b=await chromium.launch();let n=0;
  const open=async(a,c,vp)=>{const p=await b.newPage({viewport:vp||{width:1100,height:740}});p._errs=[];p._ext=[];p.on("pageerror",e=>p._errs.push(e.message));p.on("request",r=>{if(!r.url().startsWith("http://127.0.0.1:"+port)&&!r.url().startsWith("data:"))p._ext.push(r.url())});
   await p.goto(`http://127.0.0.1:${port}/tangle/tangle-match.html?p=${a}&q=${c}`);await p.mouse.move(2,2);await p.waitForTimeout(2600);return p};
@@ -27,7 +27,7 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    if(got.join()!==want(a,c).join())fail(`${a}×${c}: routes [${got.join(" ")}] != expected [${want(a,c).join(" ")}]`);n++;await p.close()}}
  else if(arg==="--need-look"){for(const [a,c] of PAIRS){const p=await open(a,c),S=await sats(p),W=want(a,c);
    const expN=[a,c].reduce((t,pid)=>t+Object.keys(M.keys).filter(k=>role(pid,k)!=="none").length,0);if(S.length!==expN)fail(`${a}×${c}: ${S.length} B satellites, expected ${expN}`);
-   for(const s of S){if(s.role==="offer"){if(s.shadow)fail(`${a}×${c} ${s.owner} ${s.k}: offer must not have a crescent shadow`);continue}
+   for(const s of S){if(s.role==="both"){if(!s.text.includes("需要＋能提供"))fail(`${a}×${c} ${s.owner} ${s.k}: BOTH label`);continue}if(s.role==="offer"){if(s.shadow)fail(`${a}×${c} ${s.owner} ${s.k}: offer must not have a crescent shadow`);continue}
     const met=W.some(w=>w.endsWith(`>${s.owner}:${s.k}`));
     if(s.shadow!==(met?"met":"unmet"))fail(`${a}×${c} ${s.owner} ${s.k}: shadow ${s.shadow} != ${met?"met":"unmet"}`);
     if(met===s.text.includes("沒有對象"))fail(`${a}×${c} ${s.owner} ${s.k}: 沒有對象 text wrong (met=${met})`)}
@@ -48,10 +48,10 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    // wait for at least one arrival: some met need shows a pulse, and later it fades back
    let seen=null;for(let k=0;k<40&&!seen;k++){seen=await p.evaluate(()=>{const g=[...document.querySelectorAll("[data-need-pulse]")].find(x=>+x.getAttribute("opacity")>.15);return g?g.closest("[data-kv-key]").getAttribute("data-kv-key"):null});if(!seen)await p.waitForTimeout(150)}
    if(!seen){fail(`${a}×${c}: no need pulse seen within 6s`);await p.close();continue}
-   const role=await p.evaluate(k=>document.querySelector(`[data-need-pulse]`).closest("[data-kv-key]").getAttribute("data-kv-role"),seen);if(role!=="need")fail(`${a}×${c}: pulse on a non-need satellite`);
+   const role=await p.evaluate(k=>document.querySelector(`[data-need-pulse]`).closest("[data-kv-key]").getAttribute("data-kv-role"),seen);if(role!=="need"&&role!=="both")fail(`${a}×${c}: pulse on a non-need satellite (${role})`);
    n++;await p.close()}}
  else if(arg==="--peer"){for(const [a,c] of PAIRS){const p=await open(a,c);
-   const exp=Object.keys(M.keys).filter(k=>role(a,k)==="offer"&&role(c,k)==="offer").sort();
+   const exp=Object.keys(M.keys).filter(k=>role(a,k)==="offer"&&role(c,k)==="offer"&&!want(a,c).some(w=>w.endsWith(":"+k))).sort();
    const got=(await p.evaluate(()=>[...document.querySelectorAll("[data-kv-peer]")].map(x=>x.getAttribute("data-kv-peer")))).sort();
    if(got.join()!==exp.join())fail(`${a}×${c}: peer lines [${got.join()}] != both-offer [${exp.join()}]`);
    const dash=await p.evaluate(()=>[...document.querySelectorAll("[data-kv-peer]")].some(x=>x.getAttribute("stroke-dasharray")));if(dash)fail(`${a}×${c}: peer line is dashed`);
@@ -80,12 +80,12 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    const lone=await p.evaluate(()=>{const g=[...document.querySelectorAll("[data-kv-key]")].find(x=>x.querySelector('[data-need-shadow="unmet"]'));return g?[g.getAttribute("data-kv-key"),g.getAttribute("data-kv-owner")]:null});
    if(lone){const q=await centre(lone[0],lone[1]);await p.mouse.click(q.x,q.y);await p.waitForTimeout(900);v=await view();if(v.f.length)fail(`${a}×${c}: unmet need ${lone[0]} must not walk in`)}
    n++;await p.close()}}
- else if(arg==="--pair-peer"){const pairs=PAIRS.filter(([a,c])=>Object.keys(M.keys).some(k=>role(a,k)==="offer"&&role(c,k)==="offer")).slice(0,8);for(const [a,c] of pairs){const p=await open(a,c);
+ else if(arg==="--pair-peer"){const pairs=PAIRS.filter(([a,c])=>Object.keys(M.keys).some(k=>role(a,k)==="offer"&&role(c,k)==="offer"&&!want(a,c).some(w=>w.endsWith(":"+k)))).slice(0,8);for(const [a,c] of pairs){const p=await open(a,c);
    await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);
    const m=await p.evaluate(()=>{const pth=document.querySelector("[data-kv-peer]"),L=pth.getTotalLength(),pt=pth.getPointAtLength(L*.5),mm=pth.getScreenCTM();return{x:pt.x*mm.a+mm.e,y:pt.y*mm.d+mm.f,tag:pth.getAttribute("data-kv-peer")}});
    await p.mouse.click(m.x,m.y);await p.waitForTimeout(1200);
    const v=await p.evaluate(()=>({f:[...document.querySelectorAll("[data-mf-focus]")].map(g=>g.getAttribute("data-mf-role")),pts:PT.length,cap:(document.querySelector("[data-mf-caption]")||{}).textContent||""}));
-   if(v.f.join()!=="offer,offer")fail(`${a}×${c} ${m.tag}: peer walk-in roles ${v.f.join()}`);if(v.pts!==0)fail(`${a}×${c}: peer walk-in must have no flow (${v.pts})`);if(!v.cap.includes("可交流經驗"))fail(`${a}×${c}: caption ${v.cap}`);
+   if(v.f.join()!=="offer,offer")fail(`${a}×${c} ${m.tag}: peer walk-in roles ${v.f.join()}`);if(v.pts!==0)fail(`${a}×${c}: peer walk-in must have no flow (${v.pts})`);if(!v.cap.includes("可聯合或交流"))fail(`${a}×${c}: caption ${v.cap}`);
    n++;await p.close()}}
  else if(arg==="--planet"){for(const [a,c] of PAIRS.slice(0,10)){const p=await open(a,c);
    await p.addInitScript(()=>{});await p.evaluate(()=>{window.__pm=[];const o=window.parent.postMessage.bind(window.parent);window.parent.postMessage=(m,t)=>{window.__pm.push(m);try{o(m,t)}catch(e){}}});
@@ -102,6 +102,22 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    if(!(after.f&&after.big.w>b0.w*1.08&&toC>80))fail(`${a}×${c}: original planet focus did not happen (focus ${after.f}, ${b0.w.toFixed(0)}→${after.big.w.toFixed(0)}px, toward centre ${toC.toFixed(0)})`);
    if(after.msgs.length!==1)fail(`${a}×${c}: planet click must send exactly one planet message (${after.msgs.length})`);
    n++;await q.close()}}
+ else if(arg==="--status"){for(const [a,c] of PAIRS){const p=await open(a,c);
+   // the status pill on the graph = the rule from the data (standard v1.1), nothing filled yet; never RECOMMEND
+   const N=r=>r==="need"||r==="both",O=r=>r==="offer"||r==="both",ks=Object.keys(M.keys);
+   const comp=ks.some(k=>(N(role(a,k))&&O(role(c,k)))||(N(role(c,k))&&O(role(a,k)))),peer=ks.some(k=>role(a,k)==="offer"&&role(c,k)==="offer");
+   const exp=comp?"CLARIFY_FIRST":peer?"EXPLORE":"ELIGIBLE";
+   const got=await p.evaluate(()=>{const g=document.querySelector("[data-mf-status]");return g?{st:g.getAttribute("data-mf-status"),t:g.textContent}:null});
+   if(!got)fail(`${a}×${c}: no status pill`);else{if(got.st!==exp)fail(`${a}×${c}: status ${got.st} != ${exp}`);if(/RECOMMEND|推薦/.test(got.st+got.t))fail(`${a}×${c}: RECOMMEND shown`)}
+   // after the server reports EXPLORE (a supplement filled the minimum fields), the pill follows
+   if(comp){await p.evaluate(()=>window.postMessage({type:"mf-status",status:"EXPLORE"},location.origin));}
+   n++;await p.close()}}
+ else if(arg==="--third"){for(const [a,c] of PAIRS){const p=await open(a,c);
+   const ks=Object.keys(M.keys),exp=ks.filter(k=>role(a,k)==="need"&&role(c,k)==="need").sort();
+   const got=(await p.evaluate(()=>[...document.querySelectorAll("[data-kv-third]")].map(x=>x.getAttribute("data-kv-third")))).sort();
+   if(got.join()!==exp.join())fail(`${a}×${c}: third-party lines [${got.join()}] != both-need [${exp.join()}]`);
+   if(await p.evaluate(()=>TRACKS.some(t=>!t.peer&&!t.mf&&document.querySelector(`[data-kv-third="${t.tag}"]`))))fail(`${a}×${c}: a both-need key got a flowing route`);
+   n++;await p.close()}}
  else if(arg==="--no-overlap"){for(const [a,c] of PAIRS)for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(a,c,vp);
    const hits=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom,out=[];
     const T=[...document.querySelectorAll("#svg text")].filter(t=>t.textContent.trim()&&getComputedStyle(t).display!=="none"&&+(t.getAttribute("opacity")??1)>.05).map(t=>[t.textContent,R(t)]);
@@ -114,5 +130,5 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
  else if(arg==="--hygiene"){for(const [a,c] of PAIRS.slice(0,10)){const p=await open(a,c);
    if(await p.evaluate(()=>document.querySelectorAll('[stroke-dasharray]:not([stroke-dasharray=""])').length))fail(`${a}×${c}: dashed lines`);
    if(p._errs.length)fail(`${a}×${c}: page errors ${p._errs.join(";")}`);if(p._ext.length)fail(`${a}×${c}: external requests ${p._ext.join(",")}`);n++;await p.close()}}
- else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --pair | --pair-peer | --planet | --no-overlap | --hygiene");process.exitCode=2}
+ else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --pair | --pair-peer | --planet | --status | --third | --no-overlap | --hygiene");process.exitCode=2}
  await b.close();srv.close();if(!process.exitCode)console.log("OK",arg,n+" pairs")})().catch(e=>{console.error("ERROR",e.message);process.exit(1)});

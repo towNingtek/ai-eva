@@ -21,16 +21,18 @@ BANNED = ("通過", "已判定", "建議合作")
 def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
-    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for", "pair_reply_for", "planet_summary_for")]
-    if len(keep) != 8:
-        raise SystemExit("FAIL tangle_lab.py must define load_kv_law, reply_for, _reply_markdown, load_kv_match and match_reply_for")
+    keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for", "pair_reply_for", "planet_summary_for",
+                                                                       "load_match_standard", "_is_need", "_is_offer", "complement_pairs", "match_status_for", "next_question_for", "third_reply_for")]
+    if len(keep) != 15:
+        raise SystemExit("FAIL tangle_lab.py must define the 15 reply and match-rule functions (incl. match_status_for, next_question_for)")
     mod = types.ModuleType("reply")
     mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
     mod._KVM_JS = ROOT / "public/tangle/kv-match-mock.js"
+    mod._STD_YAML = ROOT / "app/matching/standard_yunlin_v1.yaml"   # must exist before the functions' default args are evaluated
     exec(compile(ast.Module(body=keep, type_ignores=[]), "tangle_lab.py", "exec"), mod.__dict__)
     mod.KV_LAW = mod.load_kv_law()
-    mod._KVM_JS = ROOT / "public/tangle/kv-match-mock.js"
     mod.KV_MATCH = mod.load_kv_match()
+    mod.MATCH_STD = mod.load_match_standard()
     return mod
 
 
@@ -91,13 +93,13 @@ def match_problems(mod):
                     out.append(f"{pid} {k}: no reply"); continue
                 if r["quotes"] != v["evidence"]:
                     out.append(f"{pid} {k}: quotes differ from evidence")
-                if r["role"] != v["role"] or ("需要" if v["role"] == "need" else "能提供") not in r["body"]:
+                if r["role"] != v["role"] or {"need": "需要", "offer": "能提供", "both": "需要＋能提供"}[v["role"]] not in r["body"]:
                     out.append(f"{pid} {k}: role not stated")
                 if any(b in r["body"] for b in BANNED):
                     out.append(f"{pid} {k}: banned conclusion word")
                 if q:
                     other = kvm["projects"][q]["match"][k]["role"]
-                    linked = (v["role"] == "need" and other == "offer") or (v["role"] == "offer" and other == "need")
+                    linked = (v["role"] in ("need", "both") and other in ("offer", "both")) or (v["role"] in ("offer", "both") and other in ("need", "both"))
                     if linked != ("航跡" in r["body"]):
                         out.append(f"{pid} {k} vs {q}: route mention does not match need×offer")
     # peer lines: both offer the same B -> reply says 交流經驗, never 互補 or 需要; anything else -> no peer reply
@@ -123,7 +125,7 @@ def match_problems(mod):
                 continue
             for k in kvm["keys"]:
                 ra, rb = kvm["projects"][a]["match"][k]["role"], kvm["projects"][b]["match"][k]["role"]
-                comp = {ra, rb} == {"need", "offer"}
+                comp = (ra in ("need", "both") and rb in ("offer", "both")) or (rb in ("need", "both") and ra in ("offer", "both"))
                 r = mod.pair_reply_for(a, b, k, kvm)
                 if comp != (r is not None):
                     out.append(f"{a}×{b} {k}: pair reply exists={r is not None} but complementary={comp}"); continue
@@ -131,15 +133,71 @@ def match_problems(mod):
                     n += 1
                     if r["quotes"][r["need"]] != kvm["projects"][r["need"]]["match"][k]["evidence"] or r["quotes"][r["offer"]] != kvm["projects"][r["offer"]]["match"][k]["evidence"]:
                         out.append(f"{a}×{b} {k}: pair quotes differ")
-                    if kvm["projects"][r["need"]]["match"][k]["role"] != "need" or "建議合作" in r["body"]:
+                    if kvm["projects"][r["need"]]["match"][k]["role"] not in ("need", "both") or kvm["projects"][r["offer"]]["match"][k]["role"] not in ("offer", "both") or "建議合作" in r["body"]:
                         out.append(f"{a}×{b} {k}: pair roles or wording wrong")
             s = mod.planet_summary_for(a, b, kvm)
             m, q = kvm["projects"][a]["match"], kvm["projects"][b]["match"]
-            want_links = sorted(k for k in kvm["keys"] if {m[k]["role"], q[k]["role"]} == {"need", "offer"})
+            Nn, Oo = ("need", "both"), ("offer", "both")
+            want_links = sorted(k for k in kvm["keys"] if (m[k]["role"] in Nn and q[k]["role"] in Oo) or (m[k]["role"] in Oo and q[k]["role"] in Nn))
             want_peers = sorted(k for k in kvm["keys"] if m[k]["role"] == q[k]["role"] == "offer")
-            if sorted(s["links"]) != want_links or sorted(s["peers"]) != want_peers or sorted(s["need"]) != sorted(k for k in m if m[k]["role"] == "need"):
+            if sorted(s["links"]) != want_links or sorted(s["peers"]) != want_peers or sorted(s["need"]) != sorted(k for k in m if m[k]["role"] in Nn):
                 out.append(f"{a}×{b}: planet summary counts wrong")
             n += 1
+    # Step C: status rules, questions, third-party replies (standard v1.1)
+    std = mod.MATCH_STD
+    mf = std["status_transition"]["minimum_fields"]
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            st = mod.match_status_for(a, b, {}, kvm, std)
+            comp = mod.complement_pairs(a, b, kvm)
+            if st == "RECOMMEND":
+                out.append(f"{a}×{b}: RECOMMEND must not appear in phase 1")
+            if comp and st != "CLARIFY_FIRST":
+                out.append(f"{a}×{b}: with candidates and nothing filled, status must be CLARIFY_FIRST ({st})")
+            if comp:
+                n_, o_, k_ = comp[0]
+                half = {f"{n_}:{k_}:{mf['NEED']}": True}
+                if mod.match_status_for(a, b, half, kvm, std) != "CLARIFY_FIRST":
+                    out.append(f"{a}×{b}: one minimum field alone must not move the status")
+                full = {**half, f"{o_}:{k_}:{mf['OFFER']}": True}
+                if mod.match_status_for(a, b, full, kvm, std) != "EXPLORE":
+                    out.append(f"{a}×{b}: both minimum fields of one candidate must give EXPLORE")
+                q1 = mod.next_question_for(a, b, set(), kvm, std)
+                if not q1 or not q1["minimum"] or q1["field"] != mf["NEED"]:
+                    out.append(f"{a}×{b}: first question must be the NEED minimum field ({q1 and q1['field']})")
+                q2 = mod.next_question_for(a, b, {q1["id"]}, kvm, std)
+                if not q2 or q2["field"] != mf["OFFER"]:
+                    out.append(f"{a}×{b}: second question must be the OFFER minimum field ({q2 and q2['field']})")
+                fields = set(std["clarify_questions"]["NEED"]) | set(std["clarify_questions"]["OFFER"])
+                seen, ans = [], set()
+                while True:
+                    q = mod.next_question_for(a, b, ans, kvm, std)
+                    if not q:
+                        break
+                    if q["field"] not in fields or "{" in q["text"]:
+                        out.append(f"{a}×{b}: question not from the YAML or unfilled template: {q['text']}")
+                        break
+                    seen.append(q["id"]); ans.add(q["id"])
+                    if len(seen) > 200:
+                        out.append(f"{a}×{b}: questions never end"); break
+                if len(seen) != len(set(seen)):
+                    out.append(f"{a}×{b}: a question was asked twice")
+                n += 1
+            else:
+                A, B = kvm["projects"][a]["match"], kvm["projects"][b]["match"]
+                peer = any(A[k]["role"] == "offer" and B[k]["role"] == "offer" for k in kvm["keys"])
+                if st != ("EXPLORE" if peer else "ELIGIBLE"):
+                    out.append(f"{a}×{b}: no candidates → {('EXPLORE' if peer else 'ELIGIBLE')} expected ({st})")
+            for k in kvm["keys"]:
+                both_need = kvm["projects"][a]["match"][k]["role"] == "need" and kvm["projects"][b]["match"][k]["role"] == "need"
+                r = mod.third_reply_for(a, b, k, kvm)
+                if both_need != (r is not None):
+                    out.append(f"{a}×{b} {k}: third-party reply exists={r is not None} but both-need={both_need}")
+                if r and ("共同尋找第三方" not in r["body"] or "不算互補" not in r["body"]):
+                    out.append(f"{a}×{b} {k}: third-party wording")
+                pr = mod.pair_reply_for(a, b, k, kvm)
+                if pr and ("對上了" in pr["body"] or "互補候選" not in pr["body"]):
+                    out.append(f"{a}×{b} {k}: pair wording must say 互補候選, never 對上了")
     return out, n
 
 
