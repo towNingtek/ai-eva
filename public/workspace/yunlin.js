@@ -15,7 +15,7 @@ function ylTitle(id){if(currentId===id&&$('deskTitle'))$('deskTitle').textConten
 function ylDefault(mode){const a=PROJECTS[0];return a.name+(mode==='match'?' × '+ylPartners(a.id)[0].name:'')}
 const ylOpenDesk=openDesk;openDesk=function(mode,id){ylOpenDesk(mode,id);currentMode=mode;$('deskTitle').textContent=names[mode]+' / '+ylLabel(id)};
 const ylRun=run;run=function(mode,id){const ps=$('yl-p-'+id);if(ps){const qs=$('yl-q-'+id);ylSel.set(id,{p:ps.value,q:qs?qs.value:null})}ylRun(mode,id);ylTitle(id)};
-const ylFrame=originalFrame;originalFrame=function(mode,id){const fresh=!frames.has(id),f=ylFrame(mode,id);if(fresh){const s=ylSel.get(id)||{};f.src='/public/tangle/tangle-'+mode+'.html?v=1794759262&p='+encodeURIComponent(s.p||'')+'&q='+encodeURIComponent(s.q||'')}return f};
+const ylFrame=originalFrame;originalFrame=function(mode,id){const fresh=!frames.has(id),f=ylFrame(mode,id);if(fresh){const s=ylSel.get(id)||{};f.src='/public/tangle/tangle-'+mode+'.html?v=1794761884&p='+encodeURIComponent(s.p||'')+'&q='+encodeURIComponent(s.q||'')}return f};
 inputView=function(mode,id){const s=ylSel.get(id)||{p:PROJECTS[0].id},list=[ylById(s.p)].concat(mode==='match'&&s.q?[ylById(s.q)]:[]);
  ai('<p>本次輸入（公開計畫理念原文）：</p>'+list.map(p=>'<p><b>'+esc(p.name)+'</b></p><div class="evidence">'+esc(p.philosophy)+'</div>').join('')+'<p class="muted">固定快照，擷取自雲林社區 AI 知識系統公開頁面；後續引用都出自這段原文。</p>')};
 // DD content for the selected project; replaces the fictional evidence table.

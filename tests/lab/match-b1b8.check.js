@@ -108,6 +108,8 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    const comp=ks.some(k=>(N(role(a,k))&&O(role(c,k)))||(N(role(c,k))&&O(role(a,k)))),peer=ks.some(k=>role(a,k)==="offer"&&role(c,k)==="offer");
    const exp=comp?"CLARIFY_FIRST":peer?"EXPLORE":"ELIGIBLE";
    const got=await p.evaluate(()=>{const g=document.querySelector("[data-mf-status]");return g?{st:g.getAttribute("data-mf-status"),t:g.textContent}:null});
+   const frame=await p.evaluate(()=>[...document.querySelectorAll("[data-mf-status] rect, [data-mf-status] circle, [data-mf-status] path")].some(e=>{const f=e.getAttribute("fill")||"",st=e.getAttribute("stroke")||"";return(f&&f!=="transparent"&&f!=="none")||(st&&st!=="none"&&st!=="transparent")}));
+   if(frame)fail(`${a}×${c}: status must have no visible frame (yillkid 2026-11-15)`);
    if(!got)fail(`${a}×${c}: no status pill`);else{if(got.st!==exp)fail(`${a}×${c}: status ${got.st} != ${exp}`);if(/RECOMMEND|推薦/.test(got.st+got.t))fail(`${a}×${c}: RECOMMEND shown`)}
    // after the server reports EXPLORE (a supplement filled the minimum fields), the pill follows
    if(comp){await p.evaluate(()=>window.postMessage({type:"mf-status",status:"EXPLORE"},location.origin));}

@@ -219,7 +219,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794759262"></script><script src="./yunlin-frame.js?v=1794759262"></script>
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794670424"></script><script src="./yunlin-frame.js?v=1794670424"></script>
 <script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
@@ -606,8 +606,8 @@ function render(){
   if(P.length===2&&window.MF_STATUS_TEXT){const [p1,p2]=P,a1=pos[p1.id],a2=pos[p2.id],st=mfStatus(),T=MF_STATUS_TEXT[st];
    const x=(a1.x+a2.x)/2,y=Math.min(a1.y,a2.y)-58/VZ,f=10.5/VZ,w=T.length*f+14/VZ,h=f*1.9;
    const sg2=el('g',{'data-mf-status':st,role:'button',tabindex:0,'aria-label':'媒合狀態：'+T,style:'cursor:pointer'});
-   sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,rx:h/2,fill:'rgba(16,24,30,.72)',stroke:st==='EXPLORE'?'#7fd6cb':st==='CLARIFY_FIRST'?'#d9b98a':'#5f6b7a','stroke-width':.6/VZ}));
-   const tx=el('text',{x,y,'text-anchor':'middle',fill:'#d3e6e2','font-size':f.toFixed(2)});tx.textContent=T;sg2.appendChild(tx);
+   sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,fill:'transparent'}));   // click area only, no visible frame
+   const tx=el('text',{x,y,'text-anchor':'middle',fill:st==='EXPLORE'?'#9fe3d9':st==='CLARIFY_FIRST'?'#e6cfa6':'#9aa6a3','font-size':f.toFixed(2),stroke:'#060a10','stroke-width':(3/VZ).toFixed(2),'paint-order':'stroke'});tx.textContent=T;sg2.appendChild(tx);
    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:p1.id,kind:'status',mode:'match'},location.origin)};
    sg2.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};sg2.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(sg2);
    LBL.push({fixed:true,x,y:y+f*.45+h-f*1.2,w:w,h:h})}
