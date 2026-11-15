@@ -146,17 +146,40 @@ def _mode_actions():
             cl.Action(name=MODE_ACTION["law"], payload={"mode": "law"}, label="⚖ 法規檢核")]
 
 
-async def resume():
+RESUME_TEXT = "要繼續分析嗎？"
+
+
+async def resume(thread=None):
     """回到舊對話（重新整理、點左側紀錄）時，舊訊息上的按鈕已失效 → 補一組可用的入口。
 
     on_chat_resume 跑完後 Chainlit 才把舊訊息整批送到前端（會蓋掉先送的訊息），
     所以稍等再送，讓它排在還原內容之後。
+
+    A（2026-11-15）：先移除這個對話裡所有舊的「要繼續分析嗎？」（按鈕早已失效），再送一則新的，
+    所以不管重新整理幾次，對話裡只會有一則可用的入口。舊對話裡已累積的也一併清掉。
     """
     import asyncio
 
+    async def old_prompt_ids():
+        t = thread
+        if t is None:  # app/main.py calls resume() without the thread; read it from the data layer
+            try:
+                from chainlit.data import get_data_layer
+                dl = get_data_layer()
+                t = await dl.get_thread(cl.context.session.thread_id) if dl else None
+            except Exception:
+                t = None
+        return [s["id"] for s in ((t or {}).get("steps") or [])
+                if s.get("type") == "assistant_message" and (s.get("output") or "").strip() == RESUME_TEXT]
+
     async def later():
         await asyncio.sleep(1.2)
-        await cl.Message(content="要繼續分析嗎？", actions=_mode_actions()).send()
+        for sid in await old_prompt_ids():
+            try:
+                await cl.Message(id=sid, content=RESUME_TEXT).remove()
+            except Exception:  # 刪不到不影響新入口
+                pass
+        await cl.Message(content=RESUME_TEXT, actions=_mode_actions()).send()
 
     asyncio.create_task(later())
 
@@ -187,12 +210,20 @@ async def on_mode(action: cl.Action):
                               "做完按工作區右上角「收合」，就回到原本的畫面。")).send()
 
 
+NO_AI_TEXT = ("試作環境沒有接 AI，無法自由問答。請按「媒合分析」或「法規檢核」打開星圖，"
+              "點一顆衛星後，就可以在這裡補充。")
+
+
 async def handle_message(msg: cl.Message) -> bool:
-    """有選取中的衛星時，把輸入變成補充草稿。回傳 True 表示已處理。"""
+    """有選取中的衛星時，把輸入變成補充草稿；沒有選取時回固定說明（E：不交給沒有金鑰的 AI）。
+    試作站所有輸入都在這裡處理完，回傳 True。"""
     focus = cl.user_session.get("tangle_focus")
     text = (msg.content or "").strip()
-    if not focus or not text:
-        return False
+    if not text:
+        return True
+    if not focus:
+        await cl.Message(content=NO_AI_TEXT, actions=_mode_actions()).send()
+        return True
     did = uuid.uuid4().hex[:8]
     drafts = cl.user_session.get("tangle_drafts") or {}
     drafts[did] = {**focus, "text": text}
