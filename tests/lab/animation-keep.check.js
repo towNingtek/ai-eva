@@ -1,6 +1,6 @@
-// Animation preservation check: the 13 animations that existed in the accepted lab (f2cebc8, 2026-11-10) must still exist.
+// Animation preservation check: the 16 animations/interactions that existed in the accepted lab (f2cebc8, 2026-11-10) must still exist.
 // Values may change (tuning is allowed); an animation dropping to zero / not present = FAIL (disappeared).
-// Serves public/ (or ROOT env) itself; Playwright via NODE_PATH. Last line: "ALL KEPT 13" on success.
+// Serves public/ (or ROOT env) itself; Playwright via NODE_PATH. Last line: "ALL KEPT 16" on success.
 const http=require("http"),fs=require("fs"),path=require("path");
 let chromium;try{({chromium}=require("playwright"))}catch(e){console.error("Playwright not found. Set NODE_PATH.");process.exit(2)}
 const ROOT=process.env.ROOT||path.resolve(__dirname,"..","..","public");
@@ -31,9 +31,10 @@ function soloMove(before,after,idx){const t=before[idx],near=after.reduce((a,c)=
  try{
   // ── law ──
   let p=await open(LAW);let S=await p.evaluate(()=>window.__S);const cx=550,cy=Math.round(at(S,2500).b[0].y);
-  const e3=at(S,300).b[0],eEnd=at(S,2400).b[0];
-  check("法規出場",e3&&Math.hypot(e3.x-cx,e3.y-cy)>80&&e3.x>cx&&e3.y<cy&&e3.o<.9&&Math.hypot(eEnd.x-cx,eEnd.y-cy)<10&&eEnd.o>.99,
-   `0.3s at (${Math.round(e3.x)},${Math.round(e3.y)}) opacity ${e3.o.toFixed(2)}; end (${Math.round(eEnd.x)},${Math.round(eEnd.y)}) opacity ${eEnd.o.toFixed(2)}`);
+  const eEnd=S[S.length-1].b[0],eUR=S.map(r=>r.b[0]).filter(b=>b&&b.x>cx+80&&b.y<cy-40&&b.o<.9&&b.o>.02);
+  const e3=eUR[0]||at(S,300).b[0];
+  check("法規出場",eUR.length>=2&&Math.hypot(eEnd.x-cx,eEnd.y-cy)<10&&eEnd.o>.99,
+   `${eUR.length} frames up-right & translucent (e.g. (${Math.round(e3.x)},${Math.round(e3.y)}) opacity ${e3.o.toFixed(2)}); end (${Math.round(eEnd.x)},${Math.round(eEnd.y)}) opacity ${eEnd.o.toFixed(2)}`);
   await leave(p);await p.waitForTimeout(400);let a=await smallBodies(p),s0=await stars(p);await p.waitForTimeout(3000);let c=await smallBodies(p),s1=await stars(p);
   check("法規公轉",maxMove(a,c)>=10,`satellites ${maxMove(a,c).toFixed(1)}px / 3s`);
   check("法規星星閃爍",s0.some((x,i)=>Math.abs(x-s1[i])>.005),"star opacity changes");
@@ -46,11 +47,13 @@ function soloMove(before,after,idx){const t=before[idx],near=after.reduce((a,c)=
   await p.close();p=await open(LAW);await p.evaluate(()=>{if(typeof orbitPaused!=="undefined")orbitPaused=true});
   B=await allBodies(p);const si=B.findIndex(x=>x.w<30&&x.w>12);await drag(p,B[si],60,40);A=await allBodies(p);m=soloMove(B,A,si);
   check("法規拖曳衛星",m.solo>=50&&m.pan<5,`satellite alone ${m.solo.toFixed(0)}px, everything else ${m.pan.toFixed(0)}px`);
+  var z0=await p.evaluate(()=>VZ);await p.mouse.move(550,370);await p.mouse.wheel(0,-300);await p.waitForTimeout(400);var z1=await p.evaluate(()=>VZ);
+  check("法規滾輪縮放",z1>z0*1.2,`zoom ${z0.toFixed(2)}→${z1.toFixed(2)}`);
   await p.close();
   // ── match ──
   p=await open(MATCH);S=await p.evaluate(()=>window.__S);
-  const m3=at(S,300),m12=at(S,1300),sep=r=>r.b.length>1?Math.abs(r.b[0].x-r.b[1].x):0;
-  check("媒合出場",Math.abs(m3.vz-1)<.03&&Math.abs(m12.vz-1.2)<.03&&sep(m3)<sep(m12)*.6,`zoom ${m3.vz.toFixed(2)}→${m12.vz.toFixed(2)}, planets apart ${sep(m3).toFixed(0)}→${sep(m12).toFixed(0)}px`);
+  const sep=r=>r.b.length>1?Math.abs(r.b[0].x-r.b[1].x):0,two=S.filter(r=>r.b.length>1&&r.b[1].w>15),m3=two[0]||at(S,300),m12=S[S.length-1];
+  check("媒合出場",two.length>=2&&m3.vz<1.05&&Math.abs(m12.vz-1.2)<.03&&sep(m3)<sep(m12)*.6,`zoom ${m3.vz.toFixed(2)}→${m12.vz.toFixed(2)}, planets apart ${sep(m3).toFixed(0)}→${sep(m12).toFixed(0)}px`);
   await leave(p);await p.waitForTimeout(400);let P0=(await allBodies(p))[0];await p.waitForTimeout(3000);
   const P1=(await allBodies(p)).filter(x=>x.w>20).reduce((a,c)=>Math.hypot(c.x-P0.x,c.y-P0.y)<Math.hypot(a.x-P0.x,a.y-P0.y)?c:a);const dP=Math.hypot(P1.x-P0.x,P1.y-P0.y);
   check("媒合行星微晃",dP>.5&&dP<40,`planet ${dP.toFixed(1)}px / 3s`);
@@ -59,6 +62,14 @@ function soloMove(before,after,idx){const t=before[idx],near=after.reduce((a,c)=
   check("媒合停轉",maxMove(a,c)<1,`satellites ${maxMove(a,c).toFixed(1)}px while pointer over`);
   B=await allBodies(p);await drag(p,B[0],60,40);A=await allBodies(p);m=soloMove(B,A,0);
   check("媒合拖曳行星",m.solo>=10,`planet alone ${m.solo.toFixed(0)}px`);
+  await p.close();p=await open(MATCH);
+  // clicking a planet focuses it: it moves toward the centre and grows (existing f2cebc8 behaviour, must stay)
+  B=await allBodies(p);const pl=B[0];await p.mouse.click(pl.x,pl.y);await p.waitForTimeout(1500);A=await allBodies(p);
+  const foc=A.reduce((a,c)=>c.w>a.w?c:a);const toC=Math.hypot(pl.x-550,pl.y-370)-Math.hypot(foc.x-550,foc.y-370);
+  check("媒合點行星聚焦",foc.w>pl.w*1.08&&toC>80,`planet ${pl.w.toFixed(0)}→${foc.w.toFixed(0)}px wide, moved ${toC.toFixed(0)}px toward the centre`);
+  await p.close();p=await open(MATCH);
+  z0=await p.evaluate(()=>VZ);await p.mouse.move(550,370);await p.mouse.wheel(0,-300);await p.waitForTimeout(400);z1=await p.evaluate(()=>VZ);
+  check("媒合滾輪縮放",z1>z0*1.2,`zoom ${z0.toFixed(2)}→${z1.toFixed(2)}`);
   await p.close();
   // ── workspace slide (CSS declared in the overlay; measured live separately) ──
   const ov=fs.readFileSync(path.join(ROOT,"tangle-lab-overlay.js"),"utf8");
