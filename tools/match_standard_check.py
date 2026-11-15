@@ -42,6 +42,15 @@ def problems(d):
         out.append("Q2: phase 1 uses only Need–Offer and B1–B8")
     if "不補 0" not in d.get("missing_policy", {}).get("rule", ""):
         out.append("missing values must not be filled with 0")
+    # v1.1 (Q6/Q7): questions = exactly the fields the source requires; minimum fields among them
+    q, r = d.get("clarify_questions", {}), d.get("direction_rules", {})
+    if sorted(q.get("NEED", {})) != sorted(r.get("NEED_requires", [])) or sorted(q.get("OFFER", {})) != sorted(r.get("OFFER_requires", [])):
+        out.append("clarify_questions must cover exactly NEED_requires / OFFER_requires (SH-METHOD-02 §2)")
+    mf = d.get("status_transition", {}).get("minimum_fields", {})
+    if mf.get("NEED") not in q.get("NEED", {}) or mf.get("OFFER") not in q.get("OFFER", {}):
+        out.append("Q6: minimum_fields must be question fields")
+    if "一次只問一題" not in q.get("pace", ""):
+        out.append("Q7: one question at a time")
     if any("待拍板" in json.dumps(v, ensure_ascii=False) for v in d.values()):
         out.append("still contains 待拍板")
     return out
