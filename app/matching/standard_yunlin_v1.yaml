@@ -1,0 +1,114 @@
+# 媒合標準 — 雲林農村再生 v1
+#
+# 來源：HackMD 定案 v1（https://hackmd.io/@yillkid/BkKiUSPRMl），2026-11-15 黃俊毓拍板。
+# 這個檔由 HackMD 的 YAML 區塊原樣抽出；要改規則，先改 HackMD 再重抽，不要只改這裡。
+# 分工：**YAML 訂規則，LLM 做判斷，人做決定。**
+#
+# 媒合標準 — 雲林農村再生 v1
+# 程式照這份設定跑流程；只有「這段話屬於哪一類能力、方向是什麼」交給 LLM 判斷。
+
+standard:
+  id: match.yunlin.rural-regen
+  version: 0.1.0-r0
+  title: 雲林農村再生計畫 B2B 媒合
+  subject: multi_tenant.project.philosophy   # 受檢對象 = 計畫書（專案 philosophy 欄），同法規
+  basis: [SH-METHOD-02 V1.2, SH-COLLAB-03 V1.3, SH-COLLAB-01 V1.3]   # RC0.6_ADVISORY_MATCHING
+  profile: B2B                               # 只做組織對組織；B2C 關係人口推薦不在第一期
+  interaction_mode: PUSH                     # 非即時：提交 → 稍後回報告
+  judge:
+    type: llm
+    model_tier: strong                       # 判斷用強模型（同法規）
+    task: 對每段原文標 capability_tag + direction + 依據句
+    swap_note: judge 可替換
+
+# B1–B8：SH-METHOD-02 §6 原文抄錄。不加、不改。
+capability_registry:
+  B1: { 名稱: 空間與場域, 典型內容: [空間營運, 活化, 展演, 住宿, 工作場域] }
+  B2: { 名稱: 產品與生產, 典型內容: [產品設計, 製造, 農產, 食品, 工藝] }
+  B3: { 名稱: 服務與體驗, 典型內容: [旅遊, 教育, 照顧, 顧問, 活動] }
+  B4: { 名稱: 內容與品牌, 典型內容: [敘事, 設計, 媒體, 策展, 翻譯] }
+  B5: { 名稱: 人才與專業, 典型內容: [技術, 研究, 導師, 志工, 跨域人才] }
+  B6: { 名稱: 社群與關係, 典型內容: [社區, 會員, 關係人口, 網絡經營] }
+  B7: { 名稱: 市場與通路, 典型內容: [電商, 零售, 企業, 海外, 市場測試] }
+  B8: { 名稱: 治理與平台, 典型內容: [專案管理, 資料, 財務, 制度, 數位平台] }
+  note: B1–B8 用來發現互補與缺口，不是組織好壞排名；擁有越多類別不代表越優秀（SH-METHOD-02 §1.2）。
+
+# 方向：SH-METHOD-02 §2「同一能力必須標示方向：NEED、OFFER 或 BOTH」，不得缺省。
+direction_rules:
+  values: [NEED, OFFER, BOTH]
+  OFFER_requires: [可提供形式, 規模, 地區, 時間, Owner]       # 原文 §2
+  NEED_requires:  [缺口, 用途, 優先序, 期望合作方式]          # 原文 §2
+  # 計畫書（philosophy）通常寫不到上面全部欄位 → 寫到幾項就標幾項，缺的進 missing_policy 補問。
+  # 計畫書只有一段理念文字時怎麼判方向（2026-11-15 定案 Q1）：
+  philosophy_rule:
+    OFFER: 寫出具體做法、對象或成果
+    NEED:  只寫目標或方向（如「推動」「發展」「希望」）
+    BOTH:  同一類兩種都有
+    unknown: 判不出來 → 不標，列入補問
+  confirmation:                               # SH-METHOD-02 §5 狀態模型
+    AI_CANDIDATE: 第一期全部停在這裡（AI 標的候選，需附理由）
+    OWNER_CONFIRMED: 需要 Project Owner 確認；第一期無此流程 → 不顯示為已確認
+  maturity: 第一期不判（EXPLORING／EMERGING／OPERATING／SCALING 需佐證，計畫書文字不足）
+
+# 兩個計畫的方向配在一起，算哪一種關係。SH-METHOD-02 §7 原文。
+bridge_rules:
+  - when: [一方 NEED, 另一方 OFFER（或 BOTH）]
+    關係: 互補（Primary Bridge 候選）
+    原文: Primary Bridge 成立須有明確 Need、相對應 Offer 及可行合作形式
+    註: 計畫書看不到「可行合作形式」→ 只能標候選，不能標「成立」
+  - when: [兩方都只有 NEED]
+    關係: 共同尋找第三方
+    原文: 可推薦共同尋找第三方，但不得標示為互補完成
+  - when: [兩方都 OFFER]
+    關係: 聯合市場／交流／共同擴張
+    原文: 適合聯合市場、交流或共同擴張，需另行判斷競合
+  - when: [成熟度差異]
+    關係: 導師或擴散合作
+    原文: 不保證合作意願
+    註: 第一期不判成熟度 → 不使用
+
+# 一組計畫的媒合狀態。SH-COLLAB-03 §5 五種狀態，名稱照原文；門檻 2026-11-15 定案。
+status_rules:
+  EXCLUDED:
+    原文: 明確不在目前範圍；保留原因與重新進入條件
+    條件: 專案非 Active、不允許推薦、資料不可分享（SH-COLLAB-03 §2 硬性條件）
+    試作: 10 案都是公開計畫理念 → 無
+  CLARIFY_FIRST:
+    原文: 可能適合但缺關鍵資料；回答補問後重算
+    條件: 有互補候選，但關鍵欄位缺（NEED 缺「用途／優先序」或 OFFER 缺「規模／時間」）
+    必附: 具體補問（GT-C03-002：不得用 0、平均值或臆測補齊）
+  EXPLORE:
+    原文: 具有新穎或部分互補；建議低成本交流
+    條件: 有 ≥1 條互補候選，或兩方都 OFFER 同一類（聯合／交流）   # 2026-11-15 定案 Q3
+  RECOMMEND:
+    原文: 適配與信心達門檻；人類決定是否聯繫
+    條件: 第一期不開放（2026-11-15 定案 Q4）。理由：方向停在 AI_CANDIDATE、沒有 Owner 確認、缺可行合作形式
+    開放條件: Owner 確認方向（OWNER_CONFIRMED）且有可行合作形式
+  ELIGIBLE:
+    原文: 可進入排序；狀態、權限及最低資料足夠
+    條件: 通過 EXCLUDED 檢查、但沒有任何互補或交流關係 → 可排序、不建議
+
+# 缺值政策：SH-COLLAB-03 §2、GT-B18-002、GT-C03-002 原文。
+missing_policy:
+  rule: 缺值不補 0、不補平均、不臆測
+  on_missing: 輸出 CLARIFY_FIRST + 具體補問
+  fit_and_confidence: 分開算、分開呈現，不得混成一個值（SH-COLLAB-03 §5）
+  # 第一期不顯示分數（fit 0–100）：只看 Need–Offer，其他 4 維沒有資料（見 out_of_scope）。
+
+# 輸出：SH-COLLAB-03 §5 必要輸出 + §1.3 語意標示
+output:
+  semantics:                                  # 每一句都要標其中一種
+    FACT: 計畫書原文（附出處）
+    INFERENCE: AI 判的 B 類別與方向（標「推論」）
+    SUGGESTION: 下一步建議（由 Owner 決定是否採用）
+  per_pair: [狀態, 互補候選與兩方原文, 限制, 待確認問題, 第一步行動]
+  next_action_options: [介紹, 會議, 資料交換, 小型 Pilot]   # 原文，非自動執行
+  counter_reason: 必填——為何暫不推薦或需補問，要具體可修正
+  disclaimer: 媒合分數是排序工具，不是合作決定；AI 不判斷合作意願。
+
+# 第一期不看的維度（SH-COLLAB-03 §6 六維中的四維）。範圍外 = 未評估，不代表不適合。
+out_of_scope:
+  used:     [Need–Offer 互補, B1–B8 能力互補]
+  not_used: [議題與目標對象, 合作可執行性, 階段與時程, 跨國語境與成本]
+  reason: 計畫書理念文字不足以判斷；預設權重 25/20/15/15/10/15 先不套用（2026-11-15 定案 Q2）
+  scope_disclaimer: 只看 Need–Offer 與 B1–B8；議題、可執行性、時程、跨國成本未評估。
