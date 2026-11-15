@@ -40,10 +40,16 @@ setTimeout(()=>{flowOn=!reducedMotion;buildParticles();requestAnimationFrame(orb
 
 // ── Step 1: 法領域 view (added alongside the topic view; demo data from kv-law-mock.js) ──────────
 // key = 10 law domains, value.state = hit | gap | na, plus "uncovered" outer bodies. No click handling yet.
-function renderDomain(){const svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
+function renderDomain(){let svg=document.getElementById('svg');svg.setAttribute('viewBox',`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`);svg.innerHTML='';TRACKS.length=0;ORPH.length=0;
  svg.appendChild(el('rect',{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:'#060a10'}));
  for(let j=0;j<45;j++){svg.appendChild(el('circle',{cx:(j*137.51)%Wd,cy:(j*j*33.7)%Hd,r:j%4===0?.65:.35,fill:'#a5a5c0',opacity:.08+.08*Math.sin(orbitTime*.4+j),'pointer-events':'none'}));}
  const defs=el('defs',{});svg.appendChild(defs);
+ // Entrance (restored 2026-11-15): same motion as the accepted lab f2cebc8 — the system starts small at the upper right
+ // (its spot on the overview), fades in and eases to the centre. Applied as one transform on the whole system so the
+ // tested layout, orbit and label placement are untouched.
+ const E=entGeom(),sysG=el('g',{'data-law-system':''});
+ if(!ENT_DONE&&ENTC){const T=entTargets().end,k=E.r;sysG.setAttribute('transform',`translate(${E.x-T.x*k} ${E.y-T.y*k}) scale(${k})`);sysG.setAttribute('opacity',E.o.toFixed(3))}
+ {const real=svg;svg=sysG;real.appendChild(sysG)}
  const cx=Wd/2,cy=Hd/2-Hd*.035/VZ,R=Math.min(Wd,Hd)*.235,center={x:cx+Math.sin(orbitTime*.3)*4,y:cy+Math.cos(orbitTime*.25)*3};
  const haze=el('radialGradient',{id:'planet-haze'});haze.appendChild(el('stop',{offset:0,'stop-color':'#70b8b0','stop-opacity':.18}));haze.appendChild(el('stop',{offset:1,'stop-color':'#70b8b0','stop-opacity':0}));defs.appendChild(haze);
  svg.appendChild(el('circle',{cx:center.x,cy:center.y,r:85,fill:'url(#planet-haze)','pointer-events':'none'}));
@@ -75,10 +81,10 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
   if(!dim&&(kind==='high'||kind==='mid'))TRACKS.push({A:from,B:{x:ex,y:ey},cx:mx,cy:my,st:.55,q:1,tag:dn,from:1,to:1});
   else if(!dim&&kind==='gap'){const T=.6,m=1-T,B={x:m*m*from.x+2*m*T*mx+T*T*ex,y:m*m*from.y+2*m*T*my+T*T*ey},C={x:from.x+(mx-from.x)*T,y:from.y+(my-from.y)*T};TRACKS.push({A:from,B,cx:C.x,cy:C.y,st:.4,q:.65,tag:null,from:1,to:1})}}
  function dots(ang,n,dim){for(let k=0;k<n;k++){const a=ang+(k-(n-1)/2)*.14;svg.appendChild(el('circle',{cx:center.x+Math.cos(a)*43,cy:center.y+Math.sin(a)*43,r:2,fill:'#b6bfcb','pointer-events':'none',opacity:dim?'.3':'1'}))}}
-  if(KV_P){KV_LAW.domains.forEach((name,i)=>{const a=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,st=KV_P.law[name].state;BODY(kvSel===name?17:(st==='na'?8:13))(center.x+Math.cos(a)*R,center.y+Math.sin(a)*R)});
+  if(KV_P){KV_LAW.domains.forEach((name,i)=>{const a=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,st=KV_P.law[name].state;const dO=lawPositions.get(name)||{x:0,y:0};BODY(kvSel===name?17:(st==='na'?8:13))(center.x+Math.cos(a)*R+dO.x,center.y+Math.sin(a)*R+dO.y)});
    KV_P.uncovered.forEach((name,j)=>{const a=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(a),uy=Math.sin(a),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9);BODY(13)(center.x+ux*R2,center.y+uy*R2)});
    BODY(32)(center.x,center.y);{const nf=13/VZ,nw=YP.name.length*nf;PLACED.push({x0:center.x-nw/2-3,y0:center.y+62-nf-3,x1:center.x+nw/2+3,y1:center.y+62+4})}}
- if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,t={x:center.x+Math.cos(ang)*R,y:center.y+Math.sin(ang)*R},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+ if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,dO=lawPositions.get(name)||{x:0,y:0},t={x:center.x+Math.cos(ang)*R+dO.x,y:center.y+Math.sin(ang)*R+dO.y},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
   const st=kvSupp.has(name)?'supplemented':v.state,sel=kvSel===name,dim=!!(kvSel&&!sel);
   const g=el('g',{'data-kv-key':name,'data-kv-state':st,role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(sel)g.setAttribute('data-kv-selected','');if(dim)g.setAttribute('data-kv-dim','');
   if(st==='supplemented'){dots(ang,v.evidence.length,dim);route(i,from,t,'mid',15,dim);svg.appendChild(g);drawMoon(g,t.x,t.y,11,'rule',sel);label(g,t.x,t.y,ang,name,'#d5e1e0','已補充・待重判','#b8e0dd',19,sel?16:0);}
@@ -92,7 +98,7 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
    g.appendChild(el('circle',{cx:t.x,cy:t.y,r:14+12*(1-pv),fill:'url(#kv-pulse)',opacity:pv.toFixed(3),'pointer-events':'none','data-kv-pulse':''}))}
   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:16,fill:'transparent'}));kvBind(g,name,v.state);
  });
- if(KV_P)KV_P.uncovered.forEach((name,j)=>{const ang=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(ang),uy=Math.sin(ang),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9),t={x:center.x+ux*R2,y:center.y+uy*R2},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
+ if(KV_P)KV_P.uncovered.forEach((name,j)=>{const dO=lawPositions.get(name)||{x:0,y:0},ang=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(ang),uy=Math.sin(ang),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9),t={x:center.x+ux*R2+dO.x,y:center.y+uy*R2+dO.y},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
   const dim=!!kvSel;dots(ang,1,dim);route(100+j,from,t,'unc',14,dim);const g=el('g',{'data-kv-key':name,'data-kv-state':'uncovered',role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(dim)g.setAttribute('data-kv-dim','');svg.appendChild(g);
   g.appendChild(el('circle',{cx:t.x,cy:t.y,r:11,fill:'#9fb5b1','fill-opacity':kvPulse===name?.18:.04,stroke:'#a9bfbb','stroke-width':.8,opacity:.8}));label(g,t.x,t.y,ang,name,'#aebdba','未收錄','#7f8f8c',17);kvBind(g,name,'uncovered');});
  const planet=el('g',{'data-project-planet':'1'});drawPlanet(planet,center,28,1,true);svg.appendChild(planet);
@@ -110,8 +116,13 @@ function renderDomain(){const svg=document.getElementById('svg');svg.setAttribut
 // ── Step 2a: select / fade / tell Eva ─────────────────────────────────────────────
 // hit / gap / supplemented: select it (others fade). na / uncovered: only a short flash.
 function kvBind(g,name,state){const go=()=>kvPick(name,state);
- g.onpointerdown=e=>{e.stopPropagation();e.preventDefault();const x=e.clientX,y=e.clientY;
-  window.addEventListener('pointerup',u=>{if(Math.hypot(u.clientX-x,u.clientY-y)<5)go()},{once:true})};
+ g.onpointerdown=e=>{e.stopPropagation();e.preventDefault();const x=e.clientX,y=e.clientY,canDrag=!kvFocus,o0={...(lawPositions.get(name)||{x:0,y:0})};let dragging=false;
+  // restored 2026-11-15: satellites can be dragged on their own again (accepted lab f2cebc8 had this); click still selects
+  const svgEl=document.getElementById('svg'),k=()=>{const r=svgEl.getBoundingClientRect();return Wd/r.width/VZ};
+  const move=ev=>{if(!canDrag)return;const dx=ev.clientX-x,dy=ev.clientY-y;if(!dragging&&Math.hypot(dx,dy)>=5)dragging=true;
+   if(dragging){lawPositions.set(name,{x:o0.x+dx*k(),y:o0.y+dy*k()});render();buildParticles()}};
+  window.addEventListener('pointermove',move);
+  window.addEventListener('pointerup',u=>{window.removeEventListener('pointermove',move);if(!dragging&&Math.hypot(u.clientX-x,u.clientY-y)<5)go()},{once:true})};
  g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}}
 function kvPick(name,state){
  if(state==='hit'||state==='gap'||kvSupp.has(name)){kvSel=name;kvPulse=null;
