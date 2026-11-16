@@ -26,8 +26,8 @@
  window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data||{};
   if(d.type==='tangle-relation'&&d.code){const found=[...frames.entries()].find(([,f])=>f.contentWindow===e.source);if(!found)return;
    e.stopImmediatePropagation();const id=found[0],s=ylSel.get(id)||{},r=records.find(x=>x.id===id);
-   toEva('pick',{event:'pick',id,mode:r?r.mode:currentMode,p:s.p,q:s.q,code:d.code,subject:d.subject,kind:d.kind});return}
+   toEva('pick',Object.assign({event:'pick',id,mode:r?r.mode:currentMode,p:s.p,q:s.q,code:d.code,subject:d.subject,kind:d.kind},d.pa&&d.pb?{pa:d.pa,pb:d.pb}:{},d.who?{who:d.who,others:d.others}:{}));return}
   if(d.type==='tangle-mark'&&e.source===window.parent){const a=d.args||{},f=frames.get(a.id);
-   if(f&&f.contentWindow){if(a.mfStatus)f.contentWindow.postMessage({type:'mf-status',status:a.mfStatus,filled:a.filled||{}},location.origin);else f.contentWindow.postMessage({type:'dd-confirmed',subject:a.subject,code:a.code,text:a.text},location.origin)}}
+   if(f&&f.contentWindow){if(a.mfStatus)f.contentWindow.postMessage(Object.assign({type:'mf-status',status:a.mfStatus,filled:a.filled||{}},a.pair?{pair:a.pair}:{}),location.origin);else f.contentWindow.postMessage({type:'dd-confirmed',subject:a.subject,code:a.code,text:a.text},location.origin)}}
  },true);
 })();

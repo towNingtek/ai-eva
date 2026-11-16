@@ -219,7 +219,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794670424"></script><script src="./yunlin-frame.js?v=1794670424"></script>
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794670424"></script><script src="./yunlin-frame.js?v=1794812392"></script>
 <script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
@@ -468,32 +468,34 @@ function render(){
 
   TRACKS.length=0; ORPH.length=0; const NEEDLIT={},LBL=[],PEERHIT=[];
   const sc = focus? P.reduce((m,p)=>{if(p.id!==focus)m[p.id]=scoreFor(focus,p);return m;},{}) : null;
-  const TA={}; P.forEach(p=>TA[p.id]=tentAngles(p));
+  const TA={}; P.forEach(p=>TA[p.id]=tentAngles(p)); window.TA_LAST=TA;
   const tipLen=(p,it)=>{const isF=p.id===focus;return (65+it.t[1]*5)*(.25+.75*ENT);};
   const tipOf=(p,tag,dir)=>{const it=TA[p.id].find(x=>x.t[0]===tag&&x.d===dir);
     if(!it)return pos[p.id];const L=tipLen(p,it)+ (p.id===focus?4:2);
     return {x:pos[p.id].x+Math.cos(it.ang)*L, y:pos[p.id].y+Math.sin(it.ang)*L};};
 
   // ── 邊：每條 bridge 獨立，從觸手末端連到觸手末端 ──
+  // Step D: with 3–4 plans the third-party / peer lines are drawn only around the focused plan (yillkid 2026-11-15 (3)).
+  const MF_PAIRS=P.length===2?[[P[0],P[1]]]:(focus?P.filter(x=>x.id!==focus).map(x=>[byId(focus),x]):[]);
   // Step C: both plans only NEED the same B → 「可推薦共同尋找第三方，但不得標示為互補完成」(SH-METHOD-02 §7). Still, no flow.
-  if(P.length===2){const [p1,p2]=P;p1.n.forEach(([tag])=>{if(!p2.n.some(o=>o[0]===tag)||BR.some(b=>b.tag===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
+  MF_PAIRS.forEach(([p1,p2])=>{p1.n.forEach(([tag])=>{if(!p2.n.some(o=>o[0]===tag)||BR.some(b=>b.tag===tag&&((b.from===p1.id&&b.to===p2.id)||(b.from===p2.id&&b.to===p1.id))))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
     const A=tipOf(p1,tag,'n'),B=tipOf(p2,tag,'n'),mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,cx=mx-dy*.14,cy=my+dx*.14;
-    const gid='third-'+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
+    const gid=(P.length===2?'third-':'third-'+p1.id+'-'+p2.id+'-')+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
     [[0,.04],[.2,.18],[.5,.22],[.8,.18],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#d9b98a','stop-opacity':o})));d.appendChild(gr);
     const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-third':tag,'pointer-events':'none'});svg.appendChild(line);
     const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':6,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都需要'});
-    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'third',mode:'match'},location.origin)};
-    hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(hit)})}
+    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'third',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
+    hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(hit)})});
   // Step 3a+: both plans OFFER the same B -> faint still line = 可交流經驗 (SH-METHOD-02: similarity is peer learning, not complementarity).
-  if(P.length===2){const [p1,p2]=P;p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(BR.some(b=>b.tag===tag))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
+  MF_PAIRS.forEach(([p1,p2])=>{p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(BR.some(b=>b.tag===tag&&((b.from===p1.id&&b.to===p2.id)||(b.from===p2.id&&b.to===p1.id))))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
     const A=tipOf(p1,tag,'o'),B=tipOf(p2,tag,'o'),mx=(A.x+B.x)/2,my=(A.y+B.y)/2,dx=B.x-A.x,dy=B.y-A.y,cx=mx+dy*.12,cy=my-dx*.12;
-    const gid='peer-'+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
+    const gid=(P.length===2?'peer-':'peer-'+p1.id+'-'+p2.id+'-')+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
     [[0,.04],[.2,.2],[.5,.24],[.8,.2],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#8fcfc5','stop-opacity':o})));d.appendChild(gr);
     const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-peer':tag});svg.appendChild(line);
     TRACKS.push({A,B,cx,cy,st:.3,q:1,tag,from:p1.id,to:p2.id,peer:true});
     const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都能提供'});
-    const go=ev=>{ev.stopPropagation();if(window.mfEnter)mfEnter(tag,'peer');parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'peer',mode:'match'},location.origin)};
-    hit.setAttribute('stroke-width',6);hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};PEERHIT.push(hit)})}
+    const go=ev=>{ev.stopPropagation();if(window.mfEnter)mfEnter(tag,'peer',p1,p2);parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'peer',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
+    hit.setAttribute('stroke-width',6);hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};PEERHIT.push(hit)})});
   BR.forEach((b,bi)=>{
     if(!VIS.has(bi)) return;
     if(focus && b.from!==focus && b.to!==focus) return;
@@ -514,7 +516,7 @@ function render(){
     d.appendChild(grad);
     const route=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.65,'stroke-linecap':'round'});svg.appendChild(route);
     const hit=el('path',{d:route.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[b.tag]+'：'+(unknown?'待釐清':'有依據的關係')});
-    function reveal(ev){ev.stopPropagation();if(window.mfEnter)mfEnter(b.tag,'pair');parent.postMessage({type:'tangle-relation',tag:BN[b.tag],code:b.tag,subject:b.to,kind:'relation',unknown,mode:'match'},location.origin);}
+    function reveal(ev){ev.stopPropagation();if(window.mfEnter)mfEnter(b.tag,'pair',byId(b.to),byId(b.from));parent.postMessage({type:'tangle-relation',tag:BN[b.tag],code:b.tag,subject:b.to,kind:'relation',unknown,mode:'match',pa:byId(b.to).pid,pb:byId(b.from).pid},location.origin);}
     hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();reveal(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter'){reveal(e)}};svg.appendChild(hit);
 
   });
@@ -565,7 +567,7 @@ function render(){
           sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*(1.8+1.6*(1-pv)),fill:'url(#pulse-grad)',opacity:pv.toFixed(3),'pointer-events':'none','data-need-pulse':''}))}}
       const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
       target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
-      target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;if(it.linked&&window.mfEnter){mfEnter(it.t[0],'pair');parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:'pair',mode:'match'},location.origin);return}else if(window.mfFlash)mfFlash(p.id,it.t[0]);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
+      target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;if(it.linked&&window.mfEnter){const ptn=window.mfPartner?mfPartner(p,it):null;mfEnter(it.t[0],'pair',p,ptn);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:'pair',mode:'match',pa:p.pid,pb:ptn?ptn.pid:null},location.origin);return}else if(window.mfFlash)mfFlash(p.id,it.t[0]);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
       target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
       LBL.push({g:sg,x:ex,y:ey,ang:it.ang,mr,name:BN[it.t[0]]+(isN?'・需要':'・能提供'),sub:isN&&!lit?'沒有對象':null,fill:isN&&!lit?'#8a9592':'#bacdcc'});
       if(it.both){const o=LBL[LBL.length-1];o.name=BN[it.t[0]]+'・需要＋能提供';o.sub=null;o.fill='#cfe3dc';o.mr=mr*1.45;
@@ -611,6 +613,14 @@ function render(){
    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:p1.id,kind:'status',mode:'match'},location.origin)};
    sg2.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};sg2.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(sg2);
    LBL.push({fixed:true,x,y:y+f*.45+h-f*1.2,w:w,h:h})}
+  if(P.length>2&&focus&&window.MF_STATUS_TEXT&&window.mfStatusPair){const fp=byId(focus);P.filter(o=>o.id!==focus).forEach(o=>{
+   const a1=pos[fp.id],a2=pos[o.id],st=mfStatusPair(fp,o),T=MF_STATUS_TEXT[st],x=a1.x+(a2.x-a1.x)*.5,y=a1.y+(a2.y-a1.y)*.5-14/VZ,f=10.5/VZ,w=T.length*f+14/VZ,h=f*1.9;
+   const sg2=el('g',{'data-mf-status':st,'data-mf-pair':fp.pid+'|'+o.pid,role:'button',tabindex:0,'aria-label':'媒合狀態：'+o.name+'：'+T,style:'cursor:pointer'});
+   sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,fill:'transparent'}));
+   const tx=el('text',{x,y,'text-anchor':'middle',fill:st==='EXPLORE'?'#9fe3d9':st==='CLARIFY_FIRST'?'#e6cfa6':'#9aa6a3','font-size':f.toFixed(2),stroke:'#060a10','stroke-width':(3/VZ).toFixed(2),'paint-order':'stroke'});tx.textContent=T;sg2.appendChild(tx);
+   const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:fp.id,kind:'status',mode:'match',pa:fp.pid,pb:o.pid},location.origin)};
+   sg2.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};sg2.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(sg2);
+   LBL.push({fixed:true,x,y:y+f*.45+h-f*1.2,w:w,h:h})})}
   // Candidate spots around the moon (outward first, then the other sides, then further out); first free, on-screen spot wins.
   (function(){const f1=10/VZ,f2=9/VZ,X0=-VX/VZ+4/VZ,Y0=-VY/VZ+4/VZ,X1=-VX/VZ+Wd/VZ-4/VZ,Y1=-VY/VZ+Hd/VZ-4/VZ,PL=[];
    const tw=(t,f)=>{let w=0;for(const ch of t)w+=ch.charCodeAt(0)>255?f:f*.6;return w};
@@ -619,7 +629,8 @@ function render(){
     const spot=(side,d)=>side==='r'?{l:o.x+d,t:o.y-h/2,an:'start'}:side==='l'?{l:o.x-d-w,t:o.y-h/2,an:'end'}:side==='t'?{l:o.x-w/2,t:o.y-d-h,an:'middle'}:{l:o.x-w/2,t:o.y+d,an:'middle'};
     const pref=Math.abs(ux)>.35?(ux>0?['r','t','b','l']:['l','t','b','r']):(uy<0?['t','r','l','b']:['b','r','l','t']);
     const fits=q=>q.l>=X0&&q.t>=Y0&&q.l+w<=X1&&q.t+h<=Y1,free=q=>!PL.some(b=>q.l-1<b.x1&&b.x0<q.l+w+1&&q.t-1<b.y1&&b.y0<q.t+h+1);
-    let pick=null;search:for(const d of [o.mr+3,o.mr+8,o.mr+15,o.mr+24])for(const side of pref){const q=spot(side,d);if(fits(q)&&free(q)){pick=q;break search}}
+    let pick=null;search:for(const d of (P.length>2?[o.mr+3,o.mr+8,o.mr+15,o.mr+24,o.mr+34,o.mr+46]:[o.mr+3,o.mr+8,o.mr+15,o.mr+24]))for(const side of pref){const q=spot(side,d);if(fits(q)&&free(q)){pick=q;break search}}
+    if(!pick&&P.length>2){wide:for(let d=o.mr+3;d<=o.mr+90;d+=5)for(const side of ['r','l','t','b'])for(const sl of [0,-.5,.5,-1,1]){const q=spot(side,d);if(side==='t'||side==='b')q.l+=sl*w*.6;else q.t+=sl*h;if(fits(q)&&free(q)){pick=q;break wide}}}
     if(!pick){pick=spot(pref[0],o.mr+3);pick.l=Math.min(Math.max(pick.l,X0),X1-w);pick.t=Math.min(Math.max(pick.t,Y0),Y1-h)}
     PL.push({x0:pick.l-1,y0:pick.t-1,x1:pick.l+w+1,y1:pick.t+h+1});
     const lx=pick.an==='start'?pick.l:pick.an==='end'?pick.l+w:pick.l+w/2;
@@ -801,7 +812,7 @@ function onUp(){
     pos[d.id].pin=false;
     focus = focus===d.id ? null : d.id; sel=null; syncMode(); draw();
     // step B2 (added, nothing removed): the original focus above stays; also ask Eva for this plan's B1–B8 summary
-    if(focus===d.id)parent.postMessage({type:'tangle-relation',tag:byId(d.id).name,code:'planet',subject:d.id,kind:'planet',mode:'match'},location.origin);
+    if(focus===d.id)parent.postMessage(Object.assign({type:'tangle-relation',tag:byId(d.id).name,code:'planet',subject:d.id,kind:'planet',mode:'match'},P.length>2?{who:byId(d.id).pid,others:P.filter(x=>x.id!==d.id).map(x=>x.pid)}:{}),location.origin);
   } else { justDragged=true; render(); buildParticles(); }   // 移動過 → 保持釘選
 }
 window.addEventListener("pointermove",onMove);
@@ -1062,10 +1073,10 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
  
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
- const ENT_RM=matchMedia('(prefers-reduced-motion: reduce)').matches;ENT=ENT_RM?1:0;const ENT_T0=performance.now()+120,ENT_MS=950,ENT_Z=1.2;
+ const ENT_RM=matchMedia('(prefers-reduced-motion: reduce)').matches;ENT=ENT_RM?1:0;const ENT_T0=performance.now()+120,ENT_MS=950,ENT_Z=P.length>2?1.0:1.2;
  const entEase=t=>1-Math.pow(1-t,3);
  function entStep(){const t=Math.min(1,Math.max(0,(performance.now()-ENT_T0)/ENT_MS));ENT=entEase(t);VZ=1+(ENT_Z-1)*ENT;VX=Wd/2*(1-VZ);VY=Hd/2*(1-VZ);bang=null;tick(1);render();buildParticles();if(window.updZ)updZ();if(t<1)requestAnimationFrame(entStep)}
- tick=function(n){if(!focus&&!drag){const time=performance.now()/1000;P.forEach((p,i)=>{const a=pos[p.id];if(!a.pin){const fx=Wd*(i===0?.27:.73),sx=Wd*(i===0?.42:.58);a.x=sx+(fx-sx)*ENT+Math.sin(time*.14+i)*3;a.y=Hd*.50+Math.cos(time*.12+i)*4;a.vx=0;a.vy=0}});return;}layoutTick(n)};
+ tick=function(n){if(!focus&&!drag){const time=performance.now()/1000;P.forEach((p,i)=>{const a=pos[p.id];if(!a.pin){if(P.length>2){const c=(P.length===3?[[.24,.32],[.76,.32],[.5,.78]]:[[.22,.30],[.78,.30],[.22,.76],[.78,.76]])[i];a.x=Wd*(.5+(c[0]-.5)*ENT)+Math.sin(time*.14+i)*3;a.y=Hd*(.5+(c[1]-.5)*ENT)+Math.cos(time*.12+i)*4;a.vx=0;a.vy=0;return}const fx=Wd*(i===0?.27:.73),sx=Wd*(i===0?.42:.58);a.x=sx+(fx-sx)*ENT+Math.sin(time*.14+i)*3;a.y=Hd*.50+Math.cos(time*.12+i)*4;a.vx=0;a.vy=0}});return;}layoutTick(n)};
  bang=null;focus=null;P.forEach(p=>pos[p.id].pin=false);tick(1);requestAnimationFrame(entStep);
 </script>
 
@@ -1082,19 +1093,21 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
  const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
  function anim(to,done){cancelAnimationFrame(mfRaf);const from=mfT,t0=performance.now(),D=matchMedia('(prefers-reduced-motion: reduce)').matches?0:600;
   const step=now=>{const k=D?1:Math.min(1,(now-t0)/D);mfT=from+(to-from)*ease(k);render();buildParticles();if(k<1)mfRaf=requestAnimationFrame(step);else done&&done()};mfRaf=requestAnimationFrame(step)}
- window.mfEnter=function(key,kind){
-  if(P.length!==2)return;const [a,b]=P,has=(p,d)=>(d==='n'?p.n:p.o).some(x=>x[0]===key);
+ window.mfEnter=function(key,kind,pa,pb){
+  if(P.length<2)return;const [a,b]=(pa&&pb)?[pa,pb]:(P.length===2?P:[null,null]);if(!a||!b)return;const has=(p,d)=>(d==='n'?p.n:p.o).some(x=>x[0]===key);
   let need,offer;
   if(kind==='peer'){if(!(has(a,'o')&&has(b,'o')))return;need=a;offer=b}
   else if(has(a,'n')&&has(b,'o')){need=a;offer=b}else if(has(b,'n')&&has(a,'o')){need=b;offer=a}else return;
   focus=null;if(typeof syncMode==='function')syncMode();
   mf={key,kind,need,offer};render=mfRender;back.classList.add('on');anim(1)};
+ window.mfPartner=function(p,it){const ids=(it.partners||[]).slice();if(it.both){const tw=TA_LAST&&TA_LAST[p.id]&&TA_LAST[p.id].find(y=>y.t[0]===it.t[0]&&y.d!==it.d);if(tw)ids.push(...(tw.partners||[]))}
+  const pick=(focus&&focus!==p.id&&ids.includes(focus))?focus:ids[0];return pick?byId(pick):null};
  window.mfLeave=function(){if(!mf)return;back.classList.remove('on');anim(0,()=>{mf=null;render=baseRender;render();buildParticles()})};
  window.mfFlash=function(pid,key){const g=[...document.querySelectorAll('[data-kv-key]')].find(x=>x.getAttribute('data-kv-key')===key&&x.getAttribute('data-kv-owner')===String((P.find(p=>p.id===pid)||{}).pid));
   if(!g)return;g.setAttribute('data-mf-flash','');const c=g.querySelector('image');if(!c)return;const r=+c.getAttribute('width')/2,x=+c.getAttribute('x')+r,y=+c.getAttribute('y')+r;
   const ring=el('circle',{cx:x,cy:y,r:r*2.2,fill:'none',stroke:'#cfe9e5','stroke-width':.8,opacity:.8,'pointer-events':'none'});g.appendChild(ring);setTimeout(()=>ring.remove(),700)};
  // blank click leaves the pair view (the original svg.onclick still runs for the normal view)
- let mfEnteredAt=0;const _enter=window.mfEnter;window.mfEnter=function(k,t){mfEnteredAt=performance.now();return _enter(k,t)};
+ let mfEnteredAt=0;const _enter=window.mfEnter;window.mfEnter=function(k,t,pa,pb){mfEnteredAt=performance.now();return _enter(k,t,pa,pb)};
  document.getElementById('svg').addEventListener('pointerdown',e=>{if(!mf||performance.now()-mfEnteredAt<250)return;if(e.target.closest&&e.target.closest('[data-mf-body]'))return;
   const x=e.clientX,y=e.clientY;window.addEventListener('pointerup',u=>{if(mf&&Math.hypot(u.clientX-x,u.clientY-y)<5)mfLeave()},{once:true})},true);
  function mfRender(){
@@ -1158,7 +1171,18 @@ window.mfStatus=function(){
  if(comp.length)return comp.some(filled)?'EXPLORE':'CLARIFY_FIRST';
  const peer=Object.keys(A).some(k=>A[k].role==='offer'&&B[k].role==='offer');
  return peer?'EXPLORE':'ELIGIBLE'};
+// Step D: status for any two plans (same rule; per-pair server value wins after a supplement)
+const MF_SERVER_PAIR={};
+window.mfStatusPair=function(x,y){const k=[x.pid,y.pid].sort().join('|');if(MF_SERVER_PAIR[k])return MF_SERVER_PAIR[k];
+ const M=KV_MATCH.projects,A=M[x.pid].match,B=M[y.pid].match,N=r=>r==='need'||r==='both',O=r=>r==='offer'||r==='both';
+ const comp=[];Object.keys(A).forEach(k=>{if(N(A[k].role)&&O(B[k].role))comp.push([x.pid,y.pid,k]);if(N(B[k].role)&&O(A[k].role))comp.push([y.pid,x.pid,k])});
+ const filled=([n,o,k])=>MF_FILLED[n+':'+k+':用途']&&MF_FILLED[o+':'+k+':可提供形式'];
+ if(comp.length)return comp.some(filled)?'EXPLORE':'CLARIFY_FIRST';
+ return Object.keys(A).some(k=>A[k].role==='offer'&&B[k].role==='offer')?'EXPLORE':'ELIGIBLE'};
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='mf-status'||!e.data.pair)return;
+ MF_SERVER_PAIR[e.data.pair]=e.data.status;if(e.data.filled)Object.assign(MF_FILLED,e.data.filled);render();buildParticles()});
 window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='mf-status')return;
+ if(P.length>2&&e.data.pair)return;   // step D: 3–4 plans use the per-pair receiver above
  MF_SERVER_STATUS=e.data.status||null;if(e.data.filled)Object.assign(MF_FILLED,e.data.filled);render();buildParticles()});
 </script>
 </body>

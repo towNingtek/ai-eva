@@ -434,6 +434,8 @@ async def _dispatch(meta) -> bool:
 
 
 async def _copilot_pick(m):
+    if m.get("mode") == "match" and m.get("pa") and m.get("pb"):   # step D: 3–4 plans — this event is about pa × pb
+        m = {**m, "p": m["pa"], "q": m["pb"], "subject": 1}
     code, pid, qid = m.get("code"), m.get("p"), m.get("q")
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
@@ -513,7 +515,8 @@ async def _push_status(m_or_d, pid, qid):
     s_ = _mq_state(pid, qid)
     st = match_status_for(pid, qid, s_["filled"])
     try:
-        await cl.CopilotFunction(name="tangle_mark", args={"id": m_or_d.get("id"), "mfStatus": st, "filled": s_["filled"]}).acall()
+        await cl.CopilotFunction(name="tangle_mark", args={"id": m_or_d.get("id"), "mfStatus": st, "filled": s_["filled"],
+                                                          "pair": "|".join(sorted([pid, qid]))}).acall()
     except Exception:
         pass
     return st
@@ -588,6 +591,23 @@ async def _match_pair_pick(m):
 
 
 async def _match_planet_pick(m):
+    if m.get("who") and m.get("others"):   # step D: 3–4 plans — one line per other plan, then its status
+        who = m["who"]
+        if who not in PROJECTS:
+            return
+        K = KV_MATCH["keys"]
+        fmt = lambda ks: "、".join(f"{k} {K[k]}" for k in ks) or "（無）"
+        r0 = planet_summary_for(who, None)
+        lines = []
+        for o in m["others"]:
+            if o not in PROJECTS:
+                continue
+            r = planet_summary_for(who, o)
+            st = match_status_for(who, o, _mq_state(who, o)["filled"])
+            lines.append(f"- 和 **{PROJECTS[o]['name']}**：互補候選 {len(r['links'])} 條（{fmt(r['links'])}）；可聯合或交流 {len(r['peers'])} 條・**{STATUS_TEXT[st]}**")
+        await cl.Message(content=f"**{PROJECTS[who]['name']}**・B1–B8\n\n{SEM['INFERENCE']}\n\n**需要**：{fmt(r0['need'])}\n\n**能提供**：{fmt(r0['offer'])}\n\n" +
+                         "\n".join(lines) + "\n\n_狀態依媒合標準 v1.1；不是合作決定。點兩顆行星之間的狀態，可以看那一組的依據。_\n\n" + MATCH_DEMO).send()
+        return
     subject = int(m.get("subject") or 1)
     pid, qid = m.get("p"), m.get("q")
     who, other = (qid, pid) if subject == 2 else (pid, qid)

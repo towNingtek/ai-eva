@@ -120,6 +120,51 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    if(got.join()!==exp.join())fail(`${a}×${c}: third-party lines [${got.join()}] != both-need [${exp.join()}]`);
    if(await p.evaluate(()=>TRACKS.some(t=>!t.peer&&!t.mf&&document.querySelector(`[data-kv-third="${t.tag}"]`))))fail(`${a}×${c}: a both-need key got a flowing route`);
    n++;await p.close()}}
+ else if(arg==="--multi"||arg==="--multi-focus"||arg==="--multi-pair"){
+   // 3-plan sets (every 6th of 120) and 4-plan sets (every 21st of 210): deterministic sample
+   const S3=[],S4=[];for(let i=0;i<IDS.length;i++)for(let j=i+1;j<IDS.length;j++)for(let k=j+1;k<IDS.length;k++){S3.push([IDS[i],IDS[j],IDS[k]]);for(let l=k+1;l<IDS.length;l++)S4.push([IDS[i],IDS[j],IDS[k],IDS[l]])}
+   const sets=[...S3.filter((_,i)=>i%6===0),...S4.filter((_,i)=>i%21===0)];
+   const openSet=async ps=>{const p=await b.newPage({viewport:{width:1100,height:740}});p._errs=[];p.on("pageerror",e=>p._errs.push(e.message));
+    await p.addInitScript(()=>{window.__pm=[];const o=window.parent.postMessage.bind(window.parent);window.parent.postMessage=(m,t)=>{window.__pm.push(m);try{o(m,t)}catch(e){}}});
+    await p.goto(`http://127.0.0.1:${port}/tangle/tangle-match.html?ps=${ps.join(",")}`);await p.mouse.move(2,2);await p.waitForTimeout(2600);return p};
+   for(const ps of sets){const p=await openSet(ps);const tag=ps.length+"案 "+ps.join("×");
+    const planets=await p.evaluate(()=>P.map(x=>x.pid));if(planets.join()!==ps.join()){fail(`${tag}: planets ${planets.join()}`);await p.close();continue}
+    const expR=[];for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++)expR.push(...want(ps[i],ps[j]));
+    if(arg==="--multi"){
+     const got=(await p.evaluate(()=>TRACKS.filter(t=>!t.peer).map(t=>{const f=P.find(x=>x.id===t.from),o=P.find(x=>x.id===t.to);return`${f.pid}>${o.pid}:${t.tag}`}))).sort();
+     if(got.join()!==expR.sort().join())fail(`${tag}: routes ${got.length} != expected ${expR.length}`);
+     // layout: triangle / square
+     const xy=await p.evaluate(()=>P.map(x=>[pos[x.id].x/Wd,pos[x.id].y/Hd]));const L=ps.length===3?[[.24,.32],[.76,.32],[.5,.78]]:[[.22,.30],[.78,.30],[.22,.76],[.78,.76]];
+     if(xy.some((q,i)=>Math.hypot(q[0]-L[i][0],q[1]-L[i][1])>.03))fail(`${tag}: layout ${JSON.stringify(xy.map(q=>q.map(v=>+v.toFixed(2))))}`);
+     const ov=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom,T=[...document.querySelectorAll("#svg text")].filter(t=>t.textContent.trim()).map(t=>[t.textContent,R(t)]),o=[];
+      for(let i=0;i<T.length;i++)for(let j=i+1;j<T.length;j++)if(X(T[i][1],T[j][1]))o.push(T[i][0]+" × "+T[j][0]);for(const [t,r] of T)if(r.left<0||r.right>innerWidth||r.top<0||r.bottom>innerHeight)o.push(t+" clipped");return o});
+     if(ov.length)fail(`${tag}: text overlap: ${ov.slice(0,2).join(" | ")}`);
+     if(p._errs.length)fail(`${tag}: page errors ${p._errs.join(";")}`)}
+    if(arg==="--multi-focus"){
+     const idle=await p.evaluate(()=>({st:document.querySelectorAll("[data-mf-status]").length,third:document.querySelectorAll("[data-kv-third]").length,peer:document.querySelectorAll("[data-kv-peer]").length}));
+     if(idle.st||idle.third||idle.peer)fail(`${tag}: not focused, but shows status ${idle.st} / third ${idle.third} / peer ${idle.peer}`);
+     await p.evaluate(()=>{focus=P[0].id;syncMode();draw()});await p.waitForTimeout(400);
+     const f=await p.evaluate(()=>({tr:TRACKS.filter(t=>!t.peer).map(t=>[P.find(x=>x.id===t.from).pid,P.find(x=>x.id===t.to).pid]),st:[...document.querySelectorAll("[data-mf-status]")].map(g=>[g.getAttribute("data-mf-pair"),g.getAttribute("data-mf-status")]),
+       frame:[...document.querySelectorAll("[data-mf-status] rect")].some(r=>{const fl=r.getAttribute("fill")||"",sk=r.getAttribute("stroke")||"";return(fl&&fl!=="transparent")||(sk&&sk!=="none")})}));
+     if(f.tr.some(([a,c])=>a!==ps[0]&&c!==ps[0]))fail(`${tag}: focused, but a route not touching the focused plan is drawn`);
+     if(f.st.length!==ps.length-1)fail(`${tag}: focused, ${f.st.length} status labels (want ${ps.length-1})`);
+     const N=r=>r==="need"||r==="both",O=r=>r==="offer"||r==="both",ks=Object.keys(M.keys);
+     for(const [pair,st] of f.st){const [x,y]=pair.split("|");const comp=ks.some(k=>(N(role(x,k))&&O(role(y,k)))||(N(role(y,k))&&O(role(x,k)))),peer=ks.some(k=>role(x,k)==="offer"&&role(y,k)==="offer");
+      const exp=comp?"CLARIFY_FIRST":peer?"EXPLORE":"ELIGIBLE";if(st!==exp)fail(`${tag}: status ${pair} ${st} != ${exp}`)}
+     if(f.frame)fail(`${tag}: status has a visible frame`)}
+    if(arg==="--multi-pair"&&expR.length){
+     await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(200);
+     const w=expR[0],[from,rest]=w.split(">"),[to,key]=rest.split(":");
+     const c=await p.evaluate(([k,o])=>{const g=document.querySelector(`[data-kv-key="${k}"][data-kv-owner="${o}"]`);if(!g)return null;const r=g.querySelector("image").getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}},[key,to]);
+     if(!c){fail(`${tag}: satellite ${key}/${to} not found`);await p.close();continue}
+     await p.mouse.click(c.x,c.y);await p.waitForTimeout(1200);
+     const v=await p.evaluate(()=>({own:[...document.querySelectorAll("[data-mf-focus]")].map(g=>g.getAttribute("data-mf-owner")+":"+g.getAttribute("data-mf-role")).sort(),msg:window.__pm.filter(m=>m&&m.kind==="pair").pop()}));
+     const okPair=v.own.some(x=>x.startsWith(to+":"))&&v.own.length===2;
+     if(!okPair)fail(`${tag}: walk-in shows ${v.own.join()} (clicked ${key} of ${to})`);
+     const partner=v.own.find(x=>!x.startsWith(to+":"));const pb=partner&&partner.split(":")[0];
+     if(!v.msg||v.msg.pa!==to||v.msg.pb!==pb)fail(`${tag}: message pa/pb ${v.msg&&v.msg.pa}/${v.msg&&v.msg.pb} != ${to}/${pb}`);
+     if(pb&&!want(to,pb).concat(want(pb,to)).some(x=>x.endsWith(":"+key)))fail(`${tag}: walked into ${to}×${pb} ${key}, which is not complementary`)}
+    n++;await p.close()}}
  else if(arg==="--no-overlap"){for(const [a,c] of PAIRS)for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(a,c,vp);
    const hits=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom,out=[];
     const T=[...document.querySelectorAll("#svg text")].filter(t=>t.textContent.trim()&&getComputedStyle(t).display!=="none"&&+(t.getAttribute("opacity")??1)>.05).map(t=>[t.textContent,R(t)]);
@@ -132,5 +177,5 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
  else if(arg==="--hygiene"){for(const [a,c] of PAIRS.slice(0,10)){const p=await open(a,c);
    if(await p.evaluate(()=>document.querySelectorAll('[stroke-dasharray]:not([stroke-dasharray=""])').length))fail(`${a}×${c}: dashed lines`);
    if(p._errs.length)fail(`${a}×${c}: page errors ${p._errs.join(";")}`);if(p._ext.length)fail(`${a}×${c}: external requests ${p._ext.join(",")}`);n++;await p.close()}}
- else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --pair | --pair-peer | --planet | --status | --third | --no-overlap | --hygiene");process.exitCode=2}
+ else{console.error("flags: --keys | --routes | --need-look | --flow | --pulse | --peer | --pair | --pair-peer | --planet | --status | --third | --multi | --multi-focus | --multi-pair | --no-overlap | --hygiene");process.exitCode=2}
  await b.close();srv.close();if(!process.exitCode)console.log("OK",arg,n+" pairs")})().catch(e=>{console.error("ERROR",e.message);process.exit(1)});
