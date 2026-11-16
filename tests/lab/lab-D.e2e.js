@@ -24,6 +24,7 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   await W.locator(".primary",{hasText:"確認並開始分析"}).click();await p.waitForTimeout(7000);
   const G=()=>p.frames().filter(f=>f.url().includes("tangle-match")).pop();
   const pl=await G().evaluate(()=>P.map(x=>x.pid).join());ok(pl==="48060125,85457156,15080750","graph shows the 3 plans ("+pl+")");
+  const opened=(await p.locator("#root").innerText()).split("已開啟").pop();ok(opened.includes("大庄")&&opened.includes("林中")&&opened.includes("水尾"),"Eva's 已開啟 message names all 3 plans");
   ok(await G().evaluate(()=>!document.querySelector("[data-mf-status]")),"not focused: no status labels");
   // focus 大庄 with a real click
   const ib=await p.frameLocator("#tangle-ws iframe").locator("iframe.original-tangle").boundingBox();

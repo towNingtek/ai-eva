@@ -425,6 +425,7 @@ async def _dispatch(meta) -> bool:
         if pid not in PROJECTS:
             return True
         title = PROJECTS[pid]["name"] + (f" × {PROJECTS[qid]['name']}" if qid in PROJECTS else "")
+        title += "".join(f" × {PROJECTS[e]['name']}" for e in (meta.get("x") or []) if e in PROJECTS)   # step D: 3–4 plans
         await cl.Message(content=f"已開啟 **{NAMES.get(mode, mode)}**：{title}\n\n點星圖上的一顆衛星，我們從那裡開始。").send()
         return True
     if ev == "pick":

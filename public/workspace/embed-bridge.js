@@ -21,7 +21,7 @@
   const slot=document.createElement('div');slot.dataset.slot=id;slot.hidden=true;slot.append(tmp.firstElementChild);document.body.append(slot);openDesk(MODE,id)});
 
  const runPrev=run;run=function(mode,id){runPrev(mode,id);const s=ylSel.get(id)||{};
-  toEva('open',{event:'open',mode,id,p:s.p,q:mode==='match'?s.q:null})};
+  toEva('open',Object.assign({event:'open',mode,id,p:s.p,q:mode==='match'?s.q:null},mode==='match'&&s.x&&s.x.length?{x:s.x}:{}))};
 
  window.addEventListener('message',e=>{if(e.origin!==location.origin)return;const d=e.data||{};
   if(d.type==='tangle-relation'&&d.code){const found=[...frames.entries()].find(([,f])=>f.contentWindow===e.source);if(!found)return;
