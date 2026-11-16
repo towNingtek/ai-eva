@@ -20,7 +20,7 @@ def load():
 
 
 TOPIC_TO_B = {"facility": "B1", "house": "B1", "industry": "B2", "experience": "B3", "care": "B3",
-              "culture": "B4", "youth": "B5", "participation": "B6"}
+              "culture": "B4", "youth": "B6", "participation": "B6"}
 
 
 def kinds_in_snapshot():

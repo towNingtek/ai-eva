@@ -22,7 +22,7 @@
   if(!p){p=document.createElement("div");p.id=KEY;p.className="hide";
    p.innerHTML='<button id="'+KEY+'-close" title="收合工作區，回到原本的聊天畫面">收合 ↙</button><iframe title="雲林專案工作區"></iframe>';
    document.body.appendChild(p);document.getElementById(KEY+"-close").onclick=close}
-  var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+(args.v||"1")+"&b=1794813112";
+  var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+(args.v||"1")+"&b=1794816549";
   var f=p.querySelector("iframe");if(f.getAttribute("src")!==src)f.setAttribute("src",src);
   if(!state.open){state.hadSidebar=sidebarOpen();if(state.hadSidebar)toggleSidebar()}
   state.open=true;var w=width();p.style.width=w+"px";document.body.style.setProperty("--tws-w",w+"px");document.body.classList.add(KEY+"-on");

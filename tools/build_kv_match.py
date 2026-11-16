@@ -6,6 +6,7 @@ value = role need / offer / both / none + evidence.
 evidence: verbatim quotes already verified against each plan's public philosophy (tangle_data.json).
 Everything else is an illustrative assumption, NOT a matching judgement:
   - topic -> B key: fixed mapping below (by category name only).
+  - youth (青年返鄉) -> B6 社群與關係 (yillkid 2026-11-15): the quotes are about participation / return / local ties, i.e. relationship population.
   - role (standard v1.1 Q1): concrete quote = OFFER; direction-only = NEED; both kinds in one B = BOTH.
   - B7 市場與通路 has no topic of its own; plans whose 農漁產業 quote is direction-only are given B7 需要.
 """
@@ -16,7 +17,7 @@ from pathlib import Path
 B = {"B1": "空間與場域", "B2": "產品與生產", "B3": "服務與體驗", "B4": "內容與品牌",
      "B5": "人才與專業", "B6": "社群與關係", "B7": "市場與通路", "B8": "治理與平台"}
 TOPIC_TO_B = {"facility": "B1", "house": "B1", "industry": "B2", "experience": "B3", "care": "B3",
-              "culture": "B4", "youth": "B5", "participation": "B6"}   # env / ecology: no B key (not a capability)
+              "culture": "B4", "youth": "B6", "participation": "B6"}   # env / ecology: no B key (not a capability)
 
 
 def build(data):

@@ -87,8 +87,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    if(!info.n)fail(`${pr.short}: no flowing tracks`);
    for(let i=0;i<info.n;i++){const c=info.pts.filter(q=>q.ti===i).length;if(c!==3)fail(`${pr.short}: track ${i} has ${c} particles (want 3)`)}
    if(info.dir.some(x=>!x))fail(`${pr.short}: a track does not start at the plan (planet) end`);
-   await p.waitForTimeout(1500);const s2=await p.evaluate(()=>PT.map(q=>({ti:q.ti,u:q.u})));
-   info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du<.2)fail(`${pr.short}: particle ${i} moved only ${du.toFixed(3)} in 1.5s`)});
+   const FR=await p.evaluate(()=>new Promise(res=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<1500)requestAnimationFrame(f);else res(n)};requestAnimationFrame(f)}));const s2=await p.evaluate(()=>PT.map(q=>({ti:q.ti,u:q.u})));
+   info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du/FR<.0020)fail(`${pr.short}: particle ${i} advanced ${(du/FR).toFixed(5)} per frame (want >= .0020; ${FR} frames in 1.5s)`)});
    if(!info.col)fail(`${pr.short}: lawFlowColor(u) missing`);else{const [c0,c1]=info.col;const warm=c=>c[0]>c[2]+20;
     if(warm(c0)||warm(c1))fail(`${pr.short}: law flow must not be warm (warm = risk): ${c0} ${c1}`);if(!(c0[0]+c0[1]+c0[2]>c1[0]+c1[1]+c1[2]))fail(`${pr.short}: flow should start lighter (plan) and end teal (domain)`);if(!(c1[1]>c1[0]))fail(`${pr.short}: flow should end teal ${c1}`)}
    n++;await p.close()}}

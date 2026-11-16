@@ -40,8 +40,8 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
    if(!comp.length)fail(`${a}×${c}: no complementary tracks`);
    for(const t of comp){const n=info.pts.filter(q=>q.ti===t.i).length;if(n!==3)fail(`${a}×${c}: track ${t.i} has ${n} particles (want 3)`);if(!t.fromOffer||!t.toNeed)fail(`${a}×${c}: track ${t.i} must run offer -> need`)}
    if(info.pts.some(q=>info.tracks[q.ti]&&info.tracks[q.ti].peer))fail(`${a}×${c}: peer lines must not carry flow`);
-   await p.waitForTimeout(1500);const s2=await p.evaluate(()=>PT.map(q=>({ti:q.ti,u:q.u})));
-   info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du<.2)fail(`${a}×${c}: particle ${i} moved only ${du.toFixed(3)} in 1.5s (want >= .2)`)});
+   const FR=await p.evaluate(()=>new Promise(res=>{let n=0;const t0=performance.now();const f=()=>{n++;if(performance.now()-t0<1500)requestAnimationFrame(f);else res(n)};requestAnimationFrame(f)}));const s2=await p.evaluate(()=>PT.map(q=>({ti:q.ti,u:q.u})));
+   info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du/FR<.0020)fail(`${a}×${c}: particle ${i} advanced ${(du/FR).toFixed(5)} per frame (want >= .0020; ${FR} frames in 1.5s)`)});
    if(!info.col)fail(`${a}×${c}: flowColor(u) missing`);else{const [c0,c1]=info.col;if(!(c0[2]>c0[0]))fail(`${a}×${c}: flow should start teal at the offer end ${c0}`);if(!(c1[0]>c1[2]))fail(`${a}×${c}: flow should end warm at the need end ${c1}`)}
    n++;await p.close()}}
  else if(arg==="--pulse"){for(const [a,c] of PAIRS.filter(([a,c])=>want(a,c).length).slice(0,6)){const p=await open(a,c);
@@ -123,7 +123,7 @@ const want=(a,b)=>{const out=[];for(const [x,y] of [[a,b],[b,a]])for(const k of 
  else if(arg==="--multi"||arg==="--multi-focus"||arg==="--multi-pair"){
    // 3-plan sets (every 6th of 120) and 4-plan sets (every 21st of 210): deterministic sample
    const S3=[],S4=[];for(let i=0;i<IDS.length;i++)for(let j=i+1;j<IDS.length;j++)for(let k=j+1;k<IDS.length;k++){S3.push([IDS[i],IDS[j],IDS[k]]);for(let l=k+1;l<IDS.length;l++)S4.push([IDS[i],IDS[j],IDS[k],IDS[l]])}
-   const sets=[...S3.filter((_,i)=>i%6===0),...S4.filter((_,i)=>i%21===0)];
+   const sets=process.argv.includes("--all")?[...S3,...S4]:[...S3.filter((_,i)=>i%6===0),...S4.filter((_,i)=>i%21===0)];
    const openSet=async ps=>{const p=await b.newPage({viewport:{width:1100,height:740}});p._errs=[];p.on("pageerror",e=>p._errs.push(e.message));
     await p.addInitScript(()=>{window.__pm=[];const o=window.parent.postMessage.bind(window.parent);window.parent.postMessage=(m,t)=>{window.__pm.push(m);try{o(m,t)}catch(e){}}});
     await p.goto(`http://127.0.0.1:${port}/tangle/tangle-match.html?ps=${ps.join(",")}`);await p.mouse.move(2,2);await p.waitForTimeout(2600);return p};

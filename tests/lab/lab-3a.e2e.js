@@ -24,7 +24,9 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   ok(S.map(s=>s.owner+":"+s.k).sort().join()===exp.join(),`satellites are exactly the B1–B8 need/offer keys (${S.length})`);
   ok(S.every(s=>s.role===role(s.owner,s.k)),"every satellite carries the right 需要／能提供 role");
   ok(S.filter(s=>s.role==="need").every(s=>s.shadow==="met"||s.shadow==="unmet")&&S.filter(s=>s.role==="offer").every(s=>!s.shadow),"needs are crescents, offers are fully lit");
-  const unmet=S.find(s=>s.shadow==="unmet");ok(unmet&&unmet.text.includes("沒有對象"),"an unmet need says 沒有對象: "+(unmet&&unmet.k));
+  const expUnmet=[A,B].flatMap(pid=>Object.keys(M.keys).filter(k=>role(pid,k)==="need"&&!["offer","both"].includes(role(pid===A?B:A,k))).map(k=>pid+":"+k)).sort();
+  const gotUnmet=S.filter(s=>s.shadow==="unmet"&&s.role==="need").map(s=>s.owner+":"+s.k).sort();
+  ok(gotUnmet.join()===expUnmet.join()&&S.filter(s=>s.shadow==="unmet"&&s.role==="need").every(s=>s.text.includes("沒有對象")),"unmet plain needs = data, each says 沒有對象 ("+(gotUnmet.join()||"none for this pair")+")");
   const routes=(await G().evaluate(()=>TRACKS.map(t=>t.tag))).sort(),expR=Object.keys(M.keys).filter(k=>(role(A,k)==="need"&&role(B,k)==="offer")||(role(B,k)==="need"&&role(A,k)==="offer")).sort();
   ok(routes.join()===expR.join(),`routes = need × offer: ${routes.join(" ")}`);
   // click a met need with a real mouse; Eva answers with the quote and the role
