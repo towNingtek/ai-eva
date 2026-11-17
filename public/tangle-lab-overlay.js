@@ -48,3 +48,19 @@
  // Workspace events need no relay here: Chainlit's own UI already forwards every window "message"
  // (including ones from this iframe) to the server as window_message -> @cl.on_window_message.
 })();
+
+// Self-heal (2026-11-17): Chainlit 2.12 sometimes opens the socket before it has read the thread id from the URL
+// (auth.threadId=""), so the server starts a fresh session instead of resuming and /thread/<id> spins forever with
+// no messages and no input box. If that is still the case 8 s after load, reload once more (at most twice per tab
+// visit, tracked in sessionStorage). Nothing else is changed; a normal resume never triggers it.
+(function(){
+ var K="tangle-resume-heal",n=+(sessionStorage.getItem(K)||0),t0=Date.now();
+ var iv=setInterval(function(){
+  if(!/\/thread\/[0-9a-f-]{8,}/.test(location.pathname)){clearInterval(iv);return}
+  var ok=document.querySelector("#chat-input")||document.querySelector("[data-step-type]");
+  if(ok){sessionStorage.removeItem(K);clearInterval(iv);return}
+  if(Date.now()-t0<6000)return;
+  clearInterval(iv);if(n>=3)return;
+  sessionStorage.setItem(K,String(n+1));location.reload();
+ },1000);
+})();
