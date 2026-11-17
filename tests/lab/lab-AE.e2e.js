@@ -32,7 +32,7 @@ const logSince=m=>execSync(`docker logs ai-eva-tangle-lab 2>&1 | tail -n +${m+1}
   const c=await G.evaluate(()=>{const r=document.querySelector('[data-kv-key="開發審議"] image').getBoundingClientRect();return{x:r.x+r.width/2,y:r.y+r.height/2}});
   await p.mouse.click(ib.x+c.x,ib.y+c.y);await p.waitForTimeout(3000);
   await box.click();await p.keyboard.type("基地約 0.4 公頃");await p.keyboard.press("Enter");await p.waitForTimeout(3500);
-  t=await p.locator("#root").innerText();ok(t.includes("確認補充到「開發審議」"),"E: with a satellite selected, typing still becomes a supplement draft");
+  t=await p.locator("#root").innerText();ok(t.includes("確認補充到「開發審議"),"E: with a satellite selected, typing still becomes a supplement draft");
   await p.getByRole("button",{name:"取消"}).last().click();await p.waitForTimeout(1500);
   ok(errs.length===0,"no page errors"+(errs.length?": "+errs.join(";"):""));
   console.log("ALL OK",n);

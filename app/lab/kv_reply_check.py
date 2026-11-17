@@ -22,17 +22,21 @@ def load_reply_for():
     src = (HERE / "tangle_lab.py").read_text(encoding="utf-8")
     tree = ast.parse(src)
     keep = [n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name in ("load_kv_law", "reply_for", "_reply_markdown", "load_kv_match", "match_reply_for", "peer_reply_for", "pair_reply_for", "planet_summary_for",
-                                                                       "load_match_standard", "_is_need", "_is_offer", "complement_pairs", "match_status_for", "next_question_for", "third_reply_for")]
-    if len(keep) != 15:
-        raise SystemExit("FAIL tangle_lab.py must define the 15 reply and match-rule functions (incl. match_status_for, next_question_for)")
+                                                                       "load_match_standard", "_is_need", "_is_offer", "complement_pairs", "match_status_for", "next_question_for", "third_reply_for",
+                                                                       "load_law_standard", "law_question", "parse_law_answer", "law_rule_verdict", "law_status_for", "law_next_question")]
+    if len(keep) != 21:
+        raise SystemExit("FAIL tangle_lab.py must define the 21 reply, match-rule and law-rule functions (incl. law_rule_verdict, law_next_question)")
     mod = types.ModuleType("reply")
     mod.json, mod.Path, mod._KV_JS, mod.DEMO = json, Path, ROOT / "public/tangle/kv-law-mock.js", "_示範資料_"
     mod._KVM_JS = ROOT / "public/tangle/kv-match-mock.js"
     mod._STD_YAML = ROOT / "app/matching/standard_yunlin_v1.yaml"   # must exist before the functions' default args are evaluated
+    mod._LAW_STD_YAML = ROOT / "app/regulations/corpus/standard_yunlin_v1.yaml"
+    mod._UNKNOWN = ("還不知道", "不知道", "不確定", "不清楚")
     exec(compile(ast.Module(body=keep, type_ignores=[]), "tangle_lab.py", "exec"), mod.__dict__)
     mod.KV_LAW = mod.load_kv_law()
     mod.KV_MATCH = mod.load_kv_match()
     mod.MATCH_STD = mod.load_match_standard()
+    mod.LAW_STD = mod.load_law_standard()
     return mod
 
 
@@ -73,6 +77,54 @@ def problems(mod, kv):
                 out.append(f"{pid} {key}: na reply must carry no quote or question")
     if mod.reply_for("law", "no-such-project", "農村再生", kv) is not None:
         out.append("unknown project must return None")
+    # Step E: law clarify loop, rules only from the law standard v0.3
+    std = mod.LAW_STD
+    for pid, p in kv["projects"].items():
+        gaps = [d for d, v in p["law"].items() if v["state"] == "gap"]
+        st, open_ = mod.law_status_for(pid, {}, kv)
+        if st != ("CLARIFY_FIRST" if gaps else "READY") or sorted(open_) != sorted(gaps):
+            out.append(f"{pid}: law status {st} / open {open_} != gaps {gaps}")
+        if gaps and mod.law_status_for(pid, {d: "unknown" for d in gaps}, kv)[0] != "CLARIFY_FIRST":
+            out.append(f"{pid}: 還不知道 must not count as filled")
+        if gaps and mod.law_status_for(pid, {d: "na" for d in gaps}, kv)[0] != "READY":
+            out.append(f"{pid}: all gaps answered must be READY")
+        asked, seen = set(), []
+        while True:
+            q = mod.law_next_question(pid, asked, kv, std)
+            if not q:
+                break
+            if q["text"] != mod.law_question(q["field"], std)["ask"]:
+                out.append(f"{pid}: question text not from the YAML ({q['field']})")
+            seen.append(q["domain"]); asked.add(q["domain"])
+            if len(seen) > 20:
+                out.append(f"{pid}: questions never end"); break
+        if sorted(seen) != sorted(gaps):
+            out.append(f"{pid}: asked {seen} but gaps are {gaps}")
+        n += 1
+    # threshold rules (numbers from the YAML; answers parsed with units)
+    qa = mod.law_question("申請開發面積", std)
+    th = qa["rule"]["hit_if_gte"] if qa else None
+    cases = [("0.8 公頃", "na"), ("1.2公頃", "hit"), (f"{th} 公頃", "hit"), ("8000 平方公尺", "na"), ("12000平方公尺", "hit"),
+             ("還不知道", None), ("不清楚", None), ("很大", None)]
+    for text, want in cases:
+        got = mod.law_rule_verdict(qa, mod.parse_law_answer(qa, text), text) if qa else "no question"
+        if got != want:
+            out.append(f"開發審議 「{text}」: verdict {got} != {want}")
+    ql = mod.law_question("土地使用編定", std)
+    for text, want in (("農牧用地", "hit"), ("鄉村區乙種建築用地", "na"), ("還不知道", None)):
+        got = mod.law_rule_verdict(ql, mod.parse_law_answer(ql, text), text) if ql else "no question"
+        if got != want:
+            out.append(f"非都 「{text}」: verdict {got} != {want}")
+    qe = mod.law_question("工程規模與位置", std)
+    if qe and mod.law_rule_verdict(qe, mod.parse_law_answer(qe, "0.5 公頃，在山坡地"), "0.5 公頃，在山坡地") != "hit":
+        out.append("環評: a sensitive area must count as 觸及 even below the area threshold")
+    # labels on the law reply (事實 when quotes, 推論 when a judgement is shown)
+    for pid, p in kv["projects"].items():
+        for d, v in p["law"].items():
+            if v["state"] in ("hit", "gap"):
+                md = mod._reply_markdown(mod.reply_for("law", pid, d, kv), "P")
+                if "**事實**" not in md or "推論（AI，未經 Owner 確認）" not in md:
+                    out.append(f"{pid} {d}: law reply must label 事實 and 推論")
     return out, n
 
 

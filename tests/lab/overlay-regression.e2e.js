@@ -20,7 +20,7 @@ ok((await chat()).includes("申請開發或變更的基地面積多大"),"domain
 const box=p.locator("#chat-input, textarea").first();await box.click();await p.keyboard.type("基地約 0.5 公頃");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
 const kst=()=>G().evaluate(()=>document.querySelector('[data-kv-key="開發審議"]').getAttribute("data-kv-state"));ok(await kst()==="gap","not recorded before confirm");
 await p.getByRole("button",{name:"確認納入"}).last().click();await p.waitForTimeout(4000);
-ok(await kst()==="supplemented","Eva confirm -> graph marked");ok((await chat()).includes("已補充・待重判"),"Eva reports mark");
+ok(await kst()==="na","Eva confirm -> graph re-judged by rule (0.5 公頃 < 1 公頃 → 未涉及)");ok(/不觸及/.test(await chat()),"Eva reports the rule result");
 await p.screenshot({path:"/tmp/ov-4.png"});
 // collapse restores
 await p.locator("#tangle-ws-close").click();await p.waitForTimeout(1200);

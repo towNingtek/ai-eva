@@ -229,6 +229,77 @@ def reply_for(mode, project_id, key, kv=None):
             "body": f"計畫書裡沒有和「{key}」相關的內容。"}
 
 
+# Step E：法規多輪補問（法規標準 v0.3：clarify_questions＋status_transition）。只照 YAML 門檻規則，不靠 AI。
+_LAW_STD_YAML = Path(__file__).resolve().parents[1] / "regulations" / "corpus" / "standard_yunlin_v1.yaml"
+
+
+def load_law_standard(path=_LAW_STD_YAML):
+    import yaml
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+
+
+LAW_STD = load_law_standard() if _LAW_STD_YAML.exists() else {}
+LAW_STATUS_TEXT = {"CLARIFY_FIRST": "先補資料", "READY": "可以判斷"}
+_UNKNOWN = ("還不知道", "不知道", "不確定", "不清楚")
+
+
+def law_question(field, std=None):
+    std = std or LAW_STD
+    return next((q for q in std.get("clarify_questions", []) if q["field"] == field), None)
+
+
+def parse_law_answer(q, text):
+    """把使用者的回答換成規則能用的值。數字題：回傳公頃／戶數（float）；選項題：回傳選項字串；看不懂或「還不知道」回 None。"""
+    import re
+    t = (text or "").strip()
+    if not t or any(u in t for u in _UNKNOWN):
+        return None
+    if q.get("options"):
+        return next((o for o in q["options"] if o != "還不知道" and o in t), None)
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(公頃|ha|甲|平方公尺|m2|㎡|坪|戶)?", t)
+    if not m:
+        return None
+    v, u = float(m.group(1)), (m.group(2) or "")
+    if q.get("unit") == "公頃":
+        return {"": v, "公頃": v, "ha": v, "甲": v * 0.9699, "平方公尺": v / 10000, "m2": v / 10000, "㎡": v / 10000, "坪": v * 3.3058 / 10000, "戶": None}.get(u, v)
+    return v
+
+
+def law_rule_verdict(q, value, text=""):
+    """照題目的 rule 判：回傳 'hit'（觸及，改成對上了）或 'na'（不觸及）；value 為 None 時回 None（不改）。"""
+    if value is None:
+        return None
+    r = q["rule"]
+    if "hit_if_gte" in r:
+        sens = r.get("hit_if_sensitive_area") and any(w in (text or "") for w in ("山坡地", "保護區", "水源"))
+        return "hit" if (value >= r["hit_if_gte"] or sens) else "na"
+    if "hit_if_in" in r:
+        return "hit" if value in r["hit_if_in"] else "na"
+    return None
+
+
+def law_status_for(project_id, answers=None, kv=None):
+    """一個計畫的法規狀態：還有沒補齊的缺資料法領域＝先補資料；否則＝可以判斷。answers：{domain: verdict|'unknown'}。"""
+    kv, answers = kv or KV_LAW, answers or {}
+    gaps = [d for d, v in kv["projects"][project_id]["law"].items() if v["state"] == "gap"]
+    open_ = [d for d in gaps if answers.get(d) not in ("hit", "na")]
+    return ("CLARIFY_FIRST" if open_ else "READY"), open_
+
+
+def law_next_question(project_id, asked=None, kv=None, std=None, only=None):
+    """下一題（一次一題）：依標準題庫順序，挑還沒問過的缺資料法領域。全問過回 None。"""
+    kv, std, asked = kv or KV_LAW, std or LAW_STD, asked or set()
+    law = kv["projects"][project_id]["law"]
+    for q in std.get("clarify_questions", []):
+        d = q["domain"]
+        if only and d != only:
+            continue
+        v = law.get(d)
+        if v and v["state"] == "gap" and v.get("missing") == q["field"] and d not in asked:
+            return {"domain": d, "field": q["field"], "text": q["ask"], "options": q.get("options"), "q": q}
+    return None
+
+
 def _reply_markdown(r, project_name, prev=None):
     q = "\n\n".join(f"> 「{x}」" for x in r["quotes"])
     src = f"\n> — {project_name}・公開計畫理念" if r["quotes"] else ""
@@ -239,7 +310,9 @@ def _reply_markdown(r, project_name, prev=None):
     if r.get("clauses"):
         rows = "\n".join(f"- {'⚠ 風險' if c['kind'] == 'risk' else '提醒'}｜{c['law']} {c['no']}：{c['situation']}" for c in r["clauses"])
         cl_md = f"\n\n**條文**（條文是真的；哪幾條對上是示範假設，還沒有實際判斷）\n{rows}"
-    return f"**{r['title']}**・{project_name}\n\n{(q + src + chr(10) + chr(10)) if q else ''}{r['body']}{cl_md}{ask}\n\n{DEMO}"
+    fact = "**事實**\n\n" if q else ""
+    inf = "**推論（AI，未經 Owner 確認）**　" if r["state"] in ("hit", "gap") else ""
+    return f"**{r['title']}**・{project_name}\n\n{fact}{(q + src + chr(10) + chr(10)) if q else ''}{inf}{r['body']}{cl_md}{ask}\n\n{DEMO}"
 
 
 def _theme(p, code):
@@ -384,6 +457,31 @@ async def on_confirm(action: cl.Action):
         await cl.Message(content=f"已記下「{d['label']}」：{d['text']}\n\n_使用者陳述・未查證。_ {moved}\n\n_補了資訊，不代表驗證完成或合作成立。_").send()
         await _ask_next({"p": mq["p"], "q": mq["q"], "id": d.get("id")}, intro=False)
         return
+    if d.get("lq"):
+        lq = d["lq"]
+        s_ = _lq_state(lq["p"])
+        before, _ = law_status_for(lq["p"], s_["answers"])
+        q = law_question(lq["field"])
+        val = parse_law_answer(q, d["text"]) if q else None
+        verdict = law_rule_verdict(q, val, d["text"]) if q else None
+        if lq["domain"] not in s_["asked"]:
+            s_["asked"].append(lq["domain"])
+        s_["answers"][lq["domain"]] = verdict or "unknown"
+        _copilot_state()["supp"][d["key"]] = d["text"]
+        after, _ = await _law_push(d, lq["p"])
+        r = q["rule"] if q else {}
+        rule_txt = (f"{r.get('law', '')}{r.get('article', '')}：≥{r['hit_if_gte']}{q.get('unit', '')}" if "hit_if_gte" in r
+                    else f"屬於 {'、'.join(r.get('hit_if_in', []))} 才算觸及")
+        if verdict:
+            res = "**觸及**（星圖這一項改成「對上了」）" if verdict == "hit" else "**不觸及**（星圖這一項改成「未涉及」）"
+            judged = f"照門檻規則（{rule_txt}）判斷：「{lq['domain']}」{res}。"
+        else:
+            judged = f"這個回答看不出{('數字' if 'hit_if_gte' in r else '是哪一種')}，先記下來，「{lq['domain']}」維持缺資料（星圖標「已補充・待重判」）。"
+            await copilot_confirmed(d)
+        moved = f"法規狀態：**{LAW_STATUS_TEXT[before]} → {LAW_STATUS_TEXT[after]}**。" if after != before else f"法規狀態：仍是 **{LAW_STATUS_TEXT[after]}**。"
+        await cl.Message(content=f"已記下「{d['label']}」：{d['text']}\n\n_使用者陳述・未查證。_\n\n{judged}\n\n{moved}\n\n_這是照標準門檻的規則判斷，不是法律意見；面積等數字以正式文件為準。_").send()
+        await _law_ask_next({"p": lq["p"], "id": d.get("id")}, intro=False)
+        return
     ok = await copilot_confirmed(d)
     mark = "已補充・待重判" if d.get("kv") else "已補充・未查證"
     tail = "示範版不會重新判斷。" if d.get("kv") else ""
@@ -438,6 +536,9 @@ async def _copilot_pick(m):
     if m.get("mode") == "match" and m.get("pa") and m.get("pb"):   # step D: 3–4 plans — this event is about pa × pb
         m = {**m, "p": m["pa"], "q": m["pb"], "subject": 1}
     code, pid, qid = m.get("code"), m.get("p"), m.get("q")
+    if m.get("mode") == "law" and m.get("kind") == "status":
+        await _law_status_pick(m)
+        return
     if m.get("mode") == "law" and m.get("kind") == "domain":
         await _law_domain_pick(m)
         return
@@ -638,6 +739,70 @@ async def _match_key_pick(m):
     await cl.Message(content=f"**{r['title']}**・{name}\n\n{q}\n> — {name}・公開計畫理念\n\n{r['body']}\n\n{MATCH_DEMO}").send()
 
 
+def _lq_state(pid):
+    st = cl.user_session.get("tangle_lq") or {}
+    st.setdefault(pid, {"asked": [], "answers": {}})
+    cl.user_session.set("tangle_lq", st)
+    return st[pid]
+
+
+async def _law_push(m_or_d, pid):
+    """法規狀態與重判結果告訴星圖（經工作區轉給 iframe）。"""
+    s_ = _lq_state(pid)
+    st, open_ = law_status_for(pid, s_["answers"])
+    try:
+        await cl.CopilotFunction(name="tangle_mark", args={"id": m_or_d.get("id"), "lawStatus": st, "lawAnswers": s_["answers"]}).acall()
+    except Exception:
+        pass
+    return st, open_
+
+
+async def _law_ask_next(m, only=None, intro=True):
+    """Eva 主動問法規的下一題（一次一題，附「還不知道」「跳過」）；回答走原本的補充確認流程。"""
+    pid = m.get("p")
+    s_ = _lq_state(pid)
+    q = law_next_question(pid, set(s_["asked"]), only=only)
+    if not q:
+        if intro:
+            st, _ = law_status_for(pid, s_["answers"])
+            await cl.Message(content=f"缺資料都問過了。法規狀態：**{LAW_STATUS_TEXT[st]}**。").send()
+        return
+    fkey = f"{m.get('id')}:1:{q['domain']}"
+    cl.user_session.set("tangle_focus", {"cop": True, "id": m.get("id"), "code": q["domain"], "subject": 1, "label": f"{q['domain']}・{q['field']}",
+                                         "key": fkey, "kv": True, "lq": {"p": pid, "domain": q["domain"], "field": q["field"]}})
+    hint = f"\n\n可以選：{'、'.join(o for o in q['options'] if o != '還不知道')}" if q.get("options") else ""
+    await cl.Message(content=f"**建議**・想先確認一件事（補了這項，可以照規則重新判斷「{q['domain']}」）\n\n**{q['text']}**{hint}\n\n_直接在下方輸入；送出後會先讓你確認。_",
+                     actions=[cl.Action(name="tangle_lq", payload={"p": pid, "domain": q["domain"], "a": "unknown", "id": m.get("id"), "only": only}, label="還不知道"),
+                              cl.Action(name="tangle_lq", payload={"p": pid, "domain": q["domain"], "a": "skip", "id": m.get("id"), "only": only}, label="跳過")]).send()
+
+
+@cl.action_callback("tangle_lq")
+async def on_lq(action: cl.Action):
+    p_ = action.payload
+    s_ = _lq_state(p_["p"])
+    if p_["domain"] not in s_["asked"]:
+        s_["asked"].append(p_["domain"])
+    if p_["a"] == "unknown":
+        s_["answers"][p_["domain"]] = "unknown"
+    await action.remove()
+    cl.user_session.set("tangle_focus", None)
+    await cl.Message(content="好，先記成「還不知道」，不算補齊，這一項維持缺資料。" if p_["a"] == "unknown" else "好，先跳過。").send()
+    await _law_ask_next({"p": p_["p"], "id": p_.get("id")}, intro=False)
+
+
+async def _law_status_pick(m):
+    pid = m.get("p")
+    if pid not in PROJECTS:
+        return
+    s_ = _lq_state(pid)
+    st, open_ = law_status_for(pid, s_["answers"])
+    why = (f"還有 {len(open_)} 個法領域缺資料：{'、'.join(open_)}。補了之後，會照標準裡的門檻規則重新判斷（不重跑 AI）。"
+           if open_ else "缺資料的法領域都已補齊，照門檻規則判完了。")
+    await cl.Message(content=f"**法規狀態：{LAW_STATUS_TEXT[st]}**（依法規檢核標準 v0.3；不是法律意見）\n\n**推論（AI，未經 Owner 確認）**　{why}\n\n{DEMO}").send()
+    if open_:
+        await _law_ask_next(m, intro=False)
+
+
 async def _law_domain_pick(m):
     pid, key = m.get("p"), m.get("code")
     r = reply_for("law", pid, key)
@@ -649,6 +814,15 @@ async def _law_domain_pick(m):
                                          "kv": True} if r["state"] == "gap" else None)
     prev = _copilot_state()["supp"].get(fkey)
     await cl.Message(content=_reply_markdown(r, PROJECTS[pid]["name"], prev)).send()
+    if r["state"] == "gap" and LAW_STD.get("clarify_questions"):
+        if key not in _lq_state(pid)["asked"]:
+            await _law_ask_next(m, only=key, intro=False)
+        else:  # asked before (e.g. 還不知道): no new question, but a typed answer is still re-judged by the rule
+            v = KV_LAW["projects"][pid]["law"].get(key, {})
+            q = law_question(v.get("missing", ""))
+            if q:
+                f = cl.user_session.get("tangle_focus") or {}
+                cl.user_session.set("tangle_focus", {**f, "label": f"{key}・{q['field']}", "lq": {"p": pid, "domain": key, "field": q["field"]}})
 
 
 async def copilot_confirmed(d) -> bool:

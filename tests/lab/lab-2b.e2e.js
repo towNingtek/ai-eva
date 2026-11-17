@@ -34,8 +34,10 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   ok((await chat()).includes(M.law[gap].question),"Eva asks the gap question");
   const box=p.locator("#chat-input, textarea").first();await box.click();await p.keyboard.type("基地約 0.3 公頃");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
   await p.getByRole("button",{name:"確認納入"}).last().click();await p.waitForTimeout(3500);
-  const st=await G().evaluate(k=>{const g=document.querySelector(`[data-focus="${k}"]`);return g?{s:g.getAttribute("data-kv-state"),t:g.textContent}:null},gap);
-  ok(st&&st.s==="supplemented"&&st.t.includes("已補充・待重判"),"supplement inside the focus view marks 已補充・待重判");
+  // step E: answering inside the focus view re-judges by rule (0.3 公頃 < 1 公頃 → 不觸及); back on the overview it is 未涉及
+  await G().evaluate(()=>{if(typeof kvLeave==="function")kvLeave()});await p.waitForTimeout(1500);
+  const st=await G().evaluate(k=>document.querySelector(`[data-kv-key="${k}"]`)?.getAttribute("data-kv-state"),gap);
+  ok(st==="na"&&/不觸及/.test(await chat()),"supplement inside the focus view is re-judged by rule (不觸及 → 未涉及)");
 
   const na=Object.keys(M.law).find(k=>M.law[k].state==="na");await click(na);V=await view();ok(!V.focus,"clicking 不適用 leaves the focus view and does not walk in");
   await p.locator("#tangle-ws-close").click();await p.waitForTimeout(1500);

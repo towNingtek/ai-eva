@@ -69,6 +69,7 @@ function renderDomain(){let svg=document.getElementById('svg');svg.setAttribute(
    const pref=Math.abs(ux)>.3?(ux>0?['r','t','b','l']:['l','t','b','r']):(uy<0?['t','r','l','b']:['b','r','l','t']);
    const fits=s=>s.l>=X0&&s.t>=Y0&&s.l+w<=X1&&s.t+h<=Y1,free=s=>!PLACED.some(q=>s.l-2<q.x1&&q.x0<s.l+w+2&&s.t-2<q.y1&&q.y0<s.t+h+2);
    let pick=null;search:for(const d of [gap,gap+8,gap+18,gap+30])for(const side of pref){const s=spot(side,d);if(fits(s)&&free(s)){pick=s;break search}}
+   if(!pick&&Wd<700){wide:for(let d=gap;d<=gap+70;d+=5)for(const side of ['t','b','r','l'])for(const sl of [0,-.5,.5,-1,1]){const s=spot(side,d);if(side==='t'||side==='b')s.l+=sl*w*.6;else s.t+=sl*h;if(fits(s)&&free(s)){pick=s;break wide}}}
    if(!pick){const s=spot(pref[0],gap);s.l=Math.min(Math.max(s.l,X0),X1-w);s.t=Math.min(Math.max(s.t,Y0),Y1-h);pick=s}
    PLACED.push({x0:pick.l-2,y0:pick.t-2,x1:pick.l+w+2,y1:pick.t+h+2});
    const anchor=pick.an,lx=anchor==='start'?pick.l:anchor==='end'?pick.l+w:pick.l+w/2,ly=pick.t+f1;
@@ -83,7 +84,7 @@ function renderDomain(){let svg=document.getElementById('svg');svg.setAttribute(
  function dots(ang,n,dim){for(let k=0;k<n;k++){const a=ang+(k-(n-1)/2)*.14;svg.appendChild(el('circle',{cx:center.x+Math.cos(a)*43,cy:center.y+Math.sin(a)*43,r:2,fill:'#b6bfcb','pointer-events':'none',opacity:dim?'.3':'1'}))}}
   if(KV_P){KV_LAW.domains.forEach((name,i)=>{const a=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,st=KV_P.law[name].state;const dO=lawPositions.get(name)||{x:0,y:0};BODY(kvSel===name?17:(st==='na'?8:13))(center.x+Math.cos(a)*R+dO.x,center.y+Math.sin(a)*R+dO.y)});
    KV_P.uncovered.forEach((name,j)=>{const a=(j?.1:.9)*Math.PI+orbitTime*KV_SPIN,ux=Math.cos(a),uy=Math.sin(a),vx0=-VX/VZ,vy0=-VY/VZ,vx1=vx0+Wd/VZ,vy1=vy0+Hd/VZ,hx=(ux>=0?vx1-center.x:center.x-vx0)-118,hy=(uy>=0?vy1-center.y:center.y-vy0)-58,R2=Math.min(R*1.5,Math.abs(ux)>.01?hx/Math.abs(ux):1e9,Math.abs(uy)>.01?hy/Math.abs(uy):1e9);BODY(13)(center.x+ux*R2,center.y+uy*R2)});
-   BODY(32)(center.x,center.y);{const nf=13/VZ,nw=YP.name.length*nf;PLACED.push({x0:center.x-nw/2-3,y0:center.y+62-nf-3,x1:center.x+nw/2+3,y1:center.y+62+4})}}
+   BODY(32)(center.x,center.y);{const nf=13/VZ,nw=YP.name.length*nf*1.06,ny=center.y+62;PLACED.push({x0:center.x-nw/2-6/VZ,y0:ny-nf*1.05-3/VZ,x1:center.x+nw/2+6/VZ,y1:ny+nf*.35+3/VZ})}}
  if(KV_P)KV_LAW.domains.forEach((name,i)=>{const v=KV_P.law[name],ang=-Math.PI*.4+i*(Math.PI*2/KV_LAW.domains.length)+orbitTime*KV_SPIN,dO=lawPositions.get(name)||{x:0,y:0},t={x:center.x+Math.cos(ang)*R+dO.x,y:center.y+Math.sin(ang)*R+dO.y},from={x:center.x+Math.cos(ang)*43,y:center.y+Math.sin(ang)*43};
   const st=kvSupp.has(name)?'supplemented':v.state,sel=kvSel===name,dim=!!(kvSel&&!sel);
   const g=el('g',{'data-kv-key':name,'data-kv-state':st,role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(sel)g.setAttribute('data-kv-selected','');if(dim)g.setAttribute('data-kv-dim','');
@@ -229,3 +230,25 @@ function renderFocus(key,e){const svg=document.getElementById('svg');svg.setAttr
   PLACED.push({x0:pick.l-1,y0:pick.t-1,x1:pick.l+w+1,y1:pick.t+h+1});
   const lx=pick.an==='start'?pick.l:pick.an==='end'?pick.l+w:pick.l+w/2,lt=el('text',{x:lx,y:pick.t+f,'text-anchor':pick.an,fill:d.risk?'#e8d5b5':'#b9dcd7','font-size':fs(9)});lt.textContent=lbl;debG[i].appendChild(lt)});
 }
+
+// ── Step E (law standard v0.3): multi-round clarify. Additions only. ─────────────────────────────────────────
+// After a confirmed answer the server re-judges that domain by the YAML threshold rule and sends
+// {type:'law-status', status, answers:{domain: 'hit'|'na'|'unknown'}}. The domain's state is updated in place,
+// so the existing drawing (glow, routes, flow, pulse, focus) is reused unchanged. 'unknown' keeps it 缺資料.
+window.LAW_STATUS_TEXT={CLARIFY_FIRST:'先補資料',READY:'可以判斷'};
+let LAW_SERVER_STATUS=null;const LAW_ORIG={};
+function lawStatus(){if(LAW_SERVER_STATUS)return LAW_SERVER_STATUS;if(!KV_P)return null;return Object.values(KV_P.law).some(v=>v.state==='gap')?'CLARIFY_FIRST':'READY'}
+function lawApply(answers){if(!KV_P)return;for(const [d,v] of Object.entries(answers||{})){const cur=KV_P.law[d];if(!cur||(v!=='hit'&&v!=='na'))continue;
+  if(!LAW_ORIG[d])LAW_ORIG[d]=JSON.parse(JSON.stringify(cur));
+  KV_P.law[d]=v==='hit'?{...LAW_ORIG[d],state:'hit',confidence:'mid',count:{risk:0,note:1},judged:'rule'}:{state:'na',evidence:[],judged:'rule'};
+  kvSupp.delete(d);if(v==='hit')LAW_PULSE[d]=performance.now()}}
+window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='law-status')return;
+ LAW_SERVER_STATUS=e.data.status||null;lawApply(e.data.answers);render();buildParticles()});
+// status text above the planet (no frame; click → Eva explains). Drawn after the domain view, so nothing old is touched.
+const _lawRenderDomain=renderDomain;renderDomain=function(){_lawRenderDomain();const st=lawStatus();if(!st)return;
+ const svg=document.getElementById('svg'),T=LAW_STATUS_TEXT[st],f=11/VZ,cx0=Wd/2,cy0=Hd/2-Hd*.035/VZ,ctr={x:cx0+Math.sin(orbitTime*.3)*4,y:cy0+Math.cos(orbitTime*.25)*3},x=ctr.x,y=ctr.y-46/VZ-f;
+ const g=el('g',{'data-law-status':st,role:'button',tabindex:0,'aria-label':'法規狀態：'+T,style:'cursor:pointer'});
+ g.appendChild(el('rect',{x:x-T.length*f/2-6/VZ,y:y-f*1.2,width:T.length*f+12/VZ,height:f*1.7,fill:'transparent'}));
+ const tx=el('text',{x,y,'text-anchor':'middle',fill:st==='READY'?'#9fe3d9':'#e6cfa6','font-size':f.toFixed(2),stroke:'#060a10','stroke-width':(3/VZ).toFixed(2),'paint-order':'stroke'});tx.textContent=T;g.appendChild(tx);
+ const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'法規狀態',code:'status',subject:1,kind:'status',mode:'law'},location.origin)};
+ g.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};g.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(g)};

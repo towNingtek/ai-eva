@@ -18,6 +18,8 @@ run() { local name="$1"; shift; local t0=$(date +%s)
 echo "log: $LOG"
 # ── data and rules ──
 run "standard yaml"            python3 tools/match_standard_check.py
+run "law standard yaml"        python3 tools/law_standard_check.py
+run "law standard self-test"   python3 tools/law_standard_check.py --self-test
 run "law data"                 python3 tools/kv_law_check.py
 run "law data self-test"       python3 tools/kv_law_check.py --self-test
 run "match data"               python3 tools/kv_match_check.py
@@ -34,17 +36,19 @@ git show "$TWO_PLAN_REF:public/tangle/tangle-match.html" > "$BASE/tangle/tangle-
 git show "$TWO_PLAN_REF:public/tangle/yunlin-frame.js"  > "$BASE/tangle/yunlin-frame.js"
 run "two-plan view unchanged (vs $TWO_PLAN_REF)" timeout 1800 node tests/lab/two-plan-same.cjs "$BASE" "$PWD/public"
 # ── law graph ──
-for f in --domain --select --supplement --ring --motion --flow --pulse --focus --hygiene --no-overlap --focus-layout; do
+for f in --domain --status --rejudge --select --supplement --ring --motion --flow --pulse --focus --hygiene --no-overlap --focus-layout; do
   run "law $f" timeout 900 node tests/lab/law-domain-view.check.js $f; done
 # ── match graph ──
 for f in --keys --routes --need-look --flow --pulse --peer --third --status --pair --pair-peer --planet --multi-focus --multi-pair --hygiene --no-overlap; do
   run "match $f" timeout 1200 node tests/lab/match-b1b8.check.js $f; done
 if [ $FULL = 1 ]; then run "match --multi (all 330 sets)" timeout 7200 node tests/lab/match-b1b8.check.js --multi --all
 else run "match --multi (30-set sample)" timeout 1200 node tests/lab/match-b1b8.check.js --multi; fi
+# ── RWD: law + match at 390 / 600 / 1100 ──
+run "rwd (law + match, 3 widths)" timeout 3000 node tests/lab/rwd.check.js
 # ── live site (real mouse) ──
 if [ $LIVE = 1 ]; then
   export LAB_URL=https://eva-tangle-lab.4impact.cc LAB_PASS="$(cat ~/.tangle-lab/password)"
-  for t in lab-D lab-C lab-B lab-3a lab-2a lab-2b lab-AE; do run "live $t" timeout 600 node tests/lab/$t.e2e.js; done
+  for t in lab-E lab-D lab-C lab-B lab-3a lab-2a lab-2b lab-AE; do run "live $t" timeout 600 node tests/lab/$t.e2e.js; done
   run "live overlay regression" bash -c 'cd /home/yillkid/workspace/swarm/hives/town-intelligent/e2e && unset NODE_OPTIONS && cp '"$PWD"'/tests/lab/overlay-regression.e2e.js ./_reg.js && U=$LAB_URL PW=$LAB_PASS timeout 400 node _reg.js; r=$?; rm -f _reg.js; exit $r'
 fi
 N=$((PASS+FAIL))

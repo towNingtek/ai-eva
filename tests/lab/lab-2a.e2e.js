@@ -39,12 +39,12 @@ let n=0;const ok=(c,m)=>{if(!c)throw Error("FAIL "+m);n++;console.log("ok",m)};
   await p.getByRole("button",{name:"取消"}).last().click();await p.waitForTimeout(2500);
   ok(await kvState(gap)==="gap","cancel leaves the satellite unchanged");
   await leave();await click(gap);await box.click();await p.keyboard.type("基地約 0.3 公頃，社區活動中心旁");await p.keyboard.press("Enter");await p.waitForTimeout(3000);
-  ok((await chat()).includes("確認補充到「開發審議」"),"Eva asks to confirm the supplement first");
+  ok((await chat()).includes("確認補充到「開發審議"),"Eva asks to confirm the supplement first");
   await p.getByRole("button",{name:"確認納入"}).last().click();await p.waitForTimeout(3500);
-  ok(await kvState(gap)==="supplemented","confirmed supplement turns the satellite into supplemented");
-  const lbl=await G().evaluate(k=>document.querySelector(`[data-kv-key="${k}"]`).textContent,gap);
-  ok(lbl.includes("已補充・待重判")&&!/風險|提醒/.test(lbl),"label says 已補充・待重判 with no risk/note counts");
-  ok((await chat()).includes("示範版不會重新判斷"),"Eva says the demo will not re-judge");
+  // step E (law standard v0.3): a readable area is re-judged by the threshold rule (§11 ≥1 公頃): 0.3 公頃 → 不觸及
+  await leave();await p.waitForTimeout(800);
+  ok(await kvState(gap)==="na","0.3 公頃 is re-judged by rule: the satellite becomes 未涉及");
+  ok(/不觸及/.test(await chat())&&(await chat()).includes("使用者陳述・未查證"),"Eva says 不觸及 by the rule and marks the answer 未查證");
 
   // 不適用 / 未收錄: flash only, fixed wording
   await leave();const na=Object.keys(M.law).find(k=>M.law[k].state==="na");await click(na);

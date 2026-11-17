@@ -127,6 +127,23 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    if(/風險|提醒/.test(r.text))fail(`${pr.short} ${gap} supplemented must not show risk/note counts`);if(r.glow)fail(`${pr.short} ${gap} supplemented must not get the 對上了 glow`);if(r.fog)fail(`${pr.short} ${gap} fog not cleared`);
    for(const [k,v] of Object.entries(before))if(k!==gap&&r.all[k]!==v)fail(`${pr.short} ${k} changed ${v}->${r.all[k]}`);
    n++;await p.close()}}
+ else if(arg==="--status"){const M=mock();for(const pr of P){const p=await open(pr.id);
+   // a frameless status text = the rule (any 缺資料 domain → 先補資料), click → Eva
+   const exp=Object.values(M.projects[pr.id].law).some(v=>v.state==="gap")?"CLARIFY_FIRST":"READY";
+   const got=await p.evaluate(()=>{const g=document.querySelector("[data-law-status]");if(!g)return null;const r=g.querySelector("rect");return{st:g.getAttribute("data-law-status"),t:g.textContent,frame:!!r&&((r.getAttribute("fill")||"")!=="transparent"||!!r.getAttribute("stroke"))}});
+   if(!got)fail(pr.short+": no law status");else{if(got.st!==exp)fail(`${pr.short}: status ${got.st} != ${exp}`);if(got.frame)fail(pr.short+": status has a visible frame")}
+   n++;await p.close()}}
+ else if(arg==="--rejudge"){const M=mock();for(const pr of P){const law=M.projects[pr.id].law,gaps=Object.keys(law).filter(d=>law[d].state==="gap");if(!gaps.length)continue;
+   const p=await open(pr.id);
+   // server says: first gap → hit (by rule), second (if any) → na, the rest unknown. The graph must follow.
+   const ans={};gaps.forEach((d,i)=>ans[d]=i===0?"hit":i===1?"na":"unknown");const left=gaps.filter(d=>ans[d]==="unknown").length;
+   await p.evaluate(a=>window.postMessage({type:"law-status",status:Object.values(a).includes("unknown")?"CLARIFY_FIRST":"READY",answers:a},location.origin),ans);await p.waitForTimeout(600);
+   const st=await p.evaluate(()=>Object.fromEntries([...document.querySelectorAll("[data-kv-key][data-kv-state]")].map(g=>[g.getAttribute("data-kv-key"),g.getAttribute("data-kv-state")])));
+   for(const d of gaps){const want=ans[d]==="unknown"?"gap":ans[d];if(st[d]!==want)fail(`${pr.short} ${d}: after re-judge ${st[d]} != ${want}`)}
+   const s2=await p.evaluate(()=>document.querySelector("[data-law-status]")?.getAttribute("data-law-status"));
+   if(s2!==(left?"CLARIFY_FIRST":"READY"))fail(`${pr.short}: status after re-judge ${s2}`);
+   if(p._errs.length)fail(pr.short+": page errors "+p._errs.join(";"));
+   n++;await p.close()}}
  else if(arg==="--hygiene"){for(const pr of P){const p=await open(pr.id);let s=await snap(p);if(s.dash)fail(pr.short+" dashes in topic view");await toDomain(p);s=await snap(p);if(s.dash)fail(pr.short+" dashes in domain view");
    if(p._errs.length)fail(pr.short+" page errors: "+p._errs.join(";"));if(p._ext.length)fail(pr.short+" external requests: "+p._ext.join(","));n++;await p.close()}}
  else{console.error("flags: --record-baseline | --default-unchanged | --domain | --toggle-back | --no-overlap | --hygiene");process.exitCode=2}
