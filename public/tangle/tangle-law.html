@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Secondhome@AI｜互補網絡 v11</title>
+<style>
+:root{--bg:#060a10;--panel:#141a22;--line:#28303a;--need:#f5a524;--offer:#93f2ea;
+      --clarify:#f471b5;--explore:#4ade80;--dim:#8b949e;--text:#e6edf3;--open:#ff6b6b;--teal:#2dd4bf}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);overflow:hidden;
+     font-family:-apple-system,"Noto Sans TC","PingFang TC",sans-serif}
+#app{display:flex;height:100vh}
+#stage{flex:1;position:relative;min-width:0;-webkit-user-select:none;user-select:none}
+svg{display:block;width:100%;height:100%;position:relative;z-index:1;cursor:grab}
+canvas{position:absolute;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+#side{width:330px;flex:none;transition:margin-right .22s ease;background:var(--panel);border-left:1px solid var(--line);
+      overflow-y:auto;padding:15px 15px 40px}
+h1{font-size:14px;margin:0 0 3px;font-weight:600}
+.sub{font-size:12px;color:var(--dim);margin-bottom:11px;line-height:1.55}
+.tag{display:inline-block;border-radius:4px;padding:1px 6px;font-size:10px;margin-left:4px}
+.t-open{background:rgba(255,107,107,.13);color:var(--open);border:1px solid rgba(255,107,107,.4)}
+.mode{display:flex;gap:6px;margin-bottom:12px}
+.mode button,.btns button{background:#1e2732;color:var(--text);border:1px solid var(--line);
+  border-radius:6px;padding:7px 6px;font-size:12px;cursor:pointer;font-family:inherit}
+.mode button{flex:1}
+.mode button.on,.btns button.on{background:rgba(45,212,191,.15);border-color:var(--teal);color:var(--teal)}
+.sec{border-top:1px solid var(--line);padding-top:11px;margin-top:12px}
+.sec h2{font-size:12px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;margin:0 0 9px;font-weight:600}
+.w{margin-bottom:8px}
+.wl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.wv{color:var(--need);font-variant-numeric:tabular-nums;font-weight:600}
+.sim{color:#5f6b7a;font-size:10px}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:#28303a;border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;
+  background:var(--need);cursor:pointer;border:2px solid #141a22}
+input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
+.btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.btns button{flex:1;min-width:76px;padding:6px;font-size:12px}
+.ri{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:6px;margin-bottom:3px;
+    background:#101620;cursor:pointer;font-size:12px}
+.ri:hover{background:#18202a}
+.rn{width:16px;color:var(--dim);font-size:10px;flex:none}
+.rd{width:8px;height:8px;border-radius:50%;flex:none}
+.rt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs{font-variant-numeric:tabular-nums;color:var(--dim);font-size:10px;flex:none}
+.tip{font-size:10px;color:var(--dim);line-height:1.6;margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+.tip b{color:var(--text)}
+.lg{display:flex;align-items:center;gap:7px;font-size:12px;margin:5px 0}
+.lgb{width:22px;height:2px;border-radius:1px;flex:none}
+.kv{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+.kv span:first-child{color:var(--dim)}
+.gauge{height:5px;background:#28303a;border-radius:3px;overflow:hidden;margin:3px 0 7px}
+.gauge i{display:block;height:100%}
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;margin-top:4px}
+.stat{position:absolute;left:14px;top:12px;font-size:12px;color:#3c4654;line-height:1.7}
+.stat b{color:#8b949e}
+.hint{position:absolute;left:14px;bottom:12px;font-size:12px;color:#3c4654}
+#zc{position:absolute;left:14px;bottom:36px;z-index:14;display:flex;align-items:center;gap:6px;
+  background:rgba(16,21,28,.82);border:1px solid var(--line);border-radius:8px;padding:5px 8px}
+#zc button{background:transparent;border:0;color:#8b949e;cursor:pointer;font-size:14px;
+  width:20px;height:20px;line-height:1;padding:0;font-family:inherit}
+#zc button:hover{color:#2dd4bf}
+#zLbl{font-size:10px;color:#8b949e;min-width:38px;text-align:center;font-variant-numeric:tabular-nums}
+#zLod{font-size:10px;color:#5f6b7a;margin-left:4px;padding-left:8px;border-left:1px solid var(--line)}
+#cpBtn{position:absolute;right:18px;bottom:18px;z-index:30;width:46px;height:46px;border-radius:50%;
+  background:linear-gradient(145deg,#1d7f72,#2dd4bf);cursor:pointer;display:flex;
+  align-items:center;justify-content:center;font-size:20px;color:#06231f;
+  box-shadow:0 5px 22px rgba(45,212,191,.32);transition:transform .16s}
+#cpBtn:hover{transform:scale(1.07)}
+#cp{position:absolute;right:18px;bottom:18px;z-index:31;width:334px;height:436px;display:none;
+  flex-direction:column;border-radius:13px;overflow:hidden;
+  background:rgba(13,18,25,.96);border:1px solid rgba(45,212,191,.3);
+  box-shadow:0 14px 46px rgba(0,0,0,.62)}
+#cp.on{display:flex}
+#cpH{padding:11px 13px;border-bottom:1px solid var(--line);display:flex;
+  align-items:center;justify-content:space-between;background:rgba(45,212,191,.07)}
+#cpH b{font-size:14px;color:#2dd4bf}
+#cpH .x{cursor:pointer;color:#8b949e;font-size:14px;line-height:1}
+#cpCtx{padding:6px 13px;font-size:10px;color:#5f6b7a;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.015)}
+#cpCtx b{color:#2dd4bf}
+#cpB{flex:1;overflow-y:auto;padding:11px 13px;font-size:12px;line-height:1.62}
+.msg{margin-bottom:11px}
+.msg.u{text-align:right}
+.msg .bub{display:inline-block;max-width:88%;padding:7px 10px;border-radius:9px;text-align:left}
+.msg.u .bub{background:rgba(45,212,191,.14);border:1px solid rgba(45,212,191,.26)}
+.msg.a .bub{background:rgba(255,255,255,.045);border:1px solid var(--line)}
+.msg.a .bub b{color:#f5a524}
+#cpQ{padding:8px 13px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:5px}
+#cpQ button{background:#1e2732;border:1px solid var(--line);color:#8b949e;font-size:10px;
+  padding:4px 8px;border-radius:12px;cursor:pointer;font-family:inherit}
+#cpQ button:hover{border-color:#2dd4bf;color:#2dd4bf}
+#cpI{display:flex;border-top:1px solid var(--line)}
+#cpI input{flex:1;background:transparent;border:0;outline:0;padding:11px 13px;
+  color:var(--text);font-size:12px;font-family:inherit}
+#cpI button{background:transparent;border:0;color:#2dd4bf;padding:0 14px;cursor:pointer;font-size:14px}
+#side.collapsed{margin-right:-330px}
+#sideTog{position:absolute;right:0;top:14px;z-index:20;width:20px;height:52px;opacity:.75;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  background:rgba(20,26,34,.92);border:1px solid var(--line);border-right:0;
+  border-radius:7px 0 0 7px;color:#8b949e;font-size:12px;transition:right .22s ease}
+#sideTog:hover{color:#2dd4bf;border-color:#2dd4bf55}
+#hov{position:absolute;left:0;top:0;pointer-events:none;z-index:9;display:none;
+  min-width:206px;max-width:262px;padding:10px 12px;border-radius:9px;
+  background:rgba(14,19,26,.9);border:1px solid rgba(120,140,165,.3);
+  box-shadow:0 8px 26px rgba(0,0,0,.55);font-size:12px;line-height:1.5;color:#e6edf3}
+#hov .hn{font-weight:600;font-size:14px;margin-bottom:6px}
+#hov .hs{color:#8b949e;font-size:10px;letter-spacing:.05em;margin:7px 0 2px}
+#hov .hr{display:flex;justify-content:space-between;gap:9px;padding:1px 0}
+#hov .hr span:last-child{color:#8b949e;font-size:10px;flex:none}
+</style>
+<style>#side,#sideTog,#cp,#cpBtn{display:none!important}#stage{width:100%;height:100%}#app{height:100dvh}.preview-note{position:absolute;left:15px;top:12px;right:15px;z-index:4;font-size:11px;color:#bbc4d1;background:#0c121cdd;padding:8px 12px;border:1px solid #26313d;border-radius:8px;pointer-events:none}#tt{max-width:310px} </style><style>#tt,#dw,#rk{display:none!important}</style><style>#hov{display:none!important}#svg text{pointer-events:none}#svg [role="button"]{cursor:pointer}</style><style id="lab-clean">.preview-note,#stat,#hint,#zLod{display:none!important}#zc{gap:4px}</style></head>
+<body>
+<div id="app">
+  <div id="stage"><div class="preview-note">星球 × 衛星航跡法規檢視 · 雲林公開計畫理念 · 說明為示範文字，非法規條文 · 不計媒合分數、不作適用或合規判定；無連線僅表示此示範未建關係</div><canvas id="cv"></canvas><svg id="svg"></svg>
+    <div class="stat" id="stat"></div><div class="hint" id="hint"></div>
+    <div id="zc"><button id="zOut">−</button><span id="zLbl">100%</span><button id="zIn">＋</button>
+      <button id="zFit" title="重設">⛶</button><span id="zLod">中景：專案名稱</span></div><div id="hov"></div><div id="sideTog">›</div>
+    <div id="cpBtn">✨</div>
+    <div id="cp">
+      <div id="cpH"><b>✨ 媒合顧問</b><span class="x" id="cpX">×</span></div>
+      <div id="cpCtx">情境：<b id="cpCtxT">網絡視圖</b></div>
+      <div id="cpB"></div>
+      <div id="cpQ"></div>
+      <div id="cpI"><input id="cpIn" placeholder="問這張圖任何事…"><button id="cpS">↑</button></div>
+    </div></div>
+  <div id="side">
+    <h1>互補網絡 v11<span style="color:#2dd4bf;font-size:12px;margin-left:5px">語意縮放</span></h1>
+    <div class="sub">邊＝<b>一條 bridge_feature</b>，從對應觸手長出。<br>
+      強度由<b>亮度</b>表達，線寬固定 —— 保留輕盈與後續動畫空間。</div>
+
+    <div class="mode">
+      <button id="mNet" class="on">網絡</button>
+      <button id="mFoc">焦點</button>
+    </div>
+
+    <div id="netPanel">
+      <div class="sec" style="border:0;padding-top:0;margin-top:0">
+        <h2>密度<span style="color:#5f6b7a;font-size:10px;margin-left:5px" id="dLbl">— / —</span></h2>
+        <div class="wl"><span style="font-size:10px">強度門檻</span><span class="wv" id="dVal">0.28</span></div>
+        <input type="range" id="dRng" min="0" max="60" value="28">
+        <div class="tip" style="margin-top:7px">
+          只顯示強度 ≥ 門檻的橋。<b>保底</b>：每個 project 至少保留最強的一條。<br>
+          <span style="color:#5f6b7a">拉高門檻 → 毛球收斂成主幹。</span>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h2>顯示</h2>
+        <div class="btns">
+          <button id="bLab">邊標能力</button>
+          <button id="bOrph" class="on">標示落空觸手</button>
+          <button id="bFlow" class="on">粒子流</button>
+          <button id="bUnpin">解除釘選</button>
+          <button id="bRelax">重新鬆弛</button>
+          <button id="bBang">▶ 重播生成</button>
+          <button id="bIdle" class="on">待機微動</button>
+        </div>
+        <div class="tip">
+          任兩個 project，<b>一方 NEED 對上另一方同代碼 OFFER</b> 即成一條橋。<br>
+          兩根 NEED 相對<b>不成橋</b>——「相似性只作經驗交流」。<br><br>
+          <b style="color:#ff6b6b">落空觸手</b>（空心末端）＝ 宣告了能力，但網絡中無人對接。<br>
+          <span style="color:#5f6b7a">那是網絡的缺口，也是 counter_reason 的具體內容。</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="focPanel" style="display:none">
+      <div class="sec" style="border:0;padding-top:0;margin-top:0">
+        <h2>Feature Profile<span class="tag t-open">◆ D-04</span></h2>
+        <div id="ws"></div>
+        <div class="btns">
+          <button id="bDef" class="on">預設</button>
+          <button id="bCap">能力導向</button>
+          <button id="bLoc">在地優先</button>
+        </div>
+        <div class="tip"><b style="color:#2dd4bf">上兩維由觸手實算</b>；
+          <b style="color:#5f6b7a">下四維為模擬輸入</b>，文件未定義算法。</div>
+      </div>
+      <div class="sec"><h2>Top-N</h2><div id="rk"></div></div>
+      <div class="sec" id="dw" style="display:none"><h2>橋樑明細</h2><div id="det"></div></div>
+    </div>
+
+    <div class="sec">
+      <h2>圖例</h2>
+
+      <div style="font-size:12px;color:#8b949e;margin:2px 0 6px">節點＝一個 project</div>
+      <div class="lg"><span class="lgb" style="background:#f5a524"></span>金觸手＝<b style="color:#e6edf3">NEED</b>　我缺這個能力</div>
+      <div class="lg"><span class="lgb" style="background:#93f2ea"></span>紫觸手＝<b style="color:#e6edf3">OFFER</b>　我有這個能力</div>
+      <div class="lg"><span class="lgb" style="background:#f5a524;opacity:.45"></span>虛線空心＝該能力資料不全</div>
+      <div class="lg"><span class="lgb" style="background:#ff6b6b"></span><b style="color:#ff6b6b">紅色脈動</b>＝落空，網絡中無人對接</div>
+      <div style="font-size:10px;color:#5f6b7a;margin:3px 0 0 29px;line-height:1.5">
+        觸手長度＝maturity（EXPLORING→SCALING）</div>
+
+      <div style="font-size:12px;color:#8b949e;margin:11px 0 6px;padding-top:9px;border-top:1px solid #28303a">
+        邊＝一條 bridge_feature</div>
+      <div class="lg"><span class="lgb" style="background:#ffe2a0;height:3px"></span><b style="color:#e6edf3">粒子</b>＝資源流動</div>
+      <div style="font-size:10px;color:#8b949e;margin:1px 0 7px 29px;line-height:1.6">
+        從 <b style="color:#93f2ea">OFFER 端</b> 流向 <b style="color:#f5a524">NEED 端</b>——<br>
+        <b style="color:#e6edf3">有的人把能力送給缺的人</b>。</div>
+      <div class="lg"><span class="lgb" style="background:#f5a524"></span>軌道亮／粒子多＝橋強</div>
+      <div style="font-size:10px;color:#5f6b7a;margin:-2px 0 6px 29px">強度＝需求優先序 × 對方成熟度</div>
+      <div class="lg"><span class="lgb" style="background:#f5a524;opacity:.3"></span>粒子閃爍＋軌道虛線＝資料不足</div>
+
+      <div class="tip" style="border-top-color:#2dd4bf44">
+        <b style="color:#2dd4bf">距離＝適配度</b><br>
+        <b>焦點視圖</b>：離焦點越近 = fit 越高，與右側 Top-N 排序一致。<br>
+        <b>網絡視圖</b>：強橋把節點拉近成團，弱橋鬆散。<br>
+        <span style="color:#5f6b7a">位置是最強的視覺通道，所以用來表達最重要的資訊。</span>
+      </div>
+      <div class="tip">
+        <b>橋怎麼成立</b>：一方的 NEED 對上另一方<b>同代碼</b>的 OFFER。<br>
+        兩根 NEED 相對<b>不成橋</b>——「相似性只作經驗交流」。<br><br>
+        <b style="color:#f471b5">CLARIFY_FIRST</b>：Fit 高但 Confidence 低 → <b>不推薦，先補問</b>。<br>
+        <span style="color:#5f6b7a">SH-COLLAB-03：confidence 不得與 fit 混為一值；缺值不補 0。</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./yunlin-frame.js?v=1793943178"></script><script src="./kv-law-mock.js?v=1794660267"></script>
+<script src="./moons.js?v=1793943178"></script>
+<script>
+const NS="http://www.w3.org/2000/svg";
+const BN={B1:"活動程序",B2:"工程前提",B3:"規模資訊",B4:"待釐清事項",
+          B5:"人才與專業",B6:"社群與關係",B7:"市場與通路",B8:"治理與平台"};
+const DIMS=[["needOffer","Need–Offer 互補",true],["cap","B1–B8 能力互補",true],
+            ["mutual","互惠性（雙向）",true],
+            ["topic","議題與目標對象",false],["exec","合作可執行性",false],
+            ["stage","階段與時程",false],["xborder","跨國語境與成本",false]];
+const PRE={def:{needOffer:22,cap:18,mutual:15,topic:13,exec:12,stage:8,xborder:12},
+           cap:{needOffer:26,cap:30,mutual:14,topic:9,exec:8,stage:8,xborder:5},
+           loc:{needOffer:18,cap:13,mutual:12,topic:22,exec:9,stage:5,xborder:21}};
+let W={...PRE.def}, focus=null, sel=null, showLab=false, showOrph=true;
+
+const P=[
+ {id:1,name:"計畫事實（虛構）",n:[["B1",.9,1],["B2",.7,.3],["B3",.65,.25],["B4",.55,1]],o:[],sim:{topic:0,exec:0,stage:0,xborder:0}},
+ {id:2,name:"待核對條件（非真實法規）",n:[],o:[["B1",.9,1],["B2",.7,1],["B3",.65,1]],sim:{topic:0,exec:0,stage:0,xborder:0}}
+];
+const byId=id=>P.find(p=>p.id===id);
+
+// ── 每條橋獨立：from(OFFER) → to(NEED) ──
+const BR=[];
+for(let i=0;i<P.length;i++) for(let j=0;j<P.length;j++){
+  if(i===j) continue;
+  const a=P[i], b=P[j];
+  a.n.forEach(([tag,pri,qa])=>{
+    const off=b.o.find(o=>o[0]===tag);
+    if(off && a.id<b.id || (off && a.id>b.id)) {
+      if(!off) return;
+      if(BR.some(x=>x.tag===tag&&x.from===b.id&&x.to===a.id)) return;
+      BR.push({tag,from:b.id,to:a.id,strength:pri*off[1],q:Math.min(qa,off[2]),m:off[1],pri});
+    }
+  });
+}
+// 同一對節點之間的多條橋 → 指派扇形序號（避免弧線重疊）
+(function(){
+  var grp={};
+  BR.forEach(function(b){
+    var k=[b.from,b.to].sort(function(x,y){return x-y}).join("-");
+    (grp[k]=grp[k]||[]).push(b);
+  });
+  Object.keys(grp).forEach(function(k){
+    var list=grp[k];
+    // 依能力代碼排序，讓同組順序穩定
+    list.sort(function(a,b){return a.tag<b.tag?-1:1});
+    list.forEach(function(b,i){ b.fanI=i; b.fanN=list.length; });
+  });
+})();
+
+// 每個 project 的觸手，是否有對接
+const linked={};
+P.forEach(p=>{
+  linked[p.id]={n:new Set(),o:new Set()};
+  BR.forEach(b=>{ if(b.to===p.id) linked[p.id].n.add(b.tag);
+                  if(b.from===p.id) linked[p.id].o.add(b.tag); });
+});
+// 關係組（僅供力學）
+const GRP={};
+BR.forEach(b=>{const k=[b.from,b.to].sort((x,y)=>x-y).join("-");
+  (GRP[k]=GRP[k]||[]).push(b);});
+const EDGES=Object.entries(GRP).map(([k,br])=>{const [a,b]=k.split("-").map(Number);
+  return {a,b,br,w:br.reduce((s,x)=>s+x.strength,0)/br.length};});
+
+function scoreFor(fid,c){ return {fit:.5,conf:1,st:"ELIGIBLE",br:BR.filter(b=>(b.from===fid&&b.to===c.id)||(b.from===c.id&&b.to===fid)),mutualRaw:0};
+/* disabled matchmaking scoring in law visual */
+}
+function unusedMatchScore(fid,c){
+  const f=byId(fid);
+  const br=BR.filter(b=>(b.from===fid&&b.to===c.id)||(b.from===c.id&&b.to===fid));
+  const inB=br.filter(b=>b.to===fid);
+  const noRaw=f.n.length? inB.reduce((s,b)=>s+b.strength,0)/f.n.reduce((s,[,p])=>s+p,0):0;
+  const kinds=new Set(br.map(b=>b.tag)).size;
+  const outB=br.filter(b=>b.from===fid);
+  // 互惠性：雙向都有橋才算；以較弱的一方為準（木桶效應）
+  const inS=inB.reduce((a,b)=>a+b.strength,0), outS=outB.reduce((a,b)=>a+b.strength,0);
+  const mutual=(inB.length&&outB.length)? Math.min(1,2*Math.min(inS,outS)/(inS+outS)) *
+               Math.min(1,(inS+outS)/1.2) : 0;
+  const s={needOffer:Math.min(1,noRaw),
+           cap:1-Math.exp(-kinds/2.6),            // 漸進飽和，不再 4 條就封頂
+           mutual, ...c.sim};
+  const q={needOffer:inB.length?inB.reduce((a,b)=>a+b.q,0)/inB.length:.3,
+           cap:br.length?br.reduce((a,b)=>a+b.q,0)/br.length:.3,
+           mutual:br.length?br.reduce((a,b)=>a+b.q,0)/br.length:.3,
+           topic:.9,exec:.75,stage:.85,xborder:1};
+  let tw=0,fit=0,conf=0;
+  DIMS.forEach(([k])=>{tw+=W[k];fit+=W[k]*s[k];conf+=W[k]*q[k];});
+  fit=tw?fit/tw:0; conf=tw?conf/tw:0;
+  let st = !br.length?"EXCLUDED" : conf<.58?"CLARIFY_FIRST"
+         : fit>=.5?"RECOMMEND" : fit>=.3?"EXPLORE":"ELIGIBLE";
+  return {fit,conf,st,br,mutualRaw:mutual};
+}
+const COL={RECOMMEND:"#f5a524",CLARIFY_FIRST:"#f471b5",EXPLORE:"#4ade80",
+           ELIGIBLE:"#8b949e",EXCLUDED:"#3c4654"};
+
+// ── 佈局 ──
+const pos={}; let Wd=0,Hd=0;
+function initPos(){const s=document.getElementById("stage");
+  Wd=s.clientWidth;Hd=s.clientHeight;
+  P.forEach((p,i)=>{const a=i/P.length*6.283;
+    pos[p.id]={x:Wd/2+Math.cos(a)*Math.min(Wd,Hd)*.32,y:Hd/2+Math.sin(a)*Math.min(Wd,Hd)*.32,vx:0,vy:0};});}
+
+// 爆炸起點：全部塞在中心，給隨機初速
+function bigBang(){
+  const s=document.getElementById("stage");
+  Wd=s.clientWidth;Hd=s.clientHeight;
+  P.forEach((p,i)=>{
+    const a=Math.random()*6.283, v=34+Math.random()*26;
+    pos[p.id]={x:Wd/2+(Math.random()-.5)*14, y:Hd/2+(Math.random()-.5)*14,
+               vx:Math.cos(a)*v, vy:Math.sin(a)*v, born:i*0.045};
+  });
+}
+function tick(n){for(let s=0;s<n;s++){
+  P.forEach(p=>{const a=pos[p.id];
+    if(!focus){ a.vx+=(Wd/2-a.x)*.0006; a.vy+=(Hd/2-a.y)*.0006; }
+    P.forEach(q=>{if(p.id===q.id)return;const b=pos[q.id];
+      let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy||1;
+      if(d2<78400){const f=3000/d2;const k=focus?.010:.02;a.vx+=dx*f*k;a.vy+=dy*f*k;}});});
+  if(focus){
+    // ── 焦點視圖：距離焦點 = fit（最強通道表達最重要資訊）──
+    const F=pos[focus];
+    P.forEach(p=>{
+      if(p.id===focus) return;
+      const a=pos[p.id]; if(a.pin) return;
+      const sc=scoreFor(focus,p);
+      // fit 高 → 近；EXCLUDED 推到最外圈
+      const ideal = sc.st==="EXCLUDED" ? 460 : (110 + Math.pow(1-sc.fit,1.6)*420);
+      let dx=a.x-F.x, dy=a.y-F.y, d=Math.hypot(dx,dy)||1;
+      const f=(d-ideal)*0.010;
+      a.vx-=dx/d*f; a.vy-=dy/d*f;
+    });
+    // 焦點自身回正中央
+    const fa=pos[focus];
+    if(!fa.pin){ fa.vx+=(Wd/2-fa.x)*0.02; fa.vy+=(Hd/2-fa.y)*0.02; }
+  } else {
+    // ── 網絡視圖：強橋才施力，距離差距放大 ──
+    EDGES.forEach(e=>{
+      if(!e.br.some(function(b){return VIS.has(BR.indexOf(b))})) return;   // 全被過濾掉就不施力
+      const a=pos[e.a],b=pos[e.b];
+      let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;
+      const ideal=80+Math.pow(1-e.w,3)*430;
+      let f=(d-ideal)*.0026*(.25+e.w);
+      if(e.w<0.3) f*=0.18;
+      a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;});
+  }
+  P.forEach(p=>{const a=pos[p.id];
+    if(a.pin){a.vx=0;a.vy=0;return;}
+    if(IDLE){                                   // 待機微動：極低振幅隨機擾動
+      a.vx+=(Math.random()-.5)*IDLE_AMP;
+      a.vy+=(Math.random()-.5)*IDLE_AMP;
+    }
+    const DP = bang!==null ? .935 : .82;
+    a.x+=a.vx*=DP;a.y+=a.vy*=DP;
+    a.x=Math.max(80,Math.min(Wd-80,a.x));a.y=Math.max(60,Math.min(Hd-72,a.y));});}}
+function el(t,a){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+
+// 粒子軌道（由 render 填入）
+const TRACKS=[], ORPH=[]; let PT=[], cvs, ctx, DPR=1, flowOn=true;
+let drag=null, justDragged=false;
+// 視圖轉換（zoom / pan）
+let VZ=1, VX=0, VY=0, panning=null;
+let DTH=0.28;                       // 密度門檻（strength）
+let VIS=new Set();                  // 目前顯示中的橋（含保底）
+function computeVis(){
+  VIS=new Set();
+  BR.forEach(function(b,i){ if(b.strength>=DTH) VIS.add(i); });
+  // 保底：每個 project 至少保留自己最強的一條，避免節點脫離網絡
+  P.forEach(function(p){
+    var own=[]; BR.forEach(function(b,i){ if(b.from===p.id||b.to===p.id) own.push(i); });
+    if(!own.some(function(i){return VIS.has(i)})){
+      own.sort(function(x,y){return BR[y].strength-BR[x].strength});
+      if(own.length) VIS.add(own[0]);
+    }
+  });
+  var el=document.getElementById("dLbl");
+  if(el) el.textContent=VIS.size+" / "+BR.length+" 條";
+}
+function toWorld(cx,cy){ const r=document.getElementById("svg").getBoundingClientRect();
+  return {x:((cx-r.left)*(Wd/r.width)-VX)/VZ, y:((cy-r.top)*(Hd/r.height)-VY)/VZ}; }
+let hovId=null, mx=0, my=0;
+let IDLE=false, IDLE_AMP=0.11, bang=null, idleT=0;
+
+// 觸手角度：朝向對接目標的平均方向；落空的填空隙
+function tentAngles(p){
+  const items=[...p.n.map(t=>({t,d:"n"})),...p.o.map(t=>({t,d:"o"}))];
+  const me=pos[p.id], res=[];
+  items.forEach(it=>{
+    const tag=it.t[0];
+    const partners = it.d==="n" ? BR.filter((b,i)=>VIS.has(i)&&b.to===p.id&&b.tag===tag).map(b=>b.from)
+                                : BR.filter((b,i)=>VIS.has(i)&&b.from===p.id&&b.tag===tag).map(b=>b.to);
+    if(partners.length){
+      let sx=0,sy=0;
+      partners.forEach(id=>{const o=pos[id];const dx=o.x-me.x,dy=o.y-me.y,d=Math.hypot(dx,dy)||1;
+        sx+=dx/d;sy+=dy/d;});
+      res.push({...it,ang:Math.atan2(sy,sx),linked:true,partners});
+    } else res.push({...it,ang:null,linked:false,partners:[]});
+  });
+  // 落空的填最大空隙
+  const used=res.filter(r=>r.linked).map(r=>r.ang).sort((a,b)=>a-b);
+  const orph=res.filter(r=>!r.linked);
+  orph.forEach((o,i)=>{
+    if(!used.length){o.ang=(i/orph.length)*6.283-1.57;return;}
+    let best=-1,bg=0;
+    for(let k=0;k<used.length;k++){
+      const a1=used[k],a2=used[(k+1)%used.length]+(k+1>=used.length?6.283:0);
+      if(a2-a1>bg){bg=a2-a1;best=k;}
+    }
+    const a1=used[best],a2=used[(best+1)%used.length]+(best+1>=used.length?6.283:0);
+    const ang=a1+(a2-a1)*(i+1)/(orph.length+1);
+    o.ang=ang; used.splice(best+1,0,ang); used.sort((a,b)=>a-b);
+  });
+  return res;
+}
+
+
+const ddSupplements=new Map();
+const planetCache={ready:true};
+// Deterministic 3D value noise: no geographical texture or external image request.
+function pn(x,y,z,seed){
+ const ix=Math.floor(x),iy=Math.floor(y),iz=Math.floor(z),f=t=>t*t*(3-2*t),u=f(x-ix),v=f(y-iy),w=f(z-iz);
+ const h=(a,b,c)=>{let n=Math.sin(a*127.1+b*311.7+c*74.7+seed*19.3)*43758.5453;return n-Math.floor(n)};
+ const mix=(a,b,t)=>a+(b-a)*t;
+ return mix(mix(mix(h(ix,iy,iz),h(ix+1,iy,iz),u),mix(h(ix,iy+1,iz),h(ix+1,iy+1,iz),u),v),mix(mix(h(ix,iy,iz+1),h(ix+1,iy,iz+1),u),mix(h(ix,iy+1,iz+1),h(ix+1,iy+1,iz+1),u),v),w);
+}
+function planetTexture(id){
+ if(planetCache[id])return planetCache[id];
+ const size=224,c=document.createElement('canvas');c.width=c.height=size;const context=c.getContext('2d'),out=context.createImageData(size,size);
+ const palette=id===1?[[60,47,32],[152,124,86],[216,200,170]]:[[32,55,58],[91,129,123],[187,202,174]];
+ for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+ const nx=(x-size/2)/(size/2-3),ny=(y-size/2)/(size/2-3),rr=nx*nx+ny*ny;if(rr>=1)continue;
+ const nz=Math.sqrt(1-rr),warp=pn(nx*3+4,ny*3+7,nz*3,id)*1.1;
+ let texture=0,amp=.54,freq=4;
+ for(let o=0;o<5;o++){texture+=amp*pn(nx*freq+warp,ny*freq-warp,nz*freq,id+o);amp*=.5;freq*=2.1;}
+ const vein=Math.pow(Math.abs(Math.sin((texture*8+ny*.7)*Math.PI)),12)*.17;
+ const haze=Math.pow(pn(nx*7+9,ny*7+5,nz*7,id+40),3)*.22;
+ const t=Math.max(0,Math.min(1,texture+vein+haze)),band=t<.52?0:1,k=(y*size+x)*4;
+ const blend=Math.max(0,Math.min(1,band===0?t/.52:(t-.52)/.48));
+ const light=Math.max(0,-nx*.52-ny*.37+nz*.77),shade=.035+.965*Math.pow(light,.85);
+ const rim=Math.pow(1-nz,4)*Math.max(0,-nx*.6-ny*.4+nz*.25)*22;
+ for(let j=0;j<3;j++){let col=palette[band][j]*(1-blend)+palette[band+1][j]*blend;out.data[k+j]=Math.min(255,col*shade+rim);}
+ out.data[k+3]=255;
+ }context.putImageData(out,0,0);return planetCache[id]=c.toDataURL();
+}
+function drawPlanet(g,a,r,id,selected){
+ const defs=el('defs',{}),grad=el('radialGradient',{id:'air'+id,cx:'.42',cy:'.38',r:'.6'});grad.appendChild(el('stop',{offset:'.65','stop-color':id===1?'#ace0dc':'#a7d1c1','stop-opacity':'0'}));grad.appendChild(el('stop',{offset:'.88','stop-color':id===1?'#ace0dc':'#a7d1c1','stop-opacity':'.45'}));grad.appendChild(el('stop',{offset:'1','stop-color':'#101520','stop-opacity':'0'}));defs.appendChild(grad);g.appendChild(defs);
+ g.appendChild(el('circle',{cx:a.x,cy:a.y,r:r*1.19,fill:'url(#air'+id+')'}));
+ if(planetCache.ready){g.appendChild(el('image',{x:a.x-r,y:a.y-r,width:r*2,height:r*2,href:planetTexture(id),'pointer-events':'none'}));}
+ else g.appendChild(el('circle',{cx:a.x,cy:a.y,r,fill:'#355267'}));
+ g.appendChild(el('circle',{cx:a.x,cy:a.y,r,fill:'transparent',stroke:selected?'#a9d9f2':'#6c95ad','stroke-opacity':'.4','stroke-width':'.6'}));
+}
+
+function render(){
+  const svg=document.getElementById("svg");
+  svg.setAttribute("viewBox",`${-VX/VZ} ${-VY/VZ} ${Wd/VZ} ${Hd/VZ}`); svg.innerHTML="";
+  const LOD = VZ<0.62 ? 0 : (VZ<1.35 ? 1 : 2);   // 0 遠景 1 中景 2 近景
+  const d=el("defs");
+  d.innerHTML=`<radialGradient id="gF"><stop offset="0" stop-color="#2dd4bf" stop-opacity=".26"/><stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/></radialGradient>
+   <radialGradient id="gR"><stop offset="0" stop-color="#f5a524" stop-opacity=".30"/><stop offset="1" stop-color="#f5a524" stop-opacity="0"/></radialGradient>
+   <radialGradient id="gC"><stop offset="0" stop-color="#f471b5" stop-opacity=".30"/><stop offset="1" stop-color="#f471b5" stop-opacity="0"/></radialGradient>
+   <radialGradient id="gE"><stop offset="0" stop-color="#4ade80" stop-opacity=".26"/><stop offset="1" stop-color="#4ade80" stop-opacity="0"/></radialGradient>
+   <radialGradient id="vg" cx="50%" cy="48%" r="76%"><stop offset="56%" stop-color="#060a10" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".62"/></radialGradient>`;
+  svg.appendChild(d);
+  svg.appendChild(el("rect",{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:"#060a10"}));
+
+  TRACKS.length=0; ORPH.length=0;
+  const sc = focus? P.reduce((m,p)=>{if(p.id!==focus)m[p.id]=scoreFor(focus,p);return m;},{}) : null;
+  const TA={}; P.forEach(p=>TA[p.id]=tentAngles(p));
+  const tipLen=(p,it)=>{const isF=p.id===focus;return (isF?45:32)+it.t[1]*(isF?23:16);};
+  const tipOf=(p,tag,dir)=>{const it=TA[p.id].find(x=>x.t[0]===tag&&x.d===dir);
+    if(!it)return pos[p.id];const L=tipLen(p,it)+ (p.id===focus?4:2);
+    return {x:pos[p.id].x+Math.cos(it.ang)*L, y:pos[p.id].y+Math.sin(it.ang)*L};};
+
+  // ── 邊：每條 bridge 獨立，從觸手末端連到觸手末端 ──
+  BR.forEach((b,bi)=>{
+    if(!VIS.has(bi)) return;
+    if(focus && b.from!==focus && b.to!==focus) return;
+    const A=tipOf(byId(b.from),b.tag,"o"), B=tipOf(byId(b.to),b.tag,"n");
+    const st=b.strength;                         // 0 ~ 1
+    const op=(0.09+Math.pow(st,0.75)*0.72).toFixed(2);   // 軌道亮度＝強度（靜態可讀）
+    const mx=(A.x+B.x)/2, my=(A.y+B.y)/2;
+    const dx=B.x-A.x, dy=B.y-A.y, len=Math.hypot(dx,dy)||1;
+    const bend=(bi%2===0?1:-1)*(.18+.10*(b.fanI||0));
+    const cx=mx-dy*bend, cy=my+dx*bend;   // 微弧，避免重疊
+    TRACKS.push({A,B,cx,cy,st,q:b.q,tag:b.tag,from:b.from,to:b.to});
+    // 兩端淡出：分三段畫，端點段降低透明度，線不「釘」在節點上
+    // Continuous orbital route. Unknown evidence fades out instead of dashes.
+    const gid='route-'+bi,grad=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
+    const unknown=b.q<.6;
+    [[0,.08],[.15,.45],[.38,unknown?.18:.65],[.58,unknown?0:.65],[.82,unknown?0:.45],[1,unknown?0:.08]].forEach(([u,o])=>grad.appendChild(el('stop',{offset:u,'stop-color':'#b9e2df','stop-opacity':o})));
+    d.appendChild(grad);
+    const route=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.65,'stroke-linecap':'round'});svg.appendChild(route);
+    const hit=el('path',{d:route.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[b.tag]+'：'+(unknown?'待釐清':'有依據的關係')});
+    function reveal(ev){ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[b.tag],code:b.tag,subject:b.to,kind:'relation',unknown,mode:'law'},location.origin);}
+    hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();reveal(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter'){reveal(e)}};svg.appendChild(hit);
+
+  });
+
+  // ── 節點 ──
+  P.forEach(p=>{
+    const a=pos[p.id], isF=p.id===focus, s=sc&&sc[p.id];
+    const bornT = (bang!==null && a.born!==undefined) ? Math.max(0,Math.min(1,(bang-a.born)/0.5)) : 1;
+    if(bornT<=0) return;
+    const faded=focus&&!isF&&s&&s.st==="EXCLUDED";
+    const g=el("g",{opacity:(faded?.2:1)*bornT}); g.style.cursor="grab";
+    // 高 fit 候選：依 fit 給微光暈（除了距離之外的第二個訊號）
+    if(!isF && s && s.st!=="EXCLUDED" && s.fit>0.34){
+      const gid = s.st==="CLARIFY_FIRST" ? "gC" : (s.st==="EXPLORE" ? "gE" : "gR");
+      const t=(s.fit-0.34)/0.46;                       // 0~1
+      g.appendChild(el("circle",{cx:a.x,cy:a.y,r:(26+Math.min(1,t)*40).toFixed(1),
+        fill:`url(#${gid})`,opacity:(0.30+Math.min(1,t)*0.70).toFixed(2)}));
+    }
+    if(isF){
+      g.appendChild(el("circle",{cx:a.x,cy:a.y,r:74,fill:"url(#gF)"}));
+
+    }
+    TA[p.id].forEach(it=>{
+      const c=it.d==="n"?"#f5a524":"#93f2ea";
+      const L=tipLen(p,it), ex=a.x+Math.cos(it.ang)*L, ey=a.y+Math.sin(it.ang)*L;
+      const dead=!it.linked, low=it.t[2]<.6;
+      // Satellites float independently; no stalk from planet surface.
+      const glow=el('radialGradient',{id:'moon-'+p.id+'-'+it.d+'-'+it.t[0]});
+      glow.appendChild(el('stop',{offset:0,'stop-color':low||dead?'#b4b1c8':c,'stop-opacity':low||dead?.18:.55}));
+      glow.appendChild(el('stop',{offset:1,'stop-color':c,'stop-opacity':0}));d.appendChild(glow);
+      g.appendChild(el('circle',{cx:ex,cy:ey,r:7,fill:'url(#'+glow.id+')','pointer-events':'none'}));
+      if(ddSupplements.has(p.id+':'+it.t[0])){
+ const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#bae8e4','stroke-width':.6,opacity:.5});g.appendChild(halo);
+ const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
+ }
+      const moon=el('circle',{cx:ex,cy:ey,r:low||dead?1.5:2.1,fill:low||dead?'#8c8a9f':c,opacity:low||dead?.45:.85});g.appendChild(moon);
+      const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
+      target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
+      target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'law'},location.origin)};
+      target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
+      if(isF){const tx=el('text',{x:ex,y:ey-9,fill:'#bacdcc','font-size':(10/VZ).toFixed(2),'text-anchor':'middle'});tx.textContent=BN[it.t[0]];g.appendChild(tx);}
+
+    });
+    const col=isF?"#2dd4bf":(s?COL[s.st]:"#5f6b7a");
+    const r=isF?24:13;
+    drawPlanet(g,a,r,p.id,isF);
+    if(a.pin) g.appendChild(el("circle",{cx:a.x,cy:a.y,r:r+5,fill:"none",stroke:"#2dd4bf",
+      "stroke-width":.5,opacity:".16"}));
+    if(LOD>=1||isF){
+      const nm=el("text",{x:a.x,y:a.y+r+14/VZ,fill:isF?"#2dd4bf":(s?col:"#5f6b7a"),
+        "font-size":((isF?14:11)/VZ).toFixed(2),"font-family":"sans-serif","text-anchor":"middle",
+        opacity:(faded?.5:.95)*(LOD===1?0.85:1)});
+      nm.textContent=p.name; g.appendChild(nm);
+    }
+    if(focus&&s&&!isF&&s.st!=="EXCLUDED"&&LOD>=2){
+      const sb=el("text",{x:a.x,y:a.y+r+26/VZ,fill:"#5f6b7a","font-size":(10/VZ).toFixed(2),
+        "font-family":"sans-serif","text-anchor":"middle"});
+      sb.textContent=`fit ${(s.fit*100).toFixed(0)} · conf ${(s.conf*100).toFixed(0)}`;
+      g.appendChild(sb);
+    }
+    g.addEventListener("pointerenter",function(){ if(!drag){hovId=p.id; paintHov();} });
+    g.addEventListener("pointerleave",function(){ if(!drag){hovId=null; paintHov();} });
+    g.onpointerdown=ev=>{
+      ev.stopPropagation();
+      hovId=null; paintHov();
+      drag={id:p.id, moved:false, sx:ev.clientX, sy:ev.clientY};
+      const w0=toWorld(ev.clientX,ev.clientY);
+      drag.ox=pos[p.id].x-w0.x; drag.oy=pos[p.id].y-w0.y;
+      svg.setPointerCapture&&svg.setPointerCapture(ev.pointerId);
+      pos[p.id].pin=true;
+    };
+    svg.appendChild(g);
+  });
+  svg.appendChild(el("rect",{x:-VX/VZ,y:-VY/VZ,width:Wd/VZ,height:Hd/VZ,fill:"url(#vg)","pointer-events":"none"}));
+  svg.onclick=()=>{if(justDragged){justDragged=false;return;} if(focus){focus=null;syncMode();draw();}};
+
+  const orphCnt=P.reduce((a,p)=>a+TA[p.id].filter(x=>!x.linked).length,0);
+  document.getElementById("stat").innerHTML= focus
+    ? `<b>焦點</b>　${byId(focus).name}`
+    : `<b>網絡</b>　${P.length} projects　·　${BR.length} 條 bridge　·　<span style="color:#ff6b6b">${orphCnt} 根落空觸手</span>`;
+  document.getElementById("hint").textContent= focus?"點空白 → 回網絡　·　拖曳節點可重排":"點節點 → 焦點視圖　·　拖曳節點分開重疊文字";
+  side(sc);
+}
+function side(sc){
+  if(!focus){document.getElementById("rk").innerHTML="";document.getElementById("dw").style.display="none";return;}
+  const R=P.filter(p=>p.id!==focus).map(p=>({p,...sc[p.id]}))
+    .filter(x=>x.st!=="EXCLUDED").sort((a,b)=>b.fit-a.fit);
+  document.getElementById("rk").innerHTML=R.map((x,i)=>
+    `<div class="ri" data-id="${x.p.id}"><span class="rn">#${i+1}</span>
+     <span class="rd" style="background:${COL[x.st]}"></span>
+     <span class="rt">${x.p.name}</span><span class="rs">${(x.fit*100).toFixed(0)}</span></div>`).join("");
+  document.querySelectorAll(".ri").forEach(e=>e.onclick=()=>{sel=+e.dataset.id;det(sc[sel],byId(sel));});
+  if(sel&&sc[sel]) det(sc[sel],byId(sel));
+}
+function det(s,p){
+  const w=document.getElementById("dw"),d=document.getElementById("det");
+  if(!s){w.style.display="none";return;} w.style.display="block";
+  d.innerHTML=`<div style="font-weight:600;margin-bottom:6px">${p.name}</div>
+   <div class="kv"><span>Fit</span><span style="color:#f5a524">${(s.fit*100).toFixed(0)}</span></div>
+   <div class="gauge"><i style="width:${s.fit*100}%;background:#f5a524"></i></div>
+   <div class="kv"><span>Confidence</span><span style="color:#f471b5">${(s.conf*100).toFixed(0)}</span></div>
+   <div class="gauge"><i style="width:${s.conf*100}%;background:#f471b5"></i></div>
+   <span class="badge" style="background:${COL[s.st]}22;color:${COL[s.st]};border:1px solid ${COL[s.st]}55">${s.st}</span>
+   <div style="margin-top:9px;color:#8b949e;font-size:10px">bridge_feature（${s.br.length} 條）</div>
+   ${s.br.map(b=>`<div class="kv"><span style="color:#f5a524">${b.tag} ${BN[b.tag]}</span>
+     <span style="font-size:10px">${b.to===focus?'← 對方供給':'→ 對方需要'} ${(b.strength*100).toFixed(0)}${b.q<.6?' ⚠':''}</span></div>`).join("")}
+   ${s.st==="CLARIFY_FIRST"?`<div style="margin-top:8px;padding:7px;background:rgba(244,113,181,.1);
+     border:1px solid rgba(244,113,181,.3);border-radius:6px;color:#f471b5;font-size:10px;line-height:1.5">
+     資料涵蓋率 ${(s.conf*100).toFixed(0)}%。<b>不輸出推薦，先補問</b>——缺值不補 0。</div>`:""}`;
+}
+
+// ══════ 粒子流 ══════
+// 軌道由 render() 填入；粒子沿 OFFER→NEED 方向流動
+function initCanvas(){
+  cvs=document.getElementById("cv"); ctx=cvs.getContext("2d");
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  cvs.width=Wd*DPR; cvs.height=Hd*DPR;
+  cvs.style.width=Wd+"px"; cvs.style.height=Hd+"px";
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+// Law flow: plan text (light) -> law domain (teal). Never warm: warm means 風險 in this view.
+const LAW_PULSE={};
+function lawFlowColor(u){const A=[226,240,238],B=[120,214,202],m=Math.max(0,Math.min(1,u));return A.map((v,i)=>Math.round(v+(B[i]-v)*m))}
+function buildParticles(){
+  // 軌道數不變時，保留粒子既有進度 u（否則每次重繪都重生，看起來速度錯亂）
+  const prev=PT, same = prev.length && prev._nt===TRACKS.length;
+  PT=[]; PT._nt=TRACKS.length;
+  let idx=0;
+  TRACKS.forEach((t,ti)=>{
+    if(t.q<.6)return; const n=3;          // 3 staggered particles per route (same as the match view)
+    for(let k=0;k<n;k++){
+      const keep = same && prev[idx] ? prev[idx].u : (k/n)+Math.random()*0.04;
+      idx++;
+      PT.push({ti, u:keep,
+        sp:0.0026,                        // 約 6.5 秒／全程（60fps）
+        q:t.q, st:t.st});
+    }
+  });
+}
+// 爆炸期：從中心噴發的自由粒子
+let SPARK=[];
+function buildSparks(){
+  SPARK=[];
+  for(let i=0;i<160;i++){
+    const a=Math.random()*6.283, v=2.4+Math.random()*9;
+    SPARK.push({x:Wd/2,y:Hd/2,vx:Math.cos(a)*v,vy:Math.sin(a)*v,
+      life:1,decay:0.008+Math.random()*0.014,r:0.7+Math.random()*2.1});
+  }
+}
+function qbez(t,A,C,B){
+  const m=1-t;
+  return {x:m*m*A.x+2*m*t*C.x+t*t*B.x, y:m*m*A.y+2*m*t*C.y+t*t*B.y};
+}
+function frame(){
+  if(!ctx){requestAnimationFrame(frame);return;}
+
+  // 爆炸階段：逐幀推進力學，節點依 born 時序登場
+  if(bang!==null){
+    bang+=1/60;
+    tick(1);
+    render(); buildParticles();
+    if(bang>2.6){ bang=null; IDLE=true; }       // 爆炸結束 → 進入待機微動
+  } else if(IDLE && !drag){
+    idleT++;
+    if(idleT%2===0){ tick(1); render(); buildParticles(); }  // 30fps 更新，省效能
+  }
+
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.clearRect(0,0,Wd,Hd);
+  ctx.setTransform(DPR*VZ,0,0,DPR*VZ,DPR*VX,DPR*VY);
+
+  // 爆炸火花
+  if(false&&SPARK.length){
+    for(let i=SPARK.length-1;i>=0;i--){
+      const s=SPARK[i];
+      s.x+=s.vx; s.y+=s.vy; s.vx*=0.955; s.vy*=0.955; s.life-=s.decay;
+      if(s.life<=0){SPARK.splice(i,1);continue;}
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r*s.life,0,6.283);
+      ctx.fillStyle=`rgba(255,${200+Math.round(40*s.life)},${120+Math.round(90*s.life)},${(s.life*0.75).toFixed(3)})`;
+      ctx.fill();
+    }
+  }
+
+  // 落空觸手脈動：向外擴散的紅環 + 呼吸點
+  if(false&&ORPH.length&&showOrph){
+    const T=performance.now()/1000;
+    ORPH.forEach(o=>{
+      const u=((T*0.55+o.ph)%1);
+      const rr=3+u*16, al=(1-u)*0.42;
+      ctx.beginPath(); ctx.arc(o.x,o.y,rr,0,6.283);
+      ctx.strokeStyle=`rgba(255,107,107,${al.toFixed(3)})`; ctx.lineWidth=1.1; ctx.stroke();
+      const br=0.45+0.35*Math.sin(T*2.4+o.ph*6.283);
+      ctx.beginPath(); ctx.arc(o.x,o.y,2.6,0,6.283);
+      ctx.fillStyle=`rgba(255,107,107,${br.toFixed(3)})`; ctx.fill();
+    });
+  }
+
+  if(flowOn){
+    for(let i=0;i<PT.length;i++){
+      const p=PT[i], t=TRACKS[p.ti]; if(!t) continue;
+      p.u+=p.sp; if(p.u>1){p.u-=1;if(t.tag)LAW_PULSE[t.tag]=performance.now()}   // arrived at the domain
+      if(p.q<0.6 && ((p.u*7|0)%2===0)) continue;     // 資料不足 → 閃爍
+      // 光條：長度 ∝ 強度，沿軌道滑動
+      const L=0.12;                         // 佔軌道比例（拉長，看得出方向）
+      const head=p.u, tail=Math.max(0,p.u-L);
+      const a=.62;
+      const SEG=7;
+      for(let k=0;k<SEG;k++){
+        const u0=tail+(head-tail)*(k/SEG), u1=tail+(head-tail)*((k+1)/SEG);
+        const A=qbez(u0,t.A,{x:t.cx,y:t.cy},t.B), B2=qbez(u1,t.A,{x:t.cx,y:t.cy},t.B);
+        const f=(k+1)/SEG;                            // 尾→頭漸亮
+        ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B2.x,B2.y);
+        const c=lawFlowColor(u1);ctx.strokeStyle=`rgba(${c[0]},${c[1]},${c[2]},${(a*f*f).toFixed(3)})`;
+        ctx.lineWidth=2.2*(0.35+0.65*f); ctx.lineCap="round"; ctx.stroke();
+      }
+      // 亮頭
+      const H=qbez(head,t.A,{x:t.cx,y:t.cy},t.B);
+      const hc=lawFlowColor(head);
+      const hg=ctx.createRadialGradient(H.x,H.y,0,H.x,H.y,5);hg.addColorStop(0,`rgba(${hc[0]},${hc[1]},${hc[2]},.55)`);hg.addColorStop(1,`rgba(${hc[0]},${hc[1]},${hc[2]},0)`);
+      ctx.beginPath();ctx.arc(H.x,H.y,5,0,6.283);ctx.fillStyle=hg;ctx.fill();
+      ctx.beginPath(); ctx.arc(H.x,H.y,1.7,0,6.283);
+      ctx.fillStyle=`rgba(${hc[0]},${hc[1]},${hc[2]},${Math.min(1,a+0.3).toFixed(3)})`; ctx.fill();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+
+// ══════ 拖曳 ══════
+function onMove(ev){
+  if(!drag) return;
+  const svgEl=document.getElementById("svg"), r=svgEl.getBoundingClientRect();
+  if(Math.abs(ev.clientX-drag.sx)+Math.abs(ev.clientY-drag.sy)>3) drag.moved=true;
+  const w=toWorld(ev.clientX,ev.clientY);
+  pos[drag.id].x=w.x+drag.ox; pos[drag.id].y=w.y+drag.oy;
+  pos[drag.id].vx=0; pos[drag.id].vy=0;
+  tick(2);          // 鄰居輕微跟隨
+  render(); buildParticles();
+}
+function onUp(){
+  if(!drag) return;
+  const d=drag; drag=null;
+  if(!d.moved){                       // 沒移動 → 視為點擊
+    pos[d.id].pin=false;
+    focus = focus===d.id ? null : d.id; sel=null; syncMode(); draw();
+  } else { justDragged=true; render(); buildParticles(); }   // 移動過 → 保持釘選
+}
+window.addEventListener("pointermove",onMove);
+window.addEventListener("pointerup",onUp);
+window.addEventListener("pointercancel",onUp);
+function unpinAll(){P.forEach(p=>pos[p.id].pin=false);draw();}
+
+
+// ══════ hover 摘要 ══════
+function paintHov(){
+  var el=document.getElementById("hov");
+  if(!el) return;
+  if(hovId===null){ el.style.display="none"; return; }
+  var p=byId(hovId); if(!p){ el.style.display="none"; return; }
+  var ta=tentAngles(p);
+  var sc=focus&&focus!==p.id ? scoreFor(focus,p) : null;
+  var row=function(it){
+    var dead=!it.linked, low=it.t[2]<0.6;
+    var c=it.d==="n"?"#f5a524":"#93f2ea";
+    var note=dead?'<span style="color:#ff6b6b">✕ 無人對接</span>'
+            :(low?'<span style="color:#f471b5">資料 '+Math.round(it.t[2]*100)+'%</span>'
+                 : it.partners.length+' 個對接');
+    return '<div class="hr"><span style="color:'+(dead?"#ff6b6b":c)+'">'+it.t[0]+' '+BN[it.t[0]]+'</span><span>'+note+'</span></div>';
+  };
+  var need=ta.filter(function(x){return x.d==="n"});
+  var off =ta.filter(function(x){return x.d==="o"});
+  var brN=BR.filter(function(b){return b.from===p.id||b.to===p.id}).length;
+  var dN=ta.filter(function(x){return !x.linked}).length;
+  var h='<div class="hn">'+p.name+'</div>';
+  h+='<div class="hr"><span style="color:#8b949e">bridge_feature</span><span>'+brN+' 條</span></div>';
+  if(dN) h+='<div class="hr"><span style="color:#ff6b6b">落空觸手</span><span style="color:#ff6b6b">'+dN+' 根</span></div>';
+  if(need.length) h+='<div class="hs" style="color:#f5a524">NEED — 缺</div>'+need.map(row).join("");
+  if(off.length)  h+='<div class="hs" style="color:#93f2ea">OFFER — 有</div>'+off.map(row).join("");
+  if(sc && sc.st!=="EXCLUDED"){
+    h+='<div class="hs">對焦點專案</div>'
+      +'<div class="hr"><span>Fit</span><span style="color:#f5a524">'+(sc.fit*100).toFixed(0)+'</span></div>'
+      +'<div class="hr"><span>Confidence</span><span style="color:#f471b5">'+(sc.conf*100).toFixed(0)+'</span></div>'
+      +'<div class="hr"><span>互惠性</span><span style="color:#7dd3c0">'+(sc.mutualRaw*100).toFixed(0)+'</span></div>'
+      +'<div style="margin-top:5px;display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;'
+      +'background:'+COL[sc.st]+'22;color:'+COL[sc.st]+';border:1px solid '+COL[sc.st]+'55">'+sc.st+'</div>';
+  }
+  el.innerHTML=h; el.style.display="block";
+  var st=document.getElementById("stage").getBoundingClientRect();
+  var x=mx-st.left+16, y=my-st.top+16;
+  if(x+el.offsetWidth>st.width-8) x=mx-st.left-el.offsetWidth-16;
+  if(y+el.offsetHeight>st.height-8) y=Math.max(8,st.height-el.offsetHeight-8);
+  el.style.left=x+"px"; el.style.top=y+"px";
+}
+window.addEventListener("pointermove",function(e){ mx=e.clientX; my=e.clientY; if(hovId!==null) paintHov(); });
+
+function draw(){tick(200);render();buildParticles();}
+
+const ws=document.getElementById("ws");
+DIMS.forEach(([k,label,real])=>{
+  const w=document.createElement("div");w.className="w";
+  w.innerHTML=`<div class="wl"><span>${label}${real?'':' <span class="sim">模擬</span>'}</span>
+    <span class="wv" id="v_${k}"${real?'':' style="color:#5f6b7a"'}>${W[k]}</span></div>
+    <input type="range" min="0" max="50" value="${W[k]}" id="r_${k}" class="${real?'':'s'}">`;
+  ws.appendChild(w);
+  w.querySelector("input").oninput=e=>{W[k]=+e.target.value;
+    document.getElementById("v_"+k).textContent=W[k];
+    document.querySelectorAll("#focPanel .btns button").forEach(b=>b.classList.remove("on"));render();buildParticles();};
+});
+function setP(k,btn){Object.assign(W,PRE[k]);
+  DIMS.forEach(([d])=>{document.getElementById("r_"+d).value=W[d];
+    document.getElementById("v_"+d).textContent=W[d];});
+  document.querySelectorAll("#focPanel .btns button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");render();buildParticles();}
+document.getElementById("bDef").onclick=e=>setP("def",e.target);
+document.getElementById("bCap").onclick=e=>setP("cap",e.target);
+document.getElementById("bLoc").onclick=e=>setP("loc",e.target);
+(function(){
+  var r=document.getElementById("dRng");
+  r.oninput=function(){
+    DTH=(+r.value)/100;
+    document.getElementById("dVal").textContent=DTH.toFixed(2);
+    computeVis(); tick(60); render(); buildParticles();
+  };
+})();
+document.getElementById("zIn").onclick=function(){zoomTo(VZ*1.35)};
+document.getElementById("zOut").onclick=function(){zoomTo(VZ/1.35)};
+document.getElementById("zFit").onclick=function(){zoomFit()};
+document.getElementById("bLab").onclick=e=>{showLab=!showLab;e.target.classList.toggle("on",showLab);render();buildParticles();};
+document.getElementById("bOrph").onclick=e=>{showOrph=!showOrph;e.target.classList.toggle("on",showOrph);render();buildParticles();};
+document.getElementById("bUnpin").onclick=()=>unpinAll();
+document.getElementById("bBang").onclick=()=>{
+  P.forEach(p=>pos[p.id]&&(pos[p.id].pin=false));
+  bigBang(); IDLE=false; bang=0; render(); buildParticles(); buildSparks();};
+document.getElementById("bIdle").onclick=e=>{IDLE=!IDLE;e.target.classList.toggle("on",IDLE);};
+document.getElementById("bRelax").onclick=()=>{unpinAll();tick(260);render();buildParticles();};
+document.getElementById("bFlow").onclick=e=>{flowOn=!flowOn;e.target.classList.toggle("on",flowOn);if(!flowOn&&ctx)ctx.clearRect(0,0,Wd,Hd);};
+function syncMode(){document.getElementById("mNet").classList.toggle("on",!focus);
+  document.getElementById("mFoc").classList.toggle("on",!!focus);
+  document.getElementById("netPanel").style.display=focus?"none":"block";
+  document.getElementById("focPanel").style.display=focus?"block":"none";}
+document.getElementById("mNet").onclick=()=>{focus=null;syncMode();draw();};
+document.getElementById("mFoc").onclick=()=>{if(!focus){focus=P[0].id;syncMode();draw();}};
+// 側欄：手動收合
+(function(){
+  var sd=document.getElementById("side"), tg=document.getElementById("sideTog");
+  var col=false, t=null;
+  tg.onclick=function(){
+    col=!col;
+    sd.classList.toggle("collapsed",col);
+    tg.textContent=col?"‹":"›";
+    clearTimeout(t);
+    t=setTimeout(function(){ initPos(); initCanvas(); tick(200); render(); buildParticles(); },240);
+  };
+})();
+
+// ══════ Zoom / Pan ══════
+(function(){
+  var sv=document.getElementById("svg"), st=document.getElementById("stage");
+  st.addEventListener("wheel",function(e){
+    e.preventDefault();
+    var r=sv.getBoundingClientRect();
+    var mxp=(e.clientX-r.left)*(Wd/r.width), myp=(e.clientY-r.top)*(Hd/r.height);
+    var old=VZ, k=Math.exp(-e.deltaY*0.0014);
+    VZ=Math.max(0.28,Math.min(4.5,VZ*k));
+    // 以游標為錨點
+    VX=mxp-(mxp-VX)*(VZ/old); VY=myp-(myp-VY)*(VZ/old);
+    render(); buildParticles(); updZ();
+  },{passive:false});
+  // 空白處拖曳平移
+  st.addEventListener("pointerdown",function(e){
+    if(e.target.closest&&e.target.closest("#cp,#cpBtn,#side,#sideTog")) return;
+    if(drag) return;
+    panning={x:e.clientX,y:e.clientY,vx:VX,vy:VY};
+    sv.style.cursor="grabbing";
+  });
+  window.addEventListener("pointermove",function(e){
+    if(!panning) return;
+    var r=sv.getBoundingClientRect();
+    VX=panning.vx+(e.clientX-panning.x)*(Wd/r.width);
+    VY=panning.vy+(e.clientY-panning.y)*(Hd/r.height);
+    render(); buildParticles();
+  });
+  window.addEventListener("pointerup",function(){ if(panning){panning=null;sv.style.cursor="grab";} });
+  function updZ(){
+    var el=document.getElementById("zLbl"); if(!el) return;
+    el.textContent=Math.round(VZ*100)+"%";
+    var l=VZ<0.62?"遠景：群聚形狀":(VZ<1.35?"中景：專案名稱":"近景：能力標籤");
+    document.getElementById("zLod").textContent=l;
+  };
+  window.zoomTo=function(z){
+    var old=VZ; VZ=Math.max(0.28,Math.min(4.5,z));
+    VX=Wd/2-(Wd/2-VX)*(VZ/old); VY=Hd/2-(Hd/2-VY)*(VZ/old);
+    render(); buildParticles(); updZ();
+  };
+  window.zoomFit=function(){ VZ=1; VX=0; VY=0; render(); buildParticles(); updZ(); };
+  window.updZ=updZ;
+})();
+
+// ══════ AI 媒合顧問（示範版：規則式，未接 RAG）══════
+function cpCtxText(){
+  if(hovId!==null) return "hover："+byId(hovId).name;
+  if(focus) return "焦點："+byId(focus).name;
+  return "網絡視圖";
+}
+function cpAdd(who,html){
+  var b=document.getElementById("cpB");
+  b.innerHTML+='<div class="msg '+who+'"><div class="bub">'+html+'</div></div>';
+  b.scrollTop=b.scrollHeight;
+}
+function cpAnswer(q){
+  var t=(focus?byId(focus):(hovId!==null?byId(hovId):null));
+  if(/虛線|資料|不全|confidence|信心/.test(q)){
+    var lowN=BR.filter(function(b){return b.q<0.6}).length;
+    return "虛線＝<b>資料不足</b>（q&lt;0.6），目前 "+lowN+" 條橋屬於此類。<br><br>"+
+      "它<b>不代表沒有這個能力</b>，而是我們對該能力的掌握不完整（規模、案例、可投入條件不明）。<br><br>"+
+      "依 SH-COLLAB-03：<b>缺值不補 0</b>；涵蓋不足時輸出 <b>CLARIFY_FIRST</b> —— 不推薦，先補問。";
+  }
+  if(/距離|遠|近|為什麼.*排/.test(q)){
+    return "<b>焦點視圖</b>：距離焦點＝fit，越近越適配，與右側 Top-N 一致。<br>"+
+      "<b>網絡視圖</b>：強橋把節點拉近成團，弱橋鬆散。<br><br>"+
+      "位置是最強的視覺通道，所以用來表達最重要的資訊。";
+  }
+  if(/互惠|雙向/.test(q)){
+    return "<b>互惠性</b>＝雙向都有橋，且兩邊強度接近。<br><br>"+
+      "單向合作（只有一方受惠）動機弱；雙向互補動機強、也更穩固。<br>"+
+      "計算採<b>木桶效應</b>：以較弱的一方為準，避免「我給你很多、你回一點」被算成高互惠。";
+  }
+  if(/落空|紅|沒人|缺口/.test(q)){
+    var o=[];
+    P.forEach(function(p){ var ta=tentAngles(p);
+      ta.forEach(function(x){ if(!x.linked) o.push(p.name+"／"+x.t[0]+" "+BN[x.t[0]]); }); });
+    return "目前有 <b>"+o.length+" 根落空觸手</b>（紅色脈動）：<br>"+o.join("<br>")+
+      "<br><br>意思是：這些 project 宣告了需求，但<b>網絡中無人能供給</b>。<br>"+
+      "這是 counter_reason 的具體內容，也可能是<b>商機訊號</b> —— 市場有需求而無供給。";
+  }
+  if(/權重|D-04|profile/.test(q)){
+    return "權重面板對應 <b>SH-HANDOFF-04 D-04</b>：「第一期媒合使用哪些維度、權重或排除條件」——"+
+      "文件標示為<b>待確認</b>。<br><br>"+
+      "目前<b style='color:#2dd4bf'>前三維由觸手實算</b>（Need-Offer／能力互補／互惠性），"+
+      "<b style='color:#5f6b7a'>後四維為模擬輸入</b>，文件未定義其算法。";
+  }
+  if(t){
+    var ta=tentAngles(t), br=BR.filter(function(b){return b.from===t.id||b.to===t.id});
+    var inB=br.filter(function(b){return b.to===t.id}), outB=br.filter(function(b){return b.from===t.id});
+    var top=br.slice().sort(function(a,b){return b.strength-a.strength})[0];
+    return "<b>"+t.name+"</b><br>"+
+      "橋 "+br.length+" 條（收 "+inB.length+"／給 "+outB.length+"）<br>"+
+      (top?("最強一條：<b>"+top.tag+" "+BN[top.tag]+"</b> "+(top.strength*100).toFixed(0)+
+            "（"+byId(top.from).name+" → "+byId(top.to).name+"）<br>"):"")+
+      "落空觸手 "+ta.filter(function(x){return !x.linked}).length+" 根";
+  }
+  return "可以問我：虛線是什麼／距離代表什麼／互惠性怎麼算／哪裡有落空觸手／權重為什麼是 OPEN。<br><br>"+
+    "<span style='color:#5f6b7a'>（示範版為規則式回答；正式版將接 RAG，可引用 27 份規範文件原文）</span>";
+}
+function cpSend(q){
+  if(!q) return;
+  cpAdd("u",q);
+  document.getElementById("cpCtxT").textContent=cpCtxText();
+  setTimeout(function(){ cpAdd("a",cpAnswer(q)); },180);
+}
+(function(){
+  var btn=document.getElementById("cpBtn"), pan=document.getElementById("cp");
+  document.getElementById("cpQ").innerHTML=
+    ["虛線是什麼","距離代表什麼","互惠性怎麼算","落空觸手在哪","權重為何 OPEN"]
+    .map(function(x){return "<button>"+x+"</button>"}).join("");
+  document.querySelectorAll("#cpQ button").forEach(function(b){
+    b.onclick=function(){ cpSend(b.textContent); };});
+  btn.onclick=function(){
+    pan.classList.add("on"); btn.style.display="none";
+    document.getElementById("cpCtxT").textContent=cpCtxText();
+    if(!document.getElementById("cpB").innerHTML)
+      cpAdd("a","我看得到你正在看的東西。<br>hover 或點選節點後再問，我會針對它回答。<br><br>"+
+        "<span style='color:#5f6b7a'>示範版：規則式回答，正式版接 RAG。</span>");
+  };
+  document.getElementById("cpX").onclick=function(){ pan.classList.remove("on"); btn.style.display="flex"; };
+  document.getElementById("cpS").onclick=function(){
+    var i=document.getElementById("cpIn"); cpSend(i.value.trim()); i.value=""; };
+  document.getElementById("cpIn").onkeydown=function(e){
+    if(e.key==="Enter"){ cpSend(e.target.value.trim()); e.target.value=""; } };
+})();
+
+window.onresize=()=>{initPos();initCanvas();tick(300);render();buildParticles();};
+
+// ══════ 啟動（所有 IIFE 綁定完成後）══════
+computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSparks();bang=0;frame();if(window.updZ)window.updZ();
+
+ document.getElementById('svg').addEventListener('pointerenter',()=>{IDLE=false;});
+ document.getElementById('svg').addEventListener('pointerup',()=>setTimeout(()=>{
+ parent.postMessage({type:'tangle-focus',mode:'law',name:focus?byId(focus).name:'全貌'},location.origin);
+ },0));
+ setTimeout(()=>{tick(200);showLab=true;render();buildParticles();},900);
+ if(matchMedia('(prefers-reduced-motion: reduce)').matches){flowOn=false;IDLE=false;bang=999;document.getElementById('bFlow').classList.remove('on');}
+ 
+ window.addEventListener('message',e=>{if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='dd-confirmed')return;
+ ddSupplements.set(e.data.subject+':'+e.data.code,e.data.text);render();buildParticles();});
+ 
+
+ </script>
+<script src="./law-orbit.js?v=1794846024"></script></body>
+</html>

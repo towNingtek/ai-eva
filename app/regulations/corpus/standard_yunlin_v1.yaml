@@ -1,6 +1,6 @@
 # 法規檢核標準 — 雲林農村再生
 #
-# 來源：R0 沙推定案的 v1（https://hackmd.io/@yillkid/BJIzoEIzzg），Round 1 實作時同步更新。
+# 來源：https://hackmd.io/@yillkid/BJIzoEIzzg （v0.3.0-r0 起：先改 HackMD，再重抽本檔；tools/law_standard_check.py --hackmd 檢查一致）。
 # 分工不變：**YAML 訂規則，LLM 做判斷**。
 #   YAML 管：查表（類型→區塊）、門檻、涵蓋邊界、偽陽性政策、輸出格式
 #   LLM 管：「這份計畫有沒有踩到這一條」的語意判斷
@@ -9,7 +9,7 @@
 
 standard:
   id: regcheck.yunlin.rural-regen
-  version: 0.2.0-r1
+  version: 0.3.1-r0
   title: 雲林農村再生計畫法規檢核
   subject: multi_tenant.project.philosophy   # 受檢對象 = 計畫書（專案 philosophy 欄）
   interaction_mode: PUSH                     # 非即時：提交 → 稍後回報告
@@ -61,6 +61,25 @@ applicability_gate:
     precondition: 開發案依非都市土地使用管制規則§11 須報請區域計畫委員會審議
     threshold: 開發（申請變更）面積 ≥1 公頃，或社區型開發 ≥50 戶
     note: 判斷的是「本次申請開發／變更編定的基地面積」，不是社區行政區總面積
+  # v0.3.1（tplanet-multi-tenant#113 Precision）：以下四部在雲林 10 案第一輪全被「推定」觸發，
+  # 但計畫書都沒有寫到前提（農地申請證明、山坡地或水域施工、申請開發許可、繳開發影響費）。
+  # 前提不成立／待確認時整部不判，報告列「前提未成立／待確認」並說缺什麼 —— 不是靜靜排除。
+  - law: 農業用地作農業使用認定及核發證明辦法
+    precondition: 計畫書有申請「農業用地作農業使用證明」的需要（例如農地移轉、贈與、繼承要申請免徵稅，或要辦農舍、農業設施容許使用）
+    threshold: 計畫書明確寫到上述任一種申請或需要
+    note: 只寫到「農業產業」「農田」「友善農業」「養殖」不算；要有申請證明、農業設施或土地權利變動的具體內容
+  - law: 水土保持法
+    precondition: 計畫書的工程位於山坡地、特定水土保持區，或在河川、水圳範圍做開挖、填土、設置構造物
+    threshold: 計畫書明確寫到山坡地、坡地、邊坡、淺山丘陵，或在水域範圍內施作工程
+    note: 只寫生態維護、水圳生態、環境清整、綠美化、水岸綠廊或步道的願景，都不算
+  - law: 非都市土地開發影響費徵收辦法
+    precondition: 計畫要申請非都市土地開發許可或使用分區變更
+    threshold: 計畫書明確寫到申請開發許可、分區變更或變更編定
+    note: 一般社區環境改善、公共設施整修、宅院整建都不算
+  - law: 非都市土地開發許可審查收費標準
+    precondition: 計畫要申請非都市土地開發許可
+    threshold: 計畫書明確寫到申請開發許可
+    note: 一般社區環境改善、公共設施整修、宅院整建都不算
 
 # 涵蓋邊界：正面宣告收了哪些領域；範圍外一律當「沒檢查」，不代表合規。
 coverage:
@@ -88,3 +107,51 @@ output:
 
 # 法條清單（資料跟設定分開放）
 clauses_source: negative_list.json
+
+# ── v0.3：多輪補問（與媒合標準 v1.1 同一套 loop）────────────────────────────
+# 缺資料時一次問一題；使用者回答並確認後，**照下面的門檻規則**重判（不靠 AI）。
+# 回答一律記為「使用者陳述・未查證」；「還不知道」記下但不算補齊；不用 0 或猜測補值。
+
+# 每個「缺資料」對應一題。field = 要問的資料；domain = 影響哪個法領域；
+# rule = 拿到答案後怎麼判（只用門檻數字或是非，不做語意判斷）。
+clarify_questions:
+  - field: 申請開發面積
+    domain: 開發審議
+    ask: 這次申請開發或變更編定的基地面積多大？（單位：公頃或平方公尺）
+    unit: 公頃
+    rule: { law: 非都市土地使用管制規則, article: "§11", hit_if_gte: 1.0, else: 不觸及 }
+    note: 判斷的是本次申請的基地面積，不是社區行政區總面積（同 applicability_gate）
+  - field: 開發戶數
+    domain: 開發審議
+    ask: 這次開發預計涉及多少戶？
+    unit: 戶
+    rule: { law: 非都市土地使用管制規則, article: "§11", hit_if_gte: 50, else: 不觸及 }
+  - field: 工程規模與位置
+    domain: 環境影響評估
+    ask: 這次工程的規模（面積）多大？是否位於山坡地、保護區或水源區？
+    unit: 公頃
+    rule: { law: 環境影響評估法, article: "§5", hit_if_gte: 1.0, hit_if_sensitive_area: true, else: 不觸及 }
+    note: 環評附表門檻依開發類型不同，此處 1 公頃為暫定，待資策會核定（同 scale_thresholds）
+  - field: 土地使用編定
+    domain: 非都市土地使用管制
+    ask: 要整建的土地目前編定為哪一種用地？（例：鄉村區乙種建築用地、農牧用地）
+    options: [建築用地, 農牧用地, 其他, 還不知道]
+    rule: { hit_if_in: [農牧用地, 其他], else: 不觸及 }
+    note: 非建築用地要做建築使用，才需辦變更編定
+  - field: 是否作農業使用
+    domain: 農地農用認定
+    ask: 這塊地目前是否作農業使用？
+    options: [是, 否, 還不知道]
+    rule: { hit_if_in: [是], else: 不觸及 }
+
+# 狀態：補完一個缺資料欄位，就照上面的 rule 重判那個法領域；其他法領域不動。
+status_transition:
+  states:
+    CLARIFY_FIRST: 先補資料（還有缺資料的法領域）
+    READY: 可以判斷（缺資料都已補齊或使用者停止）
+  recompute: rule_only          # 只照 rule 重判，不重跑 LLM
+  scope: affected_domain_only   # 只重判受影響的法領域
+  unknown_counts_as_filled: false
+  user_answer_label: 使用者陳述・未查證
+  pace: one_question_at_a_time
+  buttons: [還不知道, 跳過]

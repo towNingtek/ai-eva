@@ -1,17 +1,17 @@
 {
   "metadata": {
-    "generated_at": "2026-10-11T03:22:10.529156+00:00",
-    "source_tree_hash": "c66ea0dbbfbbbdee91fa362f582bb74fca9ad325a067fda389993378cf3ba842",
+    "generated_at": "2026-10-12T14:46:44.005051+00:00",
+    "source_tree_hash": "56d75f70cafff80b8a1378c1292cef8bf3647ec094e8c36efb95a20bcbd4a842",
     "repo_name": ".codeboarding-target",
     "depth_level": 2,
     "depth_cap": 2,
     "file_coverage_summary": {
-      "total_files": 166,
+      "total_files": 167,
       "analyzed": 86,
-      "not_analyzed": 80,
+      "not_analyzed": 81,
       "not_analyzed_by_reason": {
         "other": 61,
-        "codeboardingignore": 19
+        "codeboardingignore": 20
       }
     },
     "tree_spec": {
@@ -509,13 +509,15 @@
         "app/apps/_registry.py|app.apps._registry.menu_apps",
         "app/apps/_registry.py|app.apps._registry.filter_enabled",
         "app/apps/_registry.py|app.apps._registry.is_enabled_for",
+        "app/apps/_registry.py|app.apps._registry.role_allows",
+        "app/apps/_registry.py|app.apps._registry.filter_role",
         "app/apps/_registry.py|app.apps._registry.chainlit_commands",
         "app/apps/_registry.py|app.apps._registry.get_by_id",
         "app/apps/_registry.py|app.apps._registry.default_app",
         "app/apps/_registry.py|app.apps._registry.apps_for_project"
       ],
-      "content_hash": "2a60bb4877f335bd",
-      "module_hash": "f71ad193c7713a02"
+      "content_hash": "888b8534dd2cf907",
+      "module_hash": "488fa0099310570f"
     },
     "app/apps/chart_analysis/handler.py": {
       "method_keys": [
@@ -792,6 +794,9 @@
         "app/main.py|app.main._init_tables",
         "app/main.py|app.main._current_user_project",
         "app/main.py|app.main._enabled_apps_for",
+        "app/main.py|app.main._set_role_apps",
+        "app/main.py|app.main._role_apps",
+        "app/main.py|app.main._guard_app",
         "app/main.py|app.main._register_commands",
         "app/main.py|app.main._app_actions",
         "app/main.py|app.main._app_actions._label",
@@ -820,8 +825,8 @@
         "app/main.py|app.main.chart_export",
         "app/main.py|app.main.cms_attach"
       ],
-      "content_hash": "2c1dc92ac7d88afc",
-      "module_hash": "7bc44bce948f2160"
+      "content_hash": "9e59a275ad303139",
+      "module_hash": "d887377fbab54c9c"
     },
     "app/projects/registry.py": {
       "method_keys": [
@@ -1892,35 +1897,51 @@
       "type": "FUNCTION",
       "content_hash": "23e03c9311647d2a"
     },
+    "app/apps/_registry.py|app.apps._registry.role_allows": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.role_allows",
+      "start_line": 133,
+      "end_line": 145,
+      "type": "FUNCTION",
+      "content_hash": "db2c25f2bf89f59d"
+    },
+    "app/apps/_registry.py|app.apps._registry.filter_role": {
+      "file_path": "app/apps/_registry.py",
+      "qualified_name": "app.apps._registry.filter_role",
+      "start_line": 148,
+      "end_line": 150,
+      "type": "FUNCTION",
+      "content_hash": "b7f11cce3614290b"
+    },
     "app/apps/_registry.py|app.apps._registry.chainlit_commands": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.chainlit_commands",
-      "start_line": 133,
-      "end_line": 161,
+      "start_line": 153,
+      "end_line": 181,
       "type": "FUNCTION",
       "content_hash": "df22a8b02854d5fa"
     },
     "app/apps/_registry.py|app.apps._registry.get_by_id": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.get_by_id",
-      "start_line": 164,
-      "end_line": 166,
+      "start_line": 184,
+      "end_line": 186,
       "type": "FUNCTION",
       "content_hash": "f58453bf0643484f"
     },
     "app/apps/_registry.py|app.apps._registry.default_app": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.default_app",
-      "start_line": 169,
-      "end_line": 171,
+      "start_line": 189,
+      "end_line": 191,
       "type": "FUNCTION",
       "content_hash": "605f0f64bf35ba85"
     },
     "app/apps/_registry.py|app.apps._registry.apps_for_project": {
       "file_path": "app/apps/_registry.py",
       "qualified_name": "app.apps._registry.apps_for_project",
-      "start_line": 174,
-      "end_line": 186,
+      "start_line": 194,
+      "end_line": 206,
       "type": "FUNCTION",
       "content_hash": "a01d303d260fa8ee"
     },
@@ -3111,256 +3132,280 @@
     "app/main.py|app.main.auth_callback": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.auth_callback",
-      "start_line": 56,
-      "end_line": 59,
+      "start_line": 58,
+      "end_line": 61,
       "type": "FUNCTION",
       "content_hash": "fa12a8219f868031"
     },
     "app/main.py|app.main.sso_header_auth": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.sso_header_auth",
-      "start_line": 66,
-      "end_line": 86,
+      "start_line": 68,
+      "end_line": 88,
       "type": "FUNCTION",
       "content_hash": "70b7f8dc43d99d68"
     },
     "app/main.py|app.main._init_tables": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._init_tables",
-      "start_line": 101,
-      "end_line": 115,
+      "start_line": 103,
+      "end_line": 117,
       "type": "FUNCTION",
       "content_hash": "f0c3850a4f1ce5a9"
     },
     "app/main.py|app.main._current_user_project": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._current_user_project",
-      "start_line": 127,
-      "end_line": 132,
+      "start_line": 129,
+      "end_line": 134,
       "type": "FUNCTION",
       "content_hash": "4e24ff2e6f92fe0a"
     },
     "app/main.py|app.main._enabled_apps_for": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._enabled_apps_for",
-      "start_line": 135,
-      "end_line": 139,
+      "start_line": 137,
+      "end_line": 141,
       "type": "FUNCTION",
       "content_hash": "50cad599d443d46d"
+    },
+    "app/main.py|app.main._set_role_apps": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._set_role_apps",
+      "start_line": 144,
+      "end_line": 148,
+      "type": "FUNCTION",
+      "content_hash": "e52d6b07eddc28bd"
+    },
+    "app/main.py|app.main._role_apps": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._role_apps",
+      "start_line": 151,
+      "end_line": 152,
+      "type": "FUNCTION",
+      "content_hash": "9ca274c43139d8b8"
+    },
+    "app/main.py|app.main._guard_app": {
+      "file_path": "app/main.py",
+      "qualified_name": "app.main._guard_app",
+      "start_line": 155,
+      "end_line": 171,
+      "type": "FUNCTION",
+      "content_hash": "0db83f0a4f6f1398"
     },
     "app/main.py|app.main._register_commands": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._register_commands",
-      "start_line": 142,
-      "end_line": 149,
+      "start_line": 174,
+      "end_line": 182,
       "type": "FUNCTION",
-      "content_hash": "2d78ef8285a772ac"
+      "content_hash": "f34d7e30dbe179d6"
     },
     "app/main.py|app.main._app_actions": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._app_actions",
-      "start_line": 152,
-      "end_line": 175,
+      "start_line": 185,
+      "end_line": 209,
       "type": "FUNCTION",
-      "content_hash": "0ccb439c11c494ee"
+      "content_hash": "bf786123600ebf72"
     },
     "app/main.py|app.main._app_actions._label": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._app_actions._label",
-      "start_line": 169,
-      "end_line": 170,
+      "start_line": 203,
+      "end_line": 204,
       "type": "FUNCTION",
       "content_hash": "02d5add73eeb11be"
     },
     "app/main.py|app.main.open_app": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.open_app",
-      "start_line": 179,
-      "end_line": 202,
+      "start_line": 213,
+      "end_line": 230,
       "type": "FUNCTION",
-      "content_hash": "d98df22fdfb7ace7"
+      "content_hash": "e387702fdf4456e9"
     },
     "app/main.py|app.main.on_chat_resume": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_chat_resume",
-      "start_line": 206,
-      "end_line": 210,
+      "start_line": 234,
+      "end_line": 238,
       "type": "FUNCTION",
       "content_hash": "e4229d6e00d8a44a"
     },
     "app/main.py|app.main._current_chainlit_user": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._current_chainlit_user",
-      "start_line": 213,
-      "end_line": 223,
+      "start_line": 241,
+      "end_line": 251,
       "type": "FUNCTION",
       "content_hash": "55f8595961bed684"
     },
     "app/main.py|app.main._is_sso_user": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._is_sso_user",
-      "start_line": 226,
-      "end_line": 229,
+      "start_line": 254,
+      "end_line": 257,
       "type": "FUNCTION",
       "content_hash": "513482d265633d1e"
     },
     "app/main.py|app.main._sso_session_for_current_user": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._sso_session_for_current_user",
-      "start_line": 232,
-      "end_line": 236,
+      "start_line": 260,
+      "end_line": 264,
       "type": "FUNCTION",
       "content_hash": "bf1432f1de07c2ec"
     },
     "app/main.py|app.main._attach_refresh_handler": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._attach_refresh_handler",
-      "start_line": 239,
-      "end_line": 251,
+      "start_line": 267,
+      "end_line": 279,
       "type": "FUNCTION",
       "content_hash": "eec24fa3dc68e17a"
     },
     "app/main.py|app.main._attach_refresh_handler._on_unauthorized": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._attach_refresh_handler._on_unauthorized",
-      "start_line": 244,
-      "end_line": 250,
+      "start_line": 272,
+      "end_line": 278,
       "type": "FUNCTION",
       "content_hash": "e1bebe0d6addbbf4"
     },
     "app/main.py|app.main._load_sso_runtime": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._load_sso_runtime",
-      "start_line": 254,
-      "end_line": 285,
+      "start_line": 282,
+      "end_line": 314,
       "type": "FUNCTION",
-      "content_hash": "f250de82fb56d418"
+      "content_hash": "5e12f5988fb9fd15"
     },
     "app/main.py|app.main._refresh_sso_runtime": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._refresh_sso_runtime",
-      "start_line": 288,
-      "end_line": 310,
+      "start_line": 317,
+      "end_line": 340,
       "type": "FUNCTION",
-      "content_hash": "d410a5311ec43edb"
+      "content_hash": "3df0fbf2d0b58597"
     },
     "app/main.py|app.main.on_start": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_start",
-      "start_line": 314,
-      "end_line": 343,
+      "start_line": 344,
+      "end_line": 373,
       "type": "FUNCTION",
-      "content_hash": "645af90d067752f5"
+      "content_hash": "7a71c772f3b526a8"
     },
     "app/main.py|app.main._read_text_file": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._read_text_file",
-      "start_line": 364,
-      "end_line": 379,
+      "start_line": 394,
+      "end_line": 409,
       "type": "FUNCTION",
       "content_hash": "fcd4aa7fe052b991"
     },
     "app/main.py|app.main._read_pdf_file": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._read_pdf_file",
-      "start_line": 382,
-      "end_line": 413,
+      "start_line": 412,
+      "end_line": 443,
       "type": "FUNCTION",
       "content_hash": "29cc103fc3220c53"
     },
     "app/main.py|app.main._read_attachment": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._read_attachment",
-      "start_line": 416,
-      "end_line": 422,
+      "start_line": 446,
+      "end_line": 452,
       "type": "FUNCTION",
       "content_hash": "6924ec56da01eaf4"
     },
     "app/main.py|app.main._frame_file": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._frame_file",
-      "start_line": 425,
-      "end_line": 431,
+      "start_line": 455,
+      "end_line": 461,
       "type": "FUNCTION",
       "content_hash": "48e9f5d1a672deef"
     },
     "app/main.py|app.main._emit_copilot": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._emit_copilot",
-      "start_line": 434,
-      "end_line": 446,
+      "start_line": 464,
+      "end_line": 476,
       "type": "FUNCTION",
       "content_hash": "3dc71a2190658b64"
     },
     "app/main.py|app.main._run_copilot_emit": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._run_copilot_emit",
-      "start_line": 449,
-      "end_line": 460,
+      "start_line": 479,
+      "end_line": 490,
       "type": "FUNCTION",
       "content_hash": "dfa60dc025cd715a"
     },
     "app/main.py|app.main._run_with_attachments": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._run_with_attachments",
-      "start_line": 463,
-      "end_line": 478,
+      "start_line": 493,
+      "end_line": 508,
       "type": "FUNCTION",
       "content_hash": "cb4539ad40d38a36"
     },
     "app/main.py|app.main._handle_cms_attachments": {
       "file_path": "app/main.py",
       "qualified_name": "app.main._handle_cms_attachments",
-      "start_line": 481,
-      "end_line": 517,
+      "start_line": 511,
+      "end_line": 547,
       "type": "FUNCTION",
       "content_hash": "d28dad52c1bc2015"
     },
     "app/main.py|app.main.on_message": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.on_message",
-      "start_line": 521,
-      "end_line": 643,
+      "start_line": 551,
+      "end_line": 668,
       "type": "FUNCTION",
-      "content_hash": "cb3e1b01d24e84df"
+      "content_hash": "c6f6c9724fd096c6"
     },
     "app/main.py|app.main.cms_confirm": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_confirm",
-      "start_line": 647,
-      "end_line": 698,
+      "start_line": 672,
+      "end_line": 723,
       "type": "FUNCTION",
       "content_hash": "3a6347fa4f4404da"
     },
     "app/main.py|app.main.cms_sroi": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_sroi",
-      "start_line": 702,
-      "end_line": 723,
+      "start_line": 727,
+      "end_line": 748,
       "type": "FUNCTION",
       "content_hash": "ab8c08f74ba1c715"
     },
     "app/main.py|app.main.chart_query": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.chart_query",
-      "start_line": 727,
-      "end_line": 764,
+      "start_line": 752,
+      "end_line": 789,
       "type": "FUNCTION",
       "content_hash": "74bda02f7d841b58"
     },
     "app/main.py|app.main.chart_export": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.chart_export",
-      "start_line": 768,
-      "end_line": 796,
+      "start_line": 793,
+      "end_line": 821,
       "type": "FUNCTION",
       "content_hash": "7f364795ae7187ad"
     },
     "app/main.py|app.main.cms_attach": {
       "file_path": "app/main.py",
       "qualified_name": "app.main.cms_attach",
-      "start_line": 800,
-      "end_line": 819,
+      "start_line": 825,
+      "end_line": 844,
       "type": "FUNCTION",
       "content_hash": "1796bddad5a69ac9"
     },
@@ -4601,13 +4646,31 @@
     },
     {
       "name": "Application Handlers",
-      "description": "Interactive application feature handlers including chat analysis, regulation checking, knowledge base inspection, and web search.",
+      "description": "Interactive application feature handlers and registry discovery for modules such as chart analysis, regulation checking, knowledge base inspection, and web search.",
       "key_entities": [
         {
           "qualified_name": "app.apps._registry.App",
           "reference_file": "app/apps/_registry.py",
           "reference_start_line": 32,
           "reference_end_line": 53
+        },
+        {
+          "qualified_name": "app.apps._registry.discover",
+          "reference_file": "app/apps/_registry.py",
+          "reference_start_line": 60,
+          "reference_end_line": 93
+        },
+        {
+          "qualified_name": "app.apps._registry.filter_enabled",
+          "reference_file": "app/apps/_registry.py",
+          "reference_start_line": 109,
+          "reference_end_line": 121
+        },
+        {
+          "qualified_name": "app.apps._registry.role_allows",
+          "reference_file": "app/apps/_registry.py",
+          "reference_start_line": 133,
+          "reference_end_line": 145
         },
         {
           "qualified_name": "app.apps.chart_analysis.handler.handle",
@@ -4650,6 +4713,8 @@
             "app.apps._registry.menu_apps",
             "app.apps._registry.filter_enabled",
             "app.apps._registry.is_enabled_for",
+            "app.apps._registry.role_allows",
+            "app.apps._registry.filter_role",
             "app.apps._registry.chainlit_commands",
             "app.apps._registry.get_by_id",
             "app.apps._registry.default_app",
@@ -4974,7 +5039,7 @@
     },
     {
       "name": "Application Entry and Dispatch",
-      "description": "Main application startup, conversational dispatching, project management registry, and authentication provider integration.",
+      "description": "Main application startup, conversational dispatching, Chainlit UI command management, project registry, and authentication provider integration.",
       "key_entities": [
         {
           "qualified_name": "app.auth.issuers.fetch_manifest",
@@ -4995,10 +5060,22 @@
           "reference_end_line": 113
         },
         {
-          "qualified_name": "app.main.on_message",
+          "qualified_name": "app.main._app_actions",
           "reference_file": "app/main.py",
-          "reference_start_line": 521,
-          "reference_end_line": 643
+          "reference_start_line": 185,
+          "reference_end_line": 209
+        },
+        {
+          "qualified_name": "app.main._guard_app",
+          "reference_file": "app/main.py",
+          "reference_start_line": 155,
+          "reference_end_line": 171
+        },
+        {
+          "qualified_name": "app.main._init_tables",
+          "reference_file": "app/main.py",
+          "reference_start_line": 103,
+          "reference_end_line": 117
         },
         {
           "qualified_name": "app.projects.registry.get_project",
@@ -5046,6 +5123,9 @@
             "app.main._init_tables",
             "app.main._current_user_project",
             "app.main._enabled_apps_for",
+            "app.main._set_role_apps",
+            "app.main._role_apps",
+            "app.main._guard_app",
             "app.main._register_commands",
             "app.main._app_actions",
             "app.main._app_actions._label",
@@ -5585,28 +5665,6 @@
           "description": "Creates OpenCode session for Discord voice chat"
         },
         {
-          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
-          "target": "app/core/opencode.py|app.core.opencode.create_session",
-          "call_sites": [
-            {
-              "line": 180,
-              "column": 46
-            }
-          ],
-          "description": "LINE OpenCode chat initializes OpenCode sessions."
-        },
-        {
-          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 207,
-              "column": 11
-            }
-          ],
-          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
-        },
-        {
           "source": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.chat",
           "target": "app/core/opencode.py|app.core.opencode.send_message",
           "call_sites": [
@@ -5627,6 +5685,28 @@
             }
           ],
           "description": "Discord voice chat checks OpenCode availability"
+        },
+        {
+          "source": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.chat",
+          "target": "app/core/opencode.py|app.core.opencode.create_session",
+          "call_sites": [
+            {
+              "line": 180,
+              "column": 46
+            }
+          ],
+          "description": "LINE OpenCode chat initializes OpenCode sessions."
+        },
+        {
+          "source": "app/surfaces/cms_copilot.py|app.surfaces.cms_copilot.ask",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 207,
+              "column": 11
+            }
+          ],
+          "description": "Surfaces instantiate LLMs and interact with copilot sessions"
         }
       ],
       "src_id": "2",
@@ -5754,17 +5834,6 @@
       "key_edges": [
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
-          "target": "app/dispatch.py|app.dispatch.Envelope",
-          "call_sites": [
-            {
-              "line": 88,
-              "column": 11
-            }
-          ],
-          "description": "Device intent handler wraps payloads into envelopes"
-        },
-        {
-          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
           "target": "app/dispatch.py|app.dispatch.handle_device_intent",
           "call_sites": [
             {
@@ -5773,6 +5842,17 @@
             }
           ],
           "description": "Device surface passes device intents to dispatch handler"
+        },
+        {
+          "source": "app/surfaces/device.py|app.surfaces.device.device_intent",
+          "target": "app/dispatch.py|app.dispatch.Envelope",
+          "call_sites": [
+            {
+              "line": 88,
+              "column": 11
+            }
+          ],
+          "description": "Device intent handler wraps payloads into envelopes"
         },
         {
           "source": "app/surfaces/device.py|app.surfaces.device.device_result",
@@ -6257,17 +6337,6 @@
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
-          "target": "app/core/llm.py|app.core.llm.make_llm",
-          "call_sites": [
-            {
-              "line": 17,
-              "column": 24
-            }
-          ],
-          "description": "Application handlers instantiate LLMs and invoke copilot workflows."
-        },
-        {
           "source": "app/apps/project_match/handler.py|app.apps.project_match.handler.handle",
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
@@ -6288,6 +6357,17 @@
             }
           ],
           "description": "Application handlers request language model completions"
+        },
+        {
+          "source": "app/apps/plain_chat/handler.py|app.apps.plain_chat.handler.handle",
+          "target": "app/core/llm.py|app.core.llm.make_llm",
+          "call_sites": [
+            {
+              "line": 17,
+              "column": 24
+            }
+          ],
+          "description": "Application handlers instantiate LLMs and invoke copilot workflows."
         }
       ],
       "src_id": "3",
@@ -6830,11 +6910,22 @@
       "evidence": "",
       "key_edges": [
         {
+          "source": "app/main.py|app.main._init_tables",
+          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
+          "call_sites": [
+            {
+              "line": 107,
+              "column": 24
+            }
+          ],
+          "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
+        },
+        {
           "source": "app/main.py|app.main._attach_refresh_handler._on_unauthorized",
           "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
             {
-              "line": 245,
+              "line": 273,
               "column": 39
             }
           ],
@@ -6845,7 +6936,7 @@
           "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
           "call_sites": [
             {
-              "line": 109,
+              "line": 111,
               "column": 25
             }
           ],
@@ -6853,21 +6944,10 @@
         },
         {
           "source": "app/main.py|app.main._init_tables",
-          "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
-          "call_sites": [
-            {
-              "line": 105,
-              "column": 24
-            }
-          ],
-          "description": "Initializes surface persistence tables and hooks SSO session refresh handling"
-        },
-        {
-          "source": "app/main.py|app.main._init_tables",
           "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
           "call_sites": [
             {
-              "line": 108,
+              "line": 110,
               "column": 25
             }
           ],
@@ -6878,7 +6958,7 @@
           "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
           "call_sites": [
             {
-              "line": 106,
+              "line": 108,
               "column": 24
             }
           ],
@@ -6894,7 +6974,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
             {
-              "line": 245,
+              "line": 273,
               "column": 39
             }
           ],
@@ -6905,7 +6985,7 @@
           "target": "app/surfaces/discord_voice.py|app.surfaces.discord_voice.ensure_discord_voice_table",
           "call_sites": [
             {
-              "line": 109,
+              "line": 111,
               "column": 25
             }
           ],
@@ -6916,7 +6996,7 @@
           "target": "app/surfaces/line.py|app.surfaces.line.ensure_line_table",
           "call_sites": [
             {
-              "line": 105,
+              "line": 107,
               "column": 24
             }
           ],
@@ -6927,7 +7007,7 @@
           "target": "app/surfaces/line_opencode.py|app.surfaces.line_opencode.ensure_line_opencode_table",
           "call_sites": [
             {
-              "line": 108,
+              "line": 110,
               "column": 25
             }
           ],
@@ -6938,7 +7018,7 @@
           "target": "app/surfaces/line_session.py|app.surfaces.line_session.ensure_session_tables",
           "call_sites": [
             {
-              "line": 106,
+              "line": 108,
               "column": 24
             }
           ],
@@ -6949,7 +7029,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.ensure_sso_sessions_table",
           "call_sites": [
             {
-              "line": 107,
+              "line": 109,
               "column": 23
             }
           ],
@@ -6960,7 +7040,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
             {
-              "line": 264,
+              "line": 292,
               "column": 39
             }
           ],
@@ -6971,7 +7051,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.refresh_sso_session",
           "call_sites": [
             {
-              "line": 300,
+              "line": 329,
               "column": 39
             }
           ],
@@ -6982,7 +7062,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
           "call_sites": [
             {
-              "line": 236,
+              "line": 264,
               "column": 30
             }
           ],
@@ -6993,7 +7073,7 @@
           "target": "app/surfaces/sso.py|app.surfaces.sso.get_sso_session",
           "call_sites": [
             {
-              "line": 74,
+              "line": 76,
               "column": 30
             }
           ],
@@ -7002,21 +7082,21 @@
       ]
     },
     {
-      "relation": "routes messages to",
+      "relation": "guards and executes apps from",
       "src_name": "Application Entry and Dispatch",
       "dst_name": "Application Handlers",
       "evidence": "",
       "key_edges": [
         {
-          "source": "app/main.py|app.main.on_message",
-          "target": "app/apps/_registry.py|app.apps._registry.App.full_id",
+          "source": "app/main.py|app.main._guard_app",
+          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
           "call_sites": [
             {
-              "line": 636,
-              "column": 80
+              "line": 160,
+              "column": 12
             }
           ],
-          "description": "Main dispatcher delegates chat messages to registered apps"
+          "description": "Discovers, filters, and executes application feature handlers based on project and role policies"
         }
       ],
       "src_id": "6",
@@ -7028,8 +7108,19 @@
           "target": "app/apps/_registry.py|app.apps._registry.filter_enabled",
           "call_sites": [
             {
-              "line": 165,
+              "line": 198,
               "column": 54
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._app_actions",
+          "target": "app/apps/_registry.py|app.apps._registry.filter_role",
+          "call_sites": [
+            {
+              "line": 199,
+              "column": 18
             }
           ],
           "description": ""
@@ -7039,12 +7130,34 @@
           "target": "app/apps/_registry.py|app.apps._registry.menu_apps",
           "call_sites": [
             {
-              "line": 165,
+              "line": 198,
               "column": 18
             },
             {
-              "line": 165,
+              "line": 198,
               "column": 69
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._guard_app",
+          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
+          "call_sites": [
+            {
+              "line": 160,
+              "column": 12
+            }
+          ],
+          "description": ""
+        },
+        {
+          "source": "app/main.py|app.main._guard_app",
+          "target": "app/apps/_registry.py|app.apps._registry.role_allows",
+          "call_sites": [
+            {
+              "line": 166,
+              "column": 12
             }
           ],
           "description": ""
@@ -7054,30 +7167,30 @@
           "target": "app/apps/_registry.py|app.apps._registry.chainlit_commands",
           "call_sites": [
             {
-              "line": 146,
-              "column": 12
+              "line": 178,
+              "column": 24
             }
           ],
           "description": ""
         },
         {
-          "source": "app/main.py|app.main.on_message",
-          "target": "app/apps/_registry.py|app.apps._registry.App",
+          "source": "app/main.py|app.main._register_commands",
+          "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
           "call_sites": [
             {
-              "line": 636,
-              "column": 80
+              "line": 179,
+              "column": 28
             }
           ],
           "description": ""
         },
         {
-          "source": "app/main.py|app.main.on_message",
-          "target": "app/apps/_registry.py|app.apps._registry.App.full_id",
+          "source": "app/main.py|app.main._register_commands",
+          "target": "app/apps/_registry.py|app.apps._registry.role_allows",
           "call_sites": [
             {
-              "line": 636,
-              "column": 80
+              "line": 179,
+              "column": 16
             }
           ],
           "description": ""
@@ -7087,7 +7200,7 @@
           "target": "app/apps/_registry.py|app.apps._registry.default_app",
           "call_sites": [
             {
-              "line": 626,
+              "line": 658,
               "column": 15
             }
           ],
@@ -7098,23 +7211,12 @@
           "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
           "call_sites": [
             {
-              "line": 543,
+              "line": 573,
               "column": 15
             },
             {
-              "line": 624,
+              "line": 656,
               "column": 11
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/main.py|app.main.on_message",
-          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
-          "call_sites": [
-            {
-              "line": 635,
-              "column": 12
             }
           ],
           "description": ""
@@ -7124,7 +7226,7 @@
           "target": "app/apps/social_post/handler.py|app.apps.social_post.handler.handle_selection",
           "call_sites": [
             {
-              "line": 529,
+              "line": 559,
               "column": 15
             }
           ],
@@ -7135,19 +7237,8 @@
           "target": "app/apps/_registry.py|app.apps._registry.get_by_id",
           "call_sites": [
             {
-              "line": 182,
+              "line": 216,
               "column": 11
-            }
-          ],
-          "description": ""
-        },
-        {
-          "source": "app/main.py|app.main.open_app",
-          "target": "app/apps/_registry.py|app.apps._registry.is_enabled_for",
-          "call_sites": [
-            {
-              "line": 192,
-              "column": 12
             }
           ],
           "description": ""
@@ -7160,6 +7251,17 @@
       "dst_name": "Core LLM and Copilot Services",
       "evidence": "",
       "key_edges": [
+        {
+          "source": "app/main.py|app.main._run_copilot_emit",
+          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
+          "call_sites": [
+            {
+              "line": 482,
+              "column": 24
+            }
+          ],
+          "description": "Main copilot runner executes workflow steps"
+        },
         {
           "source": "app/dispatch.py|app.dispatch.converse",
           "target": "app/core/llm.py|app.core.llm.make_llm",
@@ -7176,22 +7278,11 @@
           "target": "app/core/copilot.py|app.core.copilot.execute_confirmed",
           "call_sites": [
             {
-              "line": 665,
+              "line": 690,
               "column": 21
             }
           ],
           "description": "Main application handles copilot execution and confirmations"
-        },
-        {
-          "source": "app/main.py|app.main._run_copilot_emit",
-          "target": "app/core/copilot.py|app.core.copilot.run_copilot",
-          "call_sites": [
-            {
-              "line": 452,
-              "column": 24
-            }
-          ],
-          "description": "Main copilot runner executes workflow steps"
         }
       ],
       "src_id": "6",
@@ -7225,7 +7316,7 @@
           "target": "app/core/copilot.py|app.core.copilot.run_copilot",
           "call_sites": [
             {
-              "line": 452,
+              "line": 482,
               "column": 24
             }
           ],
@@ -7236,7 +7327,7 @@
           "target": "app/core/copilot.py|app.core.copilot.execute_confirmed",
           "call_sites": [
             {
-              "line": 665,
+              "line": 690,
               "column": 21
             }
           ],
@@ -7247,7 +7338,7 @@
           "target": "app/core/copilot.py|app.core.copilot.generate_and_save_sdg",
           "call_sites": [
             {
-              "line": 678,
+              "line": 703,
               "column": 29
             }
           ],
@@ -7258,7 +7349,7 @@
           "target": "app/core/copilot.py|app.core.copilot.estimate_and_save_sroi",
           "call_sites": [
             {
-              "line": 719,
+              "line": 744,
               "column": 23
             }
           ],
@@ -7277,7 +7368,7 @@
           "target": "app/regulations/registry.py|app.regulations.registry.ensure_regulations_tables",
           "call_sites": [
             {
-              "line": 112,
+              "line": 114,
               "column": 32
             }
           ],
@@ -7293,7 +7384,7 @@
           "target": "app/regulations/registry.py|app.regulations.registry.ensure_regulations_tables",
           "call_sites": [
             {
-              "line": 112,
+              "line": 114,
               "column": 32
             }
           ],
@@ -7304,7 +7395,7 @@
           "target": "app/regulations/registry.py|app.regulations.registry.seed_from_corpus",
           "call_sites": [
             {
-              "line": 113,
+              "line": 115,
               "column": 41
             }
           ],
@@ -7318,6 +7409,17 @@
       "dst_name": "Device Node Registry",
       "evidence": "",
       "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._picked_to_commands",
+          "target": "app/nodes/registry.py|app.nodes.registry.nodes_with_capability",
+          "call_sites": [
+            {
+              "line": 120,
+              "column": 27
+            }
+          ],
+          "description": "Initializes tables and queries nodes matching capabilities for command dispatching"
+        },
         {
           "source": "app/dispatch.py|app.dispatch.handle_device_intent",
           "target": "app/nodes/registry.py|app.nodes.registry.list_nodes",
@@ -7372,7 +7474,7 @@
           "target": "app/nodes/commands.py|app.nodes.commands.ensure_commands_table",
           "call_sites": [
             {
-              "line": 104,
+              "line": 106,
               "column": 25
             }
           ],
@@ -7383,7 +7485,7 @@
           "target": "app/nodes/registry.py|app.nodes.registry.ensure_nodes_table",
           "call_sites": [
             {
-              "line": 103,
+              "line": 105,
               "column": 25
             }
           ],
@@ -7394,7 +7496,7 @@
           "target": "app/nodes/commands.py|app.nodes.commands.enqueue_command",
           "call_sites": [
             {
-              "line": 618,
+              "line": 650,
               "column": 41
             }
           ],
@@ -7408,6 +7510,17 @@
       "dst_name": "Tool Runtime and Registry",
       "evidence": "",
       "key_edges": [
+        {
+          "source": "app/dispatch.py|app.dispatch._select_capabilities",
+          "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",
+          "call_sites": [
+            {
+              "line": 85,
+              "column": 15
+            }
+          ],
+          "description": "Discovers and maps capabilities for available tools"
+        },
         {
           "source": "app/dispatch.py|app.dispatch.converse",
           "target": "app/tools/registry.py|app.tools.registry.capability_for_tool",
