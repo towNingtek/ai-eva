@@ -7,7 +7,8 @@
 - 輸入：舊南投 `LLMTwinss/nantou-gov/archived/upload_unused/` 的 15 份「計畫處114年先期_N案.pdf」。
 - 程式：ai-eva `beta` commit `d0b7469` 的 `app/main.py::_read_pdf_file`（PyMuPDF `get_text("text")`；若文字層為空，以 2x render、Tesseract `chi_tra+eng` OCR）。15 份均走 OCR fallback。
 - 輸出：共 52 頁；OCR 文字長度共 54,756 字元；推定執行時間合計約 3,365 秒（56.1 分鐘）。此時間是執行程式的計時值，不包含部署／環境等待。
-- 原始文字輸出與 `summary.json` 暫存於執行主機 `/tmp/ocr-out/`，來源 PDF 以唯讀掛載，沒有改動。
+- 原始 PDF（執行主機唯讀來源）：`/home/yillkid/workspace/town-intelligent/stable/LLMTwinss/nantou-gov/archived/upload_unused/`；每列列出檔名。來源 PDF 未修改。
+- 原始 OCR 文字輸出與 `summary.json` 暫存於執行主機 `/tmp/ocr-out/`，尚未複製進 repo；此 markdown 只保存欄位草稿，供人工開原 PDF 核對。
 - 計畫名稱、經費與摘要均為依 OCR 文字自動抓取的候選片段；欄位定位可能錯誤，必須看原件核對。無法定位時標示「未擷取到」。摘要限顯示 OCR 抽出的片段，不代表完整摘要。
 
 ## 15 份欄位對照草稿
