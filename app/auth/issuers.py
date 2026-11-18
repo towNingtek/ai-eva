@@ -44,6 +44,8 @@ ISSUERS: dict[str, dict] = {
             # host，否則 origin 會解析成預設租戶（townway#78 工商搬遷）。
             "ntidipc": "https://ntidipc.sechome.cc",
             "newtaipei-city": "https://newtaipei-city.sechome.cc",
+            # 南投測試站（tplanet-multi-tenant#480）；正式站 issuer 待 #482 路由確定後另加
+            "nantou-gov": "https://nantou-gov.sechome.cc",
         },
         "tenant_project_map": {
             "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
