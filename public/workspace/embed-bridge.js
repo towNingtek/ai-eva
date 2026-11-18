@@ -3,6 +3,7 @@
 // Eva -> workspace: parent posts {type:"tangle-mark"} after the user confirms a supplement.
 (function(){
  const Q=new URLSearchParams(location.search),MODE=Q.get('mode')==='match'?'match':'law';
+ if(MODE==='law'&&Q.get('liveLaw')==='1')return;
  const S=document.createElement('style');
  S.textContent='.sidebar,.main>header,.chat-pane,.mobile-toggle{display:none!important}.shell{grid-template-columns:1fr!important}'
   +'.stage-layout,.workspace-open .stage-layout{grid-template-columns:minmax(0,1fr)!important}.desk{display:block!important;grid-column:1!important;padding:22px 26px}'

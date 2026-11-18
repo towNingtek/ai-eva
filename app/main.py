@@ -12,7 +12,16 @@ TANGLE_LAB = os.getenv("TANGLE_LAB") == "1"
 if TANGLE_LAB:
     from app.lab import tangle_lab
 import chainlit.data as cl_data
+from chainlit.config import config as chainlit_config
 from chainlit.data.sql_alchemy import SQLAlchemyDataLayer
+
+# 正式法規工作區獨立 opt-in；不啟用試作入口或媒合流程。
+TANGLE_LAW_TASK = os.getenv("TANGLE_LAW_TASK") == "1"
+if TANGLE_LAW_TASK:
+    from app.apps.regulation_check import task as regulation_task
+
+    if not TANGLE_LAB:
+        chainlit_config.ui.custom_js = "/public/tangle-lab-overlay.js?v=law-task-1"
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import (
@@ -159,7 +168,13 @@ def _role_apps() -> Optional[dict]:
 
 async def _guard_app(app) -> bool:
     """dispatch 前的共同檢查：project 啟用矩陣（#127）＋角色（#308）。擋下時回訊息、回 False。"""
-    user = cl.user_session.get("user")
+    if TANGLE_LAW_TASK and app.id == "regulation_check":
+        # Reconnect can enter through a command/action before SSO role metadata is restored.
+        if _is_sso_user() and not cl.user_session.get("law_task_identity"):
+            await _load_sso_runtime()
+        user = _current_chainlit_user()
+    else:
+        user = cl.user_session.get("user")
     project = await _current_user_project(user)
     enabled = await _enabled_apps_for(project)
     if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
@@ -214,6 +229,45 @@ async def _app_actions() -> list[cl.Action]:
     ]
 
 
+async def _law_task_context():
+    runtime = cl.user_session.get("cms_runtime")
+    identity = cl.user_session.get("law_task_identity")
+    if not runtime or not identity:
+        await _load_sso_runtime()
+        runtime = cl.user_session.get("cms_runtime")
+        identity = cl.user_session.get("law_task_identity")
+    thread_id = cl.context.session.thread_id
+    if runtime and identity and thread_id:
+        return regulation_task.scope_path(identity, thread_id), runtime
+    return None
+
+
+async def _handle_app(app, payload, msg):
+    if TANGLE_LAW_TASK and app.id == "regulation_check":
+        ctx = await _law_task_context()
+        if ctx is None:
+            await cl.Message(content="⚠️ 請先從 CMS 重新進入 AI-Eva（法規檢核需要讀取你的專案）。").send()
+            return
+        await regulation_task.open_task(*ctx)
+    else:
+        await app.handle(payload, msg)
+
+
+if TANGLE_LAW_TASK:
+    @cl.on_window_message
+    async def route_window_message(data):
+        meta = data.get("tangle") if isinstance(data, dict) else None
+        if isinstance(meta, dict) and meta.get("kind") == "law_task":
+            if meta.get("action") not in ("get", "select", "new"):
+                return
+            ctx = await _law_task_context()
+            app = get_by_id("regulation_check")
+            if ctx and app and await _guard_app(app):
+                await regulation_task.handle_event(*ctx, meta, cl.user_session.get("judge_model"))
+        elif TANGLE_LAB and isinstance(meta, dict):
+            await tangle_lab.on_window_message(data)
+
+
 @cl.action_callback("open_app")
 async def open_app(action: cl.Action):
     """按下工具按鈕 → 直接跑那個 app（不必再送一次訊息）。"""
@@ -232,7 +286,7 @@ async def open_app(action: cl.Action):
     # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
     # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
     anchor = await cl.Message(content=f"▶ {app.label}").send()
-    await app.handle("", anchor)
+    await _handle_app(app, "", anchor)
 
 
 @cl.on_chat_resume
@@ -310,6 +364,8 @@ async def _load_sso_runtime():
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
     idn = sess["identity"]
+    if TANGLE_LAW_TASK and (idn.get("user_id") or idn.get("email")):
+        cl.user_session.set("law_task_identity", idn)
     # 階段2：依 project 帶對應 LiteLLM virtual key（用量分流到各 team）；無設定則 fallback 預設 key
     cl.user_session.set("llm_key", await project_registry.get_litellm_key(idn.get("project")))
     # #62 B：帶 SSO user_id 當 LiteLLM user 欄 → 帳號層 end-user 計量
@@ -652,7 +708,7 @@ async def on_message(msg: cl.Message):
             if not await _guard_app(app):
                 return
             logger.info("dispatch tool command → %s", app.id)
-            await app.handle(content, msg)
+            await _handle_app(app, content, msg)
             return
 
     # CMS 副駕模式（SSO 認證）：用該帳號 manifest 的工具跑 copilot tool-loop。
@@ -742,7 +798,7 @@ async def on_message(msg: cl.Message):
         return
 
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
-    await app.handle(content, msg)
+    await _handle_app(app, content, msg)
 
 
 @cl.action_callback("cms_confirm")
