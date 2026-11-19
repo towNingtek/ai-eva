@@ -195,18 +195,8 @@ async def handle(payload: str, msg: cl.Message) -> None:
     path = REPORT_DIR / f"法規檢核報告_{picked['uuid']}_{stamp}.md"
     path.write_text(md, encoding="utf-8")
 
-    hit = [f for f in result["findings"] if f["verdict"] == "觸發"]
-    def _arts(items): return len({(f["regulation"], f["article_no"]) for f in items})
-    violations = _arts([f for f in hit if f["section"] == "違規風險"])
-    reminders = _arts([f for f in hit if f["section"] == "合規提醒"])
-    gaps = _arts([f for f in result["findings"] if f["verdict"] in ("需補資訊", "需補語料")])
-    cov = result["coverage"]
-
-    summary = (f"✅ **{picked['name']}** 檢核完成（{result['elapsed']:.0f} 秒）\n\n"
-               f"🔴 違規風險 **{violations}** 條文　🟡 合規提醒 **{reminders}** 條文　"
-               f"📚 需補 **{gaps}** 條文\n\n"
-               f"逐條評估 {cov['evaluated']} 條管制條目，涵蓋 {len(cov['domains'])} 個法領域。"
-               + (f"\n判定模型：{judge_model}" if judge_model else ""))
+    stats = result_stats(result, picked, judge_model)
+    summary = stats["summary"]
 
     # 結果分兩則送，而且都不掛 parent_id：
     #   1. 子訊息在 Chainlit 會被收合，使用者要展開才看得到（E2E 實測踩到：
@@ -226,6 +216,28 @@ async def handle(payload: str, msg: cl.Message) -> None:
         logger.exception("報告檔附件送出失敗（報告已存在 %s）", path)
         await cl.Message(content=f"⚠️ 報告已產生但附件送出失敗，檔案位置：`{path}`").send()
 
+    await notify_result(picked, stats)
+
+
+def result_stats(result: dict, picked: dict, judge_model: str | None) -> dict:
+    hit = [f for f in result["findings"] if f["verdict"] == "觸發"]
+    def _arts(items): return len({(f["regulation"], f["article_no"]) for f in items})
+    violations = _arts([f for f in hit if f["section"] == "違規風險"])
+    reminders = _arts([f for f in hit if f["section"] == "合規提醒"])
+    gaps = _arts([f for f in result["findings"] if f["verdict"] in ("需補資訊", "需補語料")])
+    cov = result["coverage"]
+
+    summary = (f"✅ **{picked['name']}** 檢核完成（{result['elapsed']:.0f} 秒）\n\n"
+               f"🔴 違規風險 **{violations}** 條文　🟡 合規提醒 **{reminders}** 條文　"
+               f"📚 需補 **{gaps}** 條文\n\n"
+               f"逐條評估 {cov['evaluated']} 條管制條目，涵蓋 {len(cov['domains'])} 個法領域。"
+               + (f"\n判定模型：{judge_model}" if judge_model else ""))
+    return {"violations": violations, "reminders": reminders, "gaps": gaps,
+            "evaluated": cov["evaluated"], "domains": cov["domains"],
+            "elapsed": result["elapsed"], "summary": summary}
+
+
+async def notify_result(picked: dict, stats: dict) -> None:
     # PUSH：非即時流程的收尾。沒設 LINE 收件人就靜靜跳過（web 上已經看到結果了）。
     profile = await project_registry.get_project(YUNLIN_PROJECT)
     recipient = (profile or {}).get("line_recipient")
@@ -233,7 +245,7 @@ async def handle(payload: str, msg: cl.Message) -> None:
         await push.push_line(
             recipient,
             f"【法規檢核完成】{picked['name']}\n"
-            f"違規風險 {violations} 條文 / 合規提醒 {reminders} 條文 / 需補 {gaps} 條文\n"
+            f"違規風險 {stats['violations']} 條文 / 合規提醒 {stats['reminders']} 條文 / 需補 {stats['gaps']} 條文\n"
             f"完整報告請至 AI-Eva 下載。",
             source="regulation-check",
         )
