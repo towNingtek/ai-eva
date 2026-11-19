@@ -107,7 +107,9 @@
       for (const r of progress) {
         if (!r?.domain) continue;
         const tr = node('tr');
-        for (const value of [r.domain, r.total, r.hit, r.elapsed]) tr.append(node('td', value ?? '—'));
+        // Elapsed arrives as raw float seconds (e.g. 29.02004861831665); show whole seconds.
+        const secs = Number.isFinite(r.elapsed) ? Math.round(r.elapsed) : r.elapsed;
+        for (const value of [r.domain, r.total, r.hit, secs]) tr.append(node('td', value ?? '—'));
         body.append(tr);
       }
       table.append(head, body);

@@ -44,9 +44,11 @@ const server = http.createServer(async (req, res) => {
     await panel.getByRole('button',{name:'開始法規檢核'}).click();
     await waitAction('select');
     assert.deepEqual(await page.evaluate(() => events.find(e=>e.action==='select')), {kind:'law_task',action:'select',task_id:'task-1',uuid:'two'});
-    const r = {...s,status:'running',project:projects[1],progress:[{domain:'測試法領域',total:8,hit:1,elapsed:1.25}]};
+    const r = {...s,status:'running',project:projects[1],progress:[{domain:'測試法領域',total:8,hit:1,elapsed:29.02004861831665}]};
     await push(r);
     await panel.getByText('各法領域進度').waitFor();
+    // the progress table shows whole seconds, not the raw float
+    assert.deepEqual(await panel.locator('tbody tr').first().locator('td').allInnerTexts(), ['測試法領域','8','1','29']);
     const galaxy = panel.frameLocator('iframe[title="本次法規檢核星系"]');
     const domain = galaxy.locator('[data-kv-key="測試法領域"]');
     await domain.waitFor();
