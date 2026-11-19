@@ -92,7 +92,7 @@ function renderDomain(){let svg=document.getElementById('svg');svg.setAttribute(
   const st=kvSupp.has(name)?'supplemented':v.state,sel=kvSel===name,dim=!!(kvSel&&!sel);
   const g=el('g',{'data-kv-key':name,'data-kv-state':st,role:'button',tabindex:0,'aria-label':name,style:'cursor:pointer',opacity:dim?'.3':'1'});if(sel)g.setAttribute('data-kv-selected','');if(dim)g.setAttribute('data-kv-dim','');
   if(st==='supplemented'){dots(ang,v.evidence.length,dim);route(i,from,t,'mid',15,dim);svg.appendChild(g);drawMoon(g,t.x,t.y,11,'rule',sel);label(g,t.x,t.y,ang,name,'#d5e1e0','已補充・待重判','#b8e0dd',19,sel?16:0);}
-  else if(LIVE_LAW){route(i,from,t,v.state==='hit'?'mid':'unc',15,dim);svg.appendChild(g);drawMoon(g,t.x,t.y,11,'rule',sel);label(g,t.x,t.y,ang,name,'#d5e1e0',kvCount(v),'#8fcfc5',19,sel?16:0);}
+  else if(v.live){route(i,from,t,v.state==='hit'?'mid':'unc',15,dim);svg.appendChild(g);drawMoon(g,t.x,t.y,11,'rule',sel);label(g,t.x,t.y,ang,name,'#d5e1e0',kvCount(v),'#8fcfc5',19,sel?16:0);}
    else if(v.state==='hit'){dots(ang,v.evidence.length,dim);route(i,from,t,v.confidence,15,dim);svg.appendChild(g);g.appendChild(el('circle',{cx:t.x,cy:t.y,r:17,fill:'url(#kv-glow)'}));drawMoon(g,t.x,t.y,11,'rule',sel);
    const parts=[];if(v.count.risk)parts.push(v.count.risk+' 風險');if(v.count.note)parts.push(v.count.note+' 提醒');label(g,t.x,t.y,ang,name,'#d5e1e0',parts.join('・'),v.count.risk?'#e3c79c':'#8fcfc5',19,sel?16:0);}
   else if(v.state==='gap'){dots(ang,v.evidence.length,dim);route(i,from,t,'gap',15,dim);svg.appendChild(g);g.appendChild(el('circle',{cx:t.x,cy:t.y,r:27,fill:'url(#kv-fog)'}));const inner=el('g',{opacity:.5});drawMoon(inner,t.x,t.y,11,'rule',sel);g.appendChild(inner);
@@ -130,11 +130,12 @@ function kvBind(g,name,state){const go=()=>kvPick(name,state);
   window.addEventListener('pointerup',u=>{window.removeEventListener('pointermove',move);if(!dragging&&Math.hypot(u.clientX-x,u.clientY-y)<5)go()},{once:true})};
  g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}}}
 function kvPick(name,state){
- if(LIVE_LAW||state==='hit'||state==='gap'||kvSupp.has(name)){kvSel=name;kvPulse=null;
+ if(KV_P.law[name]?.live||state==='hit'||state==='gap'||kvSupp.has(name)){kvSel=name;kvPulse=null;
   if(!kvFocus){kvFocusT0=orbitTime;kvFocus=name;kvAnim(1)}else kvFocus=name}
  else{kvSel=null;kvPulse=name;if(kvFocus)kvAnim(0);setTimeout(()=>{if(kvPulse===name){kvPulse=null;render();buildParticles()}},700)}
  render();buildParticles();
- if(!LIVE_LAW)parent.postMessage({type:'tangle-relation',mode:'law',code:name,tag:name,subject:1,kind:'domain',state},location.origin)}
+ if(!LIVE_LAW)parent.postMessage({type:'tangle-relation',mode:'law',code:name,tag:name,subject:1,kind:'domain',state},location.origin);
+ else if(!KV_P.law[name]?.live)parent.postMessage({type:'tangle-law-domain',domain:name,state},location.origin)}
 // click on empty space (no drag) clears the selection
 (function(){const sv=document.getElementById('svg');let down=null;
  sv.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY}});
@@ -214,7 +215,7 @@ function renderFocus(key,e){const svg=document.getElementById('svg');svg.setAttr
   dg.appendChild(el('circle',{cx:d.x,cy:d.y,r:11,fill:d.risk?'url(#fx-risk)':'url(#fx-note)','pointer-events':'none'}));drawMoon(dg,d.x,d.y,5.2,d.risk?'need':'offer',false);return dg});
  // ── text: title + status on the satellite, project name, debris labels (placed to avoid everything) ──
  const parts=[];if(st==='hit'){if(v.count.risk)parts.push(v.count.risk+' 風險');if(v.count.note)parts.push(v.count.note+' 提醒')}
- const subT=LIVE_LAW?kvCount(v):st==='hit'?parts.join('・'):st==='gap'?'缺：'+v.missing:'已補充・待重判',subC=st==='hit'?(v.count.risk?'#e3c79c':'#8fcfc5'):st==='gap'?'#96a5a2':'#b8e0dd';
+ const subT=v.live?kvCount(v):st==='hit'?parts.join('・'):st==='gap'?'缺：'+v.missing:'已補充・待重判',subC=st==='hit'?(v.count.risk?'#e3c79c':'#8fcfc5'):st==='gap'?'#96a5a2':'#b8e0dd';
  const t1=el('text',{x:bc.x,y:bc.y-br-12/VZ,'text-anchor':'middle',fill:'#e4efed','font-size':fs(15),opacity:e.toFixed(3)});t1.textContent=key;g.appendChild(t1);
  const t2=el('text',{x:bc.x,y:bc.y+br+16/VZ,'text-anchor':'middle',fill:subC,'font-size':fs(11),opacity:e.toFixed(3)});t2.textContent=subT;g.appendChild(t2);
  const nm=el('text',{x:pc.x,y:pc.y+pr+16/VZ,'text-anchor':'middle',fill:'#9fb8b6','font-size':fs(11),stroke:'#060a10','stroke-width':3/VZ,'paint-order':'stroke'});nm.textContent=kvProjectName;planet.appendChild(nm);
@@ -258,14 +259,20 @@ const _lawRenderDomain=renderDomain;renderDomain=function(){_lawRenderDomain();c
  g.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};g.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(g)};
 
 // Live values never borrow demo evidence, risk classifications, or clause debris.
+// While running: per-domain progress only (live:true → simple satellites with 命中/檢核).
+// Finished: result.law is the real per-domain result in the demo-data shape, so the accepted drawing
+// (glow, evidence dots and light flow, gap fog, focus debris, pulses) is reused unchanged.
 if(LIVE_LAW)window.addEventListener('message',e=>{
  if(e.origin!==location.origin||e.source!==parent||e.data?.type!=='tangle-law-task')return;
  const s=e.data.snapshot;if(!s||!s.project)return;
- const law=Object.create(null);
- for(const p of Array.isArray(s.progress)?s.progress:[]){
+ const law=Object.create(null),full=s.result&&s.result.law&&typeof s.result.law==='object'?s.result.law:null;
+ if(full){for(const [d,v] of Object.entries(full)){if(!v||typeof v!=='object')continue;
+   if(v.state==='hit'&&KV_P.law[d]?.state!=='hit')LAW_PULSE[d]=performance.now();
+   law[d]={state:v.state,confidence:v.confidence,count:v.count||{},evidence:Array.isArray(v.evidence)?v.evidence:[],clauses:Array.isArray(v.clauses)?v.clauses:[],missing:v.missing||'',hit:v.hit,total:v.total}}}
+ else for(const p of Array.isArray(s.progress)?s.progress:[]){
   if(typeof p?.domain!=='string'||!p.domain)continue;
   if(p.hit>0&&!(KV_P.law[p.domain]?.hit>0))LAW_PULSE[p.domain]=performance.now();
-  law[p.domain]={state:p.hit>0?'hit':'checked',hit:p.hit,total:p.total,evidence:[],count:{},clauses:[]};
+  law[p.domain]={live:true,state:p.hit>0?'hit':'checked',hit:p.hit,total:p.total,evidence:[],count:{},clauses:[]};
  }
  kvDomains=Object.keys(law);kvProjectName=s.project.name||'';KV_P.law=law;
  if(kvFocus&&!law[kvFocus]){cancelAnimationFrame(kvFxRaf);kvFocus=null;kvSel=null;kvFx=0;document.getElementById('kvBack')?.classList.remove('on')}

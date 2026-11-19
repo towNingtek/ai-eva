@@ -234,7 +234,60 @@ def result_stats(result: dict, picked: dict, judge_model: str | None) -> dict:
                + (f"\n判定模型：{judge_model}" if judge_model else ""))
     return {"violations": violations, "reminders": reminders, "gaps": gaps,
             "evaluated": cov["evaluated"], "domains": cov["domains"],
-            "elapsed": result["elapsed"], "summary": summary}
+            "elapsed": result["elapsed"], "summary": summary,
+            "law": domain_view(result)}
+
+
+# 星圖每顆法領域衛星要畫的東西（光暈、證據點、光流、走進衛星後的條文碎片、缺資料霧）
+# 全部從這次的真實判定結果算出來，欄位形狀與試作站示範資料相同，畫法共用、不另寫一套。
+_DEBRIS_CAP = 12      # 走進衛星時最多畫幾顆條文碎片（示範資料最多 9）
+_EVIDENCE_CAP = 3     # 證據點／證據光流最多幾條
+
+
+def domain_view(result: dict) -> dict:
+    from app.regulations import standard
+    std = standard.load()
+    fields = {}
+    for q in std.get("clarify_questions") or []:     # first question of a domain names what is missing
+        if q.get("domain"):
+            fields.setdefault(q["domain"], q.get("field"))
+    gates = {}
+    for g in (result.get("coverage") or {}).get("gates") or []:
+        if g.get("gate") == "待確認" and g.get("law_domain"):
+            gates.setdefault(g["law_domain"], g)
+    view = {}
+    for domain in standard.covered_domains(std):
+        rows = [f for f in result["findings"] if f.get("law_domain") == domain]
+        hit = [f for f in rows if f["verdict"] == "觸發"]
+        if hit:
+            rank = {"high": 3, "medium": 2, "low": 1}
+            best = max((rank.get(f.get("confidence"), 1) for f in hit), default=1)
+            clauses, seen = [], set()
+            for f in sorted(hit, key=lambda f: f["section"] != "違規風險"):
+                k = (f["regulation"], f["article_no"])
+                if k in seen:
+                    continue
+                seen.add(k)
+                clauses.append({"law": f["regulation"], "no": f["article_no"], "tag": f.get("tag"),
+                                "situation": f.get("situation"),
+                                "kind": "risk" if f["section"] == "違規風險" else "note"})
+            evidence = []
+            for f in hit:
+                q = (f.get("evidence") or "").strip()
+                if q and f.get("evidence_verified") and q not in evidence:
+                    evidence.append(q[:40])
+            view[domain] = {"state": "hit", "confidence": {3: "high", 2: "mid", 1: "low"}[best],
+                            "count": {"risk": sum(c["kind"] == "risk" for c in clauses),
+                                      "note": sum(c["kind"] == "note" for c in clauses)},
+                            "evidence": evidence[:_EVIDENCE_CAP], "clauses": clauses[:_DEBRIS_CAP],
+                            "hit": len(hit), "total": len(rows)}
+        elif domain in gates or any(f["verdict"] == "需補資訊" for f in rows):
+            missing = fields.get(domain) or (gates.get(domain) or {}).get("missing") or "規模數字"
+            view[domain] = {"state": "gap", "missing": missing[:16], "evidence": [], "clauses": [],
+                            "hit": 0, "total": len(rows)}
+        else:
+            view[domain] = {"state": "na", "evidence": [], "clauses": [], "hit": 0, "total": len(rows)}
+    return view
 
 
 async def notify_result(picked: dict, stats: dict) -> None:

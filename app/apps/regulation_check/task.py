@@ -136,12 +136,17 @@ async def open_task(path: Path, runtime) -> None:
 
 async def handle_event(path: Path, runtime, data: dict, judge_model: str | None) -> None:
     action, task_id = data.get("action"), data.get("task_id")
-    if action not in ("get", "select", "new"):
+    if action not in ("get", "select", "new", "domain"):
         return
     task = _load(path)
     if not task:
         return
     _remember_context(path)
+    if action == "domain":
+        # Satellite clicked in the finished galaxy: explain that domain of THIS task in chat. Never re-judges.
+        if task["task_id"] == task_id and task["status"] == "done":
+            await _explain_domain(task, data.get("domain"))
+        return
     if action == "get":
         # Always return this chat's current task so older tabs recover after an explicit new.
         await _publish(task)
@@ -159,6 +164,32 @@ async def handle_event(path: Path, runtime, data: dict, judge_model: str | None)
             _save(path, task)
             _spawn(path, _run(path, task, runtime, judge_model))
     await _publish(task)
+
+
+async def _explain_domain(task: dict, domain) -> None:
+    v = ((task.get("result") or {}).get("law") or {}).get(domain) if isinstance(domain, str) else None
+    if not v:
+        return
+    name = (task.get("project") or {}).get("name", "")
+    head = f"**{domain}**（{name}・本次法規檢核）"
+    if v["state"] == "hit":
+        c = v.get("count") or {}
+        lines = [head, "",
+                 f"逐條判定 {v.get('total', 0)} 條，觸發 {v.get('hit', 0)} 條：違規風險 {c.get('risk', 0)} 條文、合規提醒 {c.get('note', 0)} 條文。"]
+        if v.get("evidence"):
+            lines += ["", "計畫書原文："] + [f"> 「{q}」" for q in v["evidence"]]
+        if v.get("clauses"):
+            lines += ["", "觸發的條文（走進衛星可看）："] + [
+                f"- {'🔴' if x['kind'] == 'risk' else '🟡'} {x['law']} {x['no']}" for x in v["clauses"]]
+    elif v["state"] == "gap":
+        lines = [head, "", f"這個法領域缺資料，無法判定：**{v.get('missing') or '規模數字'}**。計畫書沒寫，所以不推定觸發。"]
+    else:
+        lines = [head, "", f"逐條判定 {v.get('total', 0)} 條，計畫書沒有內容落入這個法領域的適用情境。"]
+    lines += ["", "完整內容請看本次的 `.md` 報告。AI 初篩，非正式法律意見。"]
+    try:
+        await cl.Message(content="\n".join(lines)).send()
+    except Exception:
+        logger.exception("Could not explain regulation domain")
 
 
 async def _run(path: Path, task: dict, runtime, judge_model: str | None) -> None:
