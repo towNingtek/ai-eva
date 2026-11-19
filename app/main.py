@@ -258,7 +258,7 @@ if TANGLE_LAW_TASK:
     async def route_window_message(data):
         meta = data.get("tangle") if isinstance(data, dict) else None
         if isinstance(meta, dict) and meta.get("kind") == "law_task":
-            if meta.get("action") not in ("get", "select", "new"):
+            if meta.get("action") not in ("get", "select", "new", "domain"):
                 return
             ctx = await _law_task_context()
             app = get_by_id("regulation_check")

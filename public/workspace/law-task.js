@@ -129,6 +129,12 @@
   let polling, closed = false;
   const stopPolling = () => { clearInterval(polling); polling = null; };
   window.addEventListener('pagehide', stopPolling);
+  // A satellite was clicked in the finished galaxy → ask Eva to explain that domain of THIS task (no re-judging).
+  window.addEventListener('message', e => {
+    if (e.origin !== location.origin || !frame || e.source !== frame.contentWindow) return;
+    if (e.data?.type !== 'tangle-law-domain' || typeof e.data.domain !== 'string' || !snapshot?.task_id) return;
+    parent.postMessage({tangle: {kind: 'law_task', action: 'domain', task_id: snapshot.task_id, domain: e.data.domain}}, location.origin);
+  });
   window.addEventListener('message', e => {
     if (e.origin !== location.origin || e.source !== parent) return;
     if (e.data?.type === 'tangle-ws-closed') { closed = true; stopPolling(); return; }
