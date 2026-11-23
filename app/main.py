@@ -4,6 +4,7 @@ import logging
 import os
 import tempfile
 from typing import Optional
+from uuid import uuid4
 
 import chainlit as cl
 
@@ -237,9 +238,15 @@ async def _app_actions() -> list[cl.Action]:
         return f"{a.icon} {app_label(a.id, a.label)}".replace("\ufe0f", "")
 
     return [
-        cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
+        cl.Action(name="open_app", payload={"app": a.id}, label=_label(a), id=_action_id(a))
         for a in candidates
     ]
+
+
+def _action_id(a) -> str:
+    """按鈕 DOM id（Chainlit 把 action.id 當 <button id>）。#237：public/custom.css 依前綴
+    `eva-app-<app_id>-` 畫「新」小標（badge=new）與舊版弱化外觀（badge=legacy）。尾碼保持每顆唯一。"""
+    return f"eva-app-{a.id}-{uuid4().hex[:8]}"
 
 
 async def _law_task_context():
@@ -284,7 +291,14 @@ if TANGLE_LAW_TASK:
 @cl.action_callback("open_app")
 async def open_app(action: cl.Action):
     """按下工具按鈕 → 直接跑那個 app（不必再送一次訊息）。"""
-    app_id = (action.payload or {}).get("app") or ""
+    await _open_app_by_id((action.payload or {}).get("app") or "")
+
+
+MATCH_PRESELECT_KEY = "match_preselect_a"   # #237：媒合面板預選 A（app/apps/match_analysis/task.py 讀）
+
+
+async def _open_app_by_id(app_id: str, preselect_a: Optional[str] = None) -> None:
+    """open_app 的本體；開場依 eva_open cookie 自動開啟（#237）也走這裡，等同按下工具按鈕。"""
     app = get_by_id(app_id)
     if app is None:
         await cl.Message(content=t("app.not_found", app_id=app_id)).send()
@@ -299,7 +313,25 @@ async def open_app(action: cl.Action):
     # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
     # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
     anchor = await cl.Message(content=t("app.opening", label=app_label(app.id, app.label))).send()
+    cl.user_session.set(MATCH_PRESELECT_KEY, preselect_a if app.id == "match_analysis" else None)
     await _handle_app(app, "", anchor)
+
+
+def _session_cookie() -> str:
+    try:
+        return (cl.context.session.environ or {}).get("HTTP_COOKIE", "") or ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+async def _auto_open_from_cookie() -> Optional[dict]:
+    """#237：/sso/handoff 帶 open=<app_id> → eva_open cookie → 開場直接開啟該工具（只生效一次）。"""
+    intent = sso_surface.consume_open(_session_cookie())
+    if not intent:
+        return None
+    logger.info("auto open from CMS → %s (a=%s)", intent["app"], bool(intent.get("a")))
+    await _open_app_by_id(intent["app"], preselect_a=intent.get("a"))
+    return intent
 
 
 @cl.on_chat_resume
@@ -462,6 +494,7 @@ async def on_start():
             content=prefix + t("welcome.sso", who=idn.get("email") or idn["project"]),
             actions=actions,
         ).send()
+        await _auto_open_from_cookie()
         return
 
     await cl.Message(content=t("welcome.guest"), actions=await _app_actions()).send()

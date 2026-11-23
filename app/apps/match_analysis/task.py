@@ -32,6 +32,7 @@ from uuid import uuid4
 import chainlit as cl
 
 from app.matching import cards, engine, flow, pair
+from app.matching import readiness as ready
 from app.settings import ROOT
 
 from . import handler
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 TASK_DIR = ROOT / "data" / "matching" / "tasks"
 KIND = "match_task"
-ACTIONS = ("get", "select", "new", "explain", "card_action", "invite")
+ACTIONS = ("get", "select", "new", "explain", "card_action", "invite", "readiness", "ready_answer")
 CARD_TOP_N = 3
 LIVE_VERSION = "live-match"
 DEFAULT_PROJECTS = "sechome"
@@ -149,11 +150,19 @@ def _new_task() -> dict:
             "cards": [], "card_state": {}, "run_id": None, "clarify": None}
 
 
-def _create(path: Path, runtime) -> dict:
+def _create(path: Path, runtime, preselect_a: str | None = None) -> dict:
     task = _new_task()
     _save(path, task)
-    _spawn(path, _list(path, task, runtime))
+    _spawn(path, _list(path, task, runtime, preselect_a))
     return task
+
+
+def _preselect(task: dict, a: str | None) -> bool:
+    """#237：從 CMS 帶 a=<uuid> 開啟 → 預選 A；只在該案在「可發起清單」裡才選（否則忽略）。"""
+    if isinstance(a, str) and a and a in (task.get("initiable") or ()):
+        task["a"] = a
+        return True
+    return False
 
 
 NO_INITIABLE = "你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。"
@@ -186,7 +195,7 @@ def _list_status(task: dict, final: bool) -> None:
                     error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {n} 個。")
 
 
-async def _list(path: Path, task: dict, runtime) -> None:
+async def _list(path: Path, task: dict, runtime, preselect_a: str | None = None) -> None:
     """#217：A 只列本站可發起媒合的案（list_match_initiable_projects）；對象清單仍用 list_my_projects，
     但本站的案排最前面、不受 LIST_LIMIT 截斷。initiable 工具不存在或 0 案 → 錯誤，不退回 list_my_projects。
 
@@ -213,6 +222,7 @@ async def _list(path: Path, task: dict, runtime) -> None:
         order = {u: i for i, u in enumerate(wanted)}
         task["projects"] = [{"uuid": u, "name": names[u]} for u in wanted if u in names]
         task["initiable"] = first if initiable is not None else list(wanted)
+        _preselect(task, preselect_a)
         missing = [u for u in wanted if u not in names]
         task["listing"] = bool(missing)
         _list_status(task, final=not missing)
@@ -272,11 +282,15 @@ async def _list(path: Path, task: dict, runtime) -> None:
 
 # ── 對外：開啟與事件 ──────────────────────────────────────────────────
 
-async def open_task(path: Path, runtime) -> dict:
-    """點工具區按鈕：有任務就接回（不重跑），沒有才建新的。"""
+async def open_task(path: Path, runtime, preselect_a: str | None = None) -> dict:
+    """點工具區按鈕：有任務就接回（不重跑），沒有才建新的。
+
+    preselect_a（#237，從 CMS 帶 a=）：新任務在清單回來後預選；接回的任務還在選案時也套用。"""
     task = _load(path)
     if task is None:
-        task = _create(path, runtime)
+        task = _create(path, runtime, preselect_a)
+    elif preselect_a and task.get("status") == "select" and _preselect(task, preselect_a):
+        _save(path, task)
     await _publish(task, opening=True)
     return task
 
@@ -304,6 +318,14 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
         if task["status"] == "done":
             await on_card(path, task, runtime, data)
         return
+    if action == "readiness":
+        # #238：選好 A 的當下先看資料夠不夠（只在選案時；不影響之後的 select）
+        if task["status"] == "select":
+            await check_readiness(path, task, runtime, data.get("a"), llm)
+        return
+    if action == "ready_answer":
+        _keep(asyncio.create_task(ready_answer(task, runtime, data)))
+        return
     if action == "new" and task["status"] not in ACTIVE_STATES:
         task = _create(path, runtime)
     elif action == "select" and task["status"] == "select":
@@ -318,6 +340,80 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
             _save(path, task)   # 先同步佔住，兩個分頁連點也只跑一次
             _spawn(path, _run(path, task, runtime, llm))
     await _publish(task)
+
+
+# ── #238 媒合準備度 ───────────────────────────────────────────────────
+
+_READY_CACHE: dict[tuple[str, str], dict] = {}   # (task_id, A) → 準備度（同一任務換回同一個 A 不重判）
+_BACKGROUND: set[asyncio.Task] = set()
+
+
+def _keep(job: asyncio.Task) -> None:
+    _BACKGROUND.add(job)
+    job.add_done_callback(_BACKGROUND.discard)
+
+
+def _can_be_a(task: dict, a) -> bool:
+    if not isinstance(a, str) or a not in {p["uuid"] for p in task.get("projects") or ()}:
+        return False
+    initiable = task.get("initiable")
+    return not initiable or a in initiable
+
+
+async def check_readiness(path: Path, task: dict, runtime, a, llm: Any = None) -> None:
+    """選好 A → 先回「檢查中」，背景用既有能力判斷（handler.judge_project）算四項準備度後推送。"""
+    if not _can_be_a(task, a):
+        return
+    cached = _READY_CACHE.get((task["task_id"], a))
+    if cached is not None:
+        task["readiness"] = copy.deepcopy(cached)
+        _save(path, task)
+        await _publish(task)
+        return
+    if (task.get("readiness") or {}).get("a") == a:
+        await _publish(task)   # 已在檢查／已有結果
+        return
+    task["readiness"] = {"a": a, "state": "checking"}
+    _save(path, task)
+    await _publish(task)
+    _keep(asyncio.create_task(_readiness_worker(path, task["task_id"], runtime, a, llm, _lang())))
+
+
+async def _readiness_worker(path: Path, task_id: str, runtime, a: str, llm: Any, lang: str) -> None:
+    try:
+        info = await handler.fetch_info(runtime, a)
+        if info is None:
+            result = {"a": a, "state": "error"}
+        else:
+            judged = await asyncio.to_thread(handler.judge_project, info,
+                                             llm if llm is not None else handler._default_llm())
+            result = ready.build(judged, info.get("philosophy_text") or "", a=a, lang=lang)
+            _READY_CACHE[(task_id, a)] = result
+    except Exception:  # noqa: BLE001 —— 準備度失敗不影響媒合
+        logger.exception("match task: 準備度判斷失敗 %s", a)
+        result = {"a": a, "state": "error"}
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task_id or cur.get("status") != "select":
+        return
+    if (cur.get("readiness") or {}).get("a") not in (None, a):
+        return   # 使用者已改選別的 A
+    cur["readiness"] = result
+    _save(path, cur)
+    await _publish(cur)
+
+
+async def ready_answer(task: dict, runtime, data: Mapping) -> dict:
+    """補問的一個回答：consent 為 true 才走既有寫回流程（不改原文，只附加）。"""
+    a = (task.get("readiness") or {}).get("a")
+    if not a or data.get("a") not in (None, a):
+        return {"result": "invalid"}
+    try:
+        return await ready.answer(runtime, uuid=a, key=str(data.get("key") or ""),
+                                  answer=str(data.get("answer") or ""), consent=data.get("consent") is True,
+                                  run_id=task.get("run_id"))
+    except Exception:  # noqa: BLE001
+        logger.exception("match task: 準備度寫回失敗 %s", a)
+        return {"result": "error"}
 
 
 def _validate(task: dict, a, targets) -> str | None:
@@ -787,5 +883,19 @@ async def open_from_tool() -> bool:
     install_window_router()
     from . import embed_route
     embed_route.install()
-    await open_task(*ctx)
+    await open_task(*ctx, preselect_a=take_preselect())
     return True
+
+
+PRESELECT_KEY = "match_preselect_a"   # app/main.py 開場依 eva_open cookie 自動開啟時放進 session（#237）
+
+
+def take_preselect() -> str | None:
+    """取出並清掉預選 A（只用一次）。"""
+    value = _session_get(PRESELECT_KEY)
+    if value:
+        try:
+            cl.user_session.set(PRESELECT_KEY, None)
+        except Exception:  # noqa: BLE001
+            pass
+    return value if isinstance(value, str) and value else None

@@ -5,7 +5,10 @@
 META = {
     "id": "match_analysis",
     "project": "sechome",
-    "label": "媒合分析",
+    "label": "尋找媒合夥伴",
+    # ai-eva#237：工具列排第一、加「新」小標（public/custom.css 依按鈕 id 畫）
+    "order": 0,
+    "badge": "new",
     "icon": "🧭",
     "cl_icon": "Compass",
     "is_default": False,

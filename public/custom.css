@@ -40,3 +40,27 @@ html.eva-handoff[lang="ja"] body::after { content: "AI 秘書に移動してい�
 html.eva-handoff[lang="ko"] body::after { content: "AI 비서로 이동하는 중…"; }
 html.eva-handoff.eva-handoff-out body::before,
 html.eva-handoff.eva-handoff-out body::after { opacity: 0; }
+
+/* ── ai-eva#237：媒合入口 ───────────────────────────────────────────
+ * 工具區按鈕的 DOM id 由 app/main.py _action_id() 產生：eva-app-<app_id>-<亂數>。
+ * 新版「尋找媒合夥伴」排第一並掛「新」徽章；舊版「即將下線」排最後、虛線框＋灰字弱化。 */
+button[id^="eva-app-match_analysis-"]::after {
+  content: "新";
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e8590c;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+}
+html[lang="en-US"] button[id^="eva-app-match_analysis-"]::after { content: "New"; }
+html[lang="ja"] button[id^="eva-app-match_analysis-"]::after { content: "新"; }
+html[lang="ko"] button[id^="eva-app-match_analysis-"]::after { content: "신규"; }
+button[id^="eva-app-project_match-"] {
+  border-style: dashed !important;
+  color: #8a8a8a !important;
+  opacity: .75;
+}

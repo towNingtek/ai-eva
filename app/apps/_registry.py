@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 Handler = Callable[[str, object], Awaitable[None]]
 
 DEFAULT_PROJECT = "yillkid"
+DEFAULT_ORDER = 100
 
 
 class App:
@@ -46,6 +47,9 @@ class App:
         self.inputs: list = meta.get("inputs", [])
         self.outputs: list = meta.get("outputs", [])
         self.ai: bool = bool(meta.get("ai", True))   # 是否屬 AI 功能（#120 工具矩陣要用）
+        # ai-eva#237：工具列排序（小的在前；同值照目錄順序）與外觀小標（"new"／"legacy"／None）
+        self.order: int = int(meta.get("order", DEFAULT_ORDER))
+        self.badge: str | None = meta.get("badge")
         self.handle: Handler = handle
 
     @property
@@ -96,10 +100,15 @@ def discover() -> dict[str, App]:
 def menu_apps() -> list[App]:
     """會出現在工具選單的 app（也給 Action 按鈕用）。"""
     discover()
-    return [
+    return _ordered([
         a for a in _APPS.values()
         if a.show_in_menu and a.enabled and not a.is_default
-    ]
+    ])
+
+
+def _ordered(apps: list[App]) -> list[App]:
+    """依 meta order 排（#237：尋找媒合夥伴第一、舊版媒合最後）；同 order 保持原順序（sorted 是穩定的）。"""
+    return sorted(apps, key=lambda a: a.order)
 
 
 # 平台內建 app 的 project — 通用 app（chat / search …）放這，不受啟用矩陣影響
@@ -166,10 +175,7 @@ def chainlit_commands(enabled: set[str] | None = None) -> list[dict]:
             }
             for a in menu_apps()
         ]
-    candidates = [
-        a for a in _APPS.values()
-        if a.show_in_menu and a.enabled and not a.is_default
-    ]
+    candidates = menu_apps()
     return [
         {
             "id": a.id,

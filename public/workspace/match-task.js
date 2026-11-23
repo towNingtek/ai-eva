@@ -20,6 +20,14 @@
       steps: ['讀取計畫', '判斷需要與能提供', '比對互補', '寫建議'], count: (n, t) => `（${n}/${t}）`, judging: '判斷中',
       stale: '沒有收到新進度，按這裡重新整理', listing: '其他專案名稱補齊中…',
       status: {CLARIFY_FIRST: '先補資料', EXPLORE: '可探索', ELIGIBLE: '可排序・未建議', RECOMMEND: '推薦', EXCLUDED: '不在範圍'},
+      ready: {title: '媒合準備度', checking: '正在看 A 的資料夠不夠…', icons: {ok: '✅', vague: '⚠', missing: '？'},
+        state: {ok: '足夠', vague: '不夠具體', missing: '還沒寫'},
+        items: {offer: '你能提供什麼', need: '你需要什麼', scale: '規模與時間', collab: '想怎麼合作'},
+        hint: '資料不夠也可以直接媒合；補完推薦會更準', complete: '資料完整，可以開始',
+        ask: '回答幾個問題（約 2 分鐘）', skip: '先直接媒合', other: '其他（自己寫）', stop: '先停在這',
+        consent: '要不要補進計畫理念（不會改原本寫的）', yes: '要，補進去', no: '不用', send: '送出',
+        otherLabel: '自己寫答案', step: (n, t) => `問題 ${n}／${t}`, answered: a => `你的回答：${a}`,
+        skipped: '好，直接勾選對象開始媒合。', stopped: '先停在這；隨時可以開始媒合。', done: '謝謝！可以開始媒合了。'},
       errors: {interrupted: '媒合已中斷，請按「開始新媒合」。', listFailed: '讀取專案清單失敗，請按「開始新媒合」再試。',
         notEnough: '媒合需要 A 加上至少 2 個對象，目前可用的專案不夠。',
         noInitiable: '你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。',
@@ -45,6 +53,16 @@
       judging: 'judging', stale: 'No new progress received. Click here to refresh.', listing: 'Loading the other project names…',
       status: {CLARIFY_FIRST: 'Add details first', EXPLORE: 'Worth exploring', ELIGIBLE: 'Rankable, not suggested',
         RECOMMEND: 'Recommended', EXCLUDED: 'Out of scope'},
+      ready: {title: 'Matching readiness', checking: 'Checking whether A has enough details…', icons: {ok: '✅', vague: '⚠', missing: '？'},
+        state: {ok: 'Enough', vague: 'Not specific enough', missing: 'Not written yet'},
+        items: {offer: 'What you can offer', need: 'What you need', scale: 'Scale and timing', collab: 'How you want to collaborate'},
+        hint: 'You can match right away even with missing details; filling them in makes suggestions more accurate',
+        complete: 'Details are complete. You can start.',
+        ask: 'Answer a few questions (about 2 minutes)', skip: 'Match right away', other: 'Other (write your own)', stop: 'Stop here for now',
+        consent: 'Add this to your project philosophy? (What you already wrote stays unchanged)', yes: 'Yes, add it', no: 'No thanks', send: 'Send',
+        otherLabel: 'Write your own answer', step: (n, t) => `Question ${n}/${t}`, answered: a => `Your answer: ${a}`,
+        skipped: 'OK. Pick the projects and start matching.', stopped: 'Stopped here. You can start matching any time.',
+        done: 'Thanks! You can start matching now.'},
       errors: {interrupted: 'Matching was interrupted. Press "Start a new match".',
         listFailed: 'Could not load the project list. Press "Start a new match" to try again.',
         notEnough: 'Matching needs A plus at least 2 projects, but not enough projects are available.',
@@ -70,6 +88,15 @@
       steps: ['プランを読む', '必要／提供を判定', '補完を比較', '提案を作成'], count: (n, t) => `（${n}/${t}）`, judging: '判定中',
       stale: '新しい進み具合が届いていません。ここを押して再読み込み', listing: 'ほかのプロジェクト名を読み込んでいます…',
       status: {CLARIFY_FIRST: '先に情報を補う', EXPLORE: '検討できる', ELIGIBLE: '順位付けのみ・提案なし', RECOMMEND: 'おすすめ', EXCLUDED: '対象外'},
+      ready: {title: 'マッチングの準備度', checking: 'A の情報が十分か確認しています…', icons: {ok: '✅', vague: '⚠', missing: '？'},
+        state: {ok: '十分', vague: '具体性が足りない', missing: 'まだ書かれていない'},
+        items: {offer: '提供できること', need: '必要としていること', scale: '規模と時期', collab: 'どう協力したいか'},
+        hint: '情報が足りなくてもそのままマッチングできます。補うと提案がより正確になります', complete: '情報はそろっています。開始できます',
+        ask: 'いくつかの質問に答える（約 2 分）', skip: 'このままマッチングする', other: 'その他（自分で書く）', stop: 'ここでやめておく',
+        consent: '計画の理念に追記しますか？（元の文章は変えません）', yes: 'はい、追記する', no: 'しない', send: '送信',
+        otherLabel: '自分で答えを書く', step: (n, t) => `質問 ${n}／${t}`, answered: a => `あなたの回答：${a}`,
+        skipped: '相手を選んでそのままマッチングを始めてください。', stopped: 'ここでやめました。いつでもマッチングを始められます。',
+        done: 'ありがとうございます。マッチングを始められます。'},
       errors: {interrupted: 'マッチングが中断されました。「新しいマッチングを開始」を押してください。',
         listFailed: 'プロジェクト一覧を読み込めませんでした。「新しいマッチングを開始」を押してもう一度お試しください。',
         notEnough: 'マッチングには A と 2 件以上の相手が必要ですが、利用できるプロジェクトが足りません。',
@@ -94,6 +121,15 @@
       steps: ['계획 읽기', '필요／제공 판단', '보완 비교', '제안 작성'], count: (n, t) => ` (${n}/${t})`, judging: '판단 중',
       stale: '새 진행 상황을 받지 못했습니다. 여기를 눌러 새로고침하세요.', listing: '다른 프로젝트 이름을 불러오는 중…',
       status: {CLARIFY_FIRST: '먼저 정보 보완', EXPLORE: '탐색 가능', ELIGIBLE: '순위만·제안 없음', RECOMMEND: '추천', EXCLUDED: '범위 밖'},
+      ready: {title: '매칭 준비도', checking: 'A의 정보가 충분한지 확인하는 중…', icons: {ok: '✅', vague: '⚠', missing: '？'},
+        state: {ok: '충분', vague: '구체적이지 않음', missing: '아직 작성되지 않음'},
+        items: {offer: '제공할 수 있는 것', need: '필요한 것', scale: '규모와 시기', collab: '원하는 협력 방식'},
+        hint: '정보가 부족해도 바로 매칭할 수 있습니다. 보완하면 추천이 더 정확해집니다', complete: '정보가 충분합니다. 시작할 수 있습니다',
+        ask: '몇 가지 질문에 답하기(약 2분)', skip: '바로 매칭하기', other: '기타(직접 작성)', stop: '여기서 멈추기',
+        consent: '계획 이념에 추가할까요?(원래 쓴 내용은 바꾸지 않습니다)', yes: '네, 추가하기', no: '아니요', send: '보내기',
+        otherLabel: '직접 답 쓰기', step: (n, t) => `질문 ${n}／${t}`, answered: a => `내 답변: ${a}`,
+        skipped: '대상을 선택하고 바로 매칭을 시작하세요.', stopped: '여기서 멈췄습니다. 언제든 매칭을 시작할 수 있습니다.',
+        done: '감사합니다! 이제 매칭을 시작할 수 있습니다.'},
       errors: {interrupted: '매칭이 중단되었습니다. "새 매칭 시작"을 누르세요.',
         listFailed: '프로젝트 목록을 불러오지 못했습니다. "새 매칭 시작"을 눌러 다시 시도하세요.',
         notEnough: '매칭에는 A와 최소 2개 대상이 필요하지만 사용할 수 있는 프로젝트가 부족합니다.',
@@ -160,6 +196,16 @@
       .live-match .mt-steps{font-size:12px}.live-match .mt-steps li{padding:2px 7px}}
     @media (prefers-reduced-motion:reduce){.live-match .mt-steps li[data-state="active"],.live-match .mt-fade{animation:none}}
     .live-match .mt-error{color:#a33}
+    /* #238 媒合準備度：選好 A 先看資料夠不夠；只提示、不擋開始 */
+    .live-match .mt-ready{border:1px solid #d8dee6;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+    .live-match .mt-ready ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 10px}
+    .live-match .mt-ready li[data-state="ok"]{color:#21714a}
+    .live-match .mt-ready li[data-state="vague"]{color:#8a5a00}
+    .live-match .mt-ready li[data-state="missing"]{color:#5f6b7a}
+    .live-match .mt-ready p{margin:0}
+    .live-match .mt-ready-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+    .live-match .mt-ready-q{font-weight:600}
+    .live-match .mt-ready input[type=text]{flex:1;min-width:160px;padding:5px 8px;border:1px solid #9aa5b1;border-radius:6px;font:inherit}
     .live-match .mt-note{color:#5f6b7a;font-size:12px}
     .live-match .mt-search{display:block;width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid #9aa5b1;border-radius:8px;font:inherit}
     .live-match .mt-box label.mt-pick{display:flex;align-items:center;gap:8px;margin:0;padding:3px 4px;border-radius:6px;cursor:pointer}
@@ -217,6 +263,8 @@
   // #232：沒有「更新進度」鈕；超過 STALE_MS 沒收到新進度才出現一行小字讓使用者手動重新整理。
   const STALE_MS = 30000;
   let staleTimer = null, stale = false, progressKey = null, draft = null, cardsFor = null;
+  // #238 準備度：面板自己的流程狀態（panel／ask／skip／stopped／done）；asked 記已向伺服器要過的 task+A
+  let ready = null, readyAsked = null;
   const send = (action, extra) => parent.postMessage({tangle: {
     kind: 'match_task', action,
     ...(snapshot?.task_id ? {task_id: snapshot.task_id} : {}),
@@ -313,11 +361,99 @@
     }
     filter();
     const hint = node('span', '', {class: 'mt-note'});
-    a.onchange = touch;
+    const readyBox = node('div', null, {class: 'mt-ready', 'data-match-readiness': ''});
+    const askReady = () => {
+      const want = a.value;
+      if (!want || pending || s.status !== 'select') return;
+      const k = `${s.task_id}|${want}`;
+      if (s.readiness?.a === want && s.readiness.state !== 'checking') { readyAsked = k; return; }
+      if (readyAsked === k) return;
+      readyAsked = k;
+      send('readiness', {a: want});
+    };
+    a.onchange = () => { touch(); askReady(); renderReady(readyBox, s, a.value, set); };
     a.disabled = !!pending;
-    controls.append(label, set, start, hint);
+    controls.append(label, readyBox, set, start, hint);
+    renderReady(readyBox, s, a.value, set);
+    askReady();
     if (s.listing) controls.append(node('p', T.listing, {class: 'mt-note', 'data-match-listing': ''}));
     sync();
+  }
+
+  // #238 媒合準備度：四項（✅／⚠／？）；不足時給兩個選擇，補問一次一題（最多 3 題）。永遠不擋「開始媒合」。
+  function renderReady(box, s, aId, targetsEl) {
+    box.replaceChildren();
+    const R = T.ready;
+    const r = s.readiness?.a === aId ? s.readiness : null;
+    if (!aId || !r || r.state === 'error') { box.hidden = true; return; }
+    box.hidden = false;
+    if (r.state !== 'ready') { box.append(node('p', R.checking, {class: 'mt-note', 'data-match-ready-checking': ''})); return; }
+    const tx = R;   // 面板依目前語言用自己的四語表（伺服器的 r.texts 與之同義，僅供其他前端用）
+    if (r.complete) { box.append(node('p', `✅ ${tx.complete}`, {'data-match-ready-complete': ''})); return; }
+    const key = `${s.task_id}|${aId}`;
+    if (ready?.key !== key) ready = {key, mode: 'panel', step: 0, picked: null, other: false};
+    const redo = () => renderReady(box, s, aId, targetsEl);
+    const list = node('ul', null, {'aria-label': R.title});
+    for (const it of r.items || []) {
+      const label = it.label || R.items[it.key] || it.key;
+      const li = node('li', `${R.icons[it.state] || ''} ${label}：${R.state[it.state] || ''}`,
+        {'data-match-ready': it.key, 'data-state': it.state});
+      list.append(li);
+    }
+    box.append(list, node('p', tx.hint, {class: 'mt-note', 'data-match-ready-msg': ''}));
+    const qs = (Array.isArray(r.questions) ? r.questions : []).slice(0, 3);
+    const stop = () => button(tx.stop, () => { ready.mode = 'stopped'; redo(); }, {'data-match-ready-stop': ''});
+    if (ready.mode === 'panel') {
+      const row = node('div', null, {class: 'mt-ready-row'});
+      if (qs.length) row.append(button(tx.ask, () => { ready.mode = 'ask'; ready.step = 0; ready.picked = null; redo(); },
+        {'data-match-ready-ask': ''}));
+      row.append(button(tx.skip, () => {
+        ready.mode = 'skip'; redo();
+        targetsEl.querySelector('input:not([disabled])')?.focus();
+      }, {'data-match-ready-skip': ''}));
+      box.append(row);
+      return;
+    }
+    if (ready.mode !== 'ask') {
+      const note = {skip: R.skipped, stopped: R.stopped, done: R.done}[ready.mode];
+      if (note) box.append(node('p', note, {class: 'mt-note', 'data-match-ready-note': ready.mode}));
+      return;
+    }
+    const q = qs[ready.step];
+    if (!q) { ready.mode = 'done'; redo(); return; }
+    const next = () => { ready.step++; ready.picked = null; ready.other = false; if (ready.step >= qs.length) ready.mode = 'done'; redo(); };
+    box.append(node('p', R.step(ready.step + 1, qs.length), {class: 'mt-note', 'data-match-ready-step': ''}),
+      node('p', q.text, {class: 'mt-ready-q', 'data-match-ready-question': q.key}));
+    if (ready.picked == null) {
+      const row = node('div', null, {class: 'mt-ready-row'});
+      (q.options || []).slice(0, 4).forEach((o, i) => row.append(button(o, () => { ready.picked = o; redo(); },
+        {'data-match-ready-opt': String(i)})));
+      row.append(button(tx.other, () => { ready.other = true; redo(); }, {'data-match-ready-other': ''}));
+      box.append(row);
+      if (ready.other) {
+        const own = node('div', null, {class: 'mt-ready-row'});
+        const input = node('input', null, {type: 'text', 'aria-label': R.otherLabel, 'data-match-ready-input': ''});
+        const go = button(R.send, () => { const v = input.value.trim(); if (v) { ready.picked = v; redo(); } },
+          {'data-match-ready-send': ''});
+        input.onkeydown = e => { if (e.key === 'Enter') go.click(); };
+        own.append(input, go);
+        box.append(own);
+        input.focus();
+      }
+      const row2 = node('div', null, {class: 'mt-ready-row'});
+      row2.append(stop());
+      box.append(row2);
+      return;
+    }
+    // #201：回答後問要不要補進計畫理念；同意才寫回（伺服器走既有寫回流程，只附加不改原文）
+    box.append(node('p', R.answered(ready.picked), {'data-match-ready-answer': ''}),
+      node('p', tx.consent, {class: 'mt-ready-q', 'data-match-ready-consent': ''}));
+    const row = node('div', null, {class: 'mt-ready-row'});
+    row.append(button(R.yes, () => {
+      send('ready_answer', {a: aId, key: q.key, answer: ready.picked, consent: true});
+      next();
+    }, {'data-match-ready-yes': ''}), button(R.no, next, {'data-match-ready-no': ''}), stop());
+    box.append(row);
   }
 
   function renderCompare(res) {
@@ -488,7 +624,8 @@
     if (status.textContent !== text) status.textContent = text;
     setTitle(s.a ? `${T.match} / ${nameOf(s.a)}` : T.match + T.workspace);
     watchStale(s);
-    const key = JSON.stringify([s.task_id, phase, s.projects, s.initiable, s.listing, s.error, !!pending, lang, stale]);
+    const key = JSON.stringify([s.task_id, phase, s.projects, s.initiable, s.listing, s.error, !!pending, lang, stale,
+      phase === 'select' ? s.readiness || null : null]);
     if (controlsKey !== key) {
       controlsKey = key;
       controls.replaceChildren();
