@@ -32,6 +32,7 @@ from uuid import uuid4
 import chainlit as cl
 
 from app.matching import cards, engine, flow, pair
+from app.matching import readiness as ready
 from app.settings import ROOT
 
 from . import handler
@@ -40,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 TASK_DIR = ROOT / "data" / "matching" / "tasks"
 KIND = "match_task"
-ACTIONS = ("get", "select", "new", "explain", "card_action", "invite")
+ACTIONS = ("get", "select", "new", "explain", "card_action", "invite", "readiness", "ready_answer")
 CARD_TOP_N = 3
 LIVE_VERSION = "live-match"
 DEFAULT_PROJECTS = "sechome"
@@ -304,6 +305,14 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
         if task["status"] == "done":
             await on_card(path, task, runtime, data)
         return
+    if action == "readiness":
+        # #238：選好 A 的當下先看資料夠不夠（只在選案時；不影響之後的 select）
+        if task["status"] == "select":
+            await check_readiness(path, task, runtime, data.get("a"), llm)
+        return
+    if action == "ready_answer":
+        _keep(asyncio.create_task(ready_answer(task, runtime, data)))
+        return
     if action == "new" and task["status"] not in ACTIVE_STATES:
         task = _create(path, runtime)
     elif action == "select" and task["status"] == "select":
@@ -318,6 +327,80 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
             _save(path, task)   # 先同步佔住，兩個分頁連點也只跑一次
             _spawn(path, _run(path, task, runtime, llm))
     await _publish(task)
+
+
+# ── #238 媒合準備度 ───────────────────────────────────────────────────
+
+_READY_CACHE: dict[tuple[str, str], dict] = {}   # (task_id, A) → 準備度（同一任務換回同一個 A 不重判）
+_BACKGROUND: set[asyncio.Task] = set()
+
+
+def _keep(job: asyncio.Task) -> None:
+    _BACKGROUND.add(job)
+    job.add_done_callback(_BACKGROUND.discard)
+
+
+def _can_be_a(task: dict, a) -> bool:
+    if not isinstance(a, str) or a not in {p["uuid"] for p in task.get("projects") or ()}:
+        return False
+    initiable = task.get("initiable")
+    return not initiable or a in initiable
+
+
+async def check_readiness(path: Path, task: dict, runtime, a, llm: Any = None) -> None:
+    """選好 A → 先回「檢查中」，背景用既有能力判斷（handler.judge_project）算四項準備度後推送。"""
+    if not _can_be_a(task, a):
+        return
+    cached = _READY_CACHE.get((task["task_id"], a))
+    if cached is not None:
+        task["readiness"] = copy.deepcopy(cached)
+        _save(path, task)
+        await _publish(task)
+        return
+    if (task.get("readiness") or {}).get("a") == a:
+        await _publish(task)   # 已在檢查／已有結果
+        return
+    task["readiness"] = {"a": a, "state": "checking"}
+    _save(path, task)
+    await _publish(task)
+    _keep(asyncio.create_task(_readiness_worker(path, task["task_id"], runtime, a, llm, _lang())))
+
+
+async def _readiness_worker(path: Path, task_id: str, runtime, a: str, llm: Any, lang: str) -> None:
+    try:
+        info = await handler.fetch_info(runtime, a)
+        if info is None:
+            result = {"a": a, "state": "error"}
+        else:
+            judged = await asyncio.to_thread(handler.judge_project, info,
+                                             llm if llm is not None else handler._default_llm())
+            result = ready.build(judged, info.get("philosophy_text") or "", a=a, lang=lang)
+            _READY_CACHE[(task_id, a)] = result
+    except Exception:  # noqa: BLE001 —— 準備度失敗不影響媒合
+        logger.exception("match task: 準備度判斷失敗 %s", a)
+        result = {"a": a, "state": "error"}
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task_id or cur.get("status") != "select":
+        return
+    if (cur.get("readiness") or {}).get("a") not in (None, a):
+        return   # 使用者已改選別的 A
+    cur["readiness"] = result
+    _save(path, cur)
+    await _publish(cur)
+
+
+async def ready_answer(task: dict, runtime, data: Mapping) -> dict:
+    """補問的一個回答：consent 為 true 才走既有寫回流程（不改原文，只附加）。"""
+    a = (task.get("readiness") or {}).get("a")
+    if not a or data.get("a") not in (None, a):
+        return {"result": "invalid"}
+    try:
+        return await ready.answer(runtime, uuid=a, key=str(data.get("key") or ""),
+                                  answer=str(data.get("answer") or ""), consent=data.get("consent") is True,
+                                  run_id=task.get("run_id"))
+    except Exception:  # noqa: BLE001
+        logger.exception("match task: 準備度寫回失敗 %s", a)
+        return {"result": "error"}
 
 
 def _validate(task: dict, a, targets) -> str | None:
