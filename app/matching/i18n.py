@@ -397,6 +397,36 @@ MSG: dict[str, dict[str, str]] = {
     "action.supplement": {"zh": "補資料", "en": "Add information", "ja": "情報をおぎなう", "ko": "정보 보완"},
     "action.invite": {"zh": "寄站內邀請", "en": "Send an invitation", "ja": "サイト内で招待を送る",
                       "ko": "사이트 내 초대 보내기"},
+    # 聊天裡的媒合摘要（task.summary，#229）
+    "summary.head": {"zh": "## 🧭 媒合星球：{a} × {n} 個指定對象",
+                     "en": "## 🧭 Matching galaxy: {a} × {n} selected project(s)",
+                     "ja": "## 🧭 マッチングの星系：{a} × 指定した相手 {n} 件",
+                     "ko": "## 🧭 매칭 성계: {a} × 지정한 대상 {n}개"},
+    "summary.pair": {"zh": "- **{name}**：{status}（互補候選 {c}・共同尋找第三方 {t}・可聯合或交流 {p}）",
+                     "en": "- **{name}**: {status} (complementary candidates {c} · seek a third party together {t}"
+                           " · can join forces or exchange {p})",
+                     "ja": "- **{name}**：{status}（補いあいの候補 {c}・いっしょに第三者をさがす {t}・連携や交流ができる {p}）",
+                     "ko": "- **{name}**: {status} (보완 후보 {c} · 함께 제3자 찾기 {t} · 연대·교류 가능 {p})"},
+    "summary.cards": {"zh": "工作區列出 {n} 張媒合建議卡：可收藏、略過、補資料；"
+                            "要聯絡對方請按卡片上的「寄站內邀請」並確認，Eva 不會自動寄出。",
+                      "en": "The workspace lists {n} match suggestion card(s): you can save, skip or add information. "
+                            "To contact the other side, press \"Send an invitation\" on the card and confirm; "
+                            "Eva never sends anything automatically.",
+                      "ja": "ワークスペースにマッチングの提案カードが {n} 枚あります。お気に入り・スキップ・情報をおぎなうことができます。"
+                            "相手に連絡するときは、カードの「サイト内で招待を送る」を押して確認してください。Eva が自動で送ることはありません。",
+                      "ko": "작업 공간에 매칭 제안 카드 {n}장이 있습니다. 저장, 건너뛰기, 정보 보완을 할 수 있습니다. "
+                            "상대에게 연락하려면 카드의 \"사이트 내 초대 보내기\"를 누르고 확인하세요. "
+                            "Eva는 자동으로 보내지 않습니다."},
+    "summary.explain": {"zh": "點星球上的衛星或一對，Eva 會用這次的結果說明（不重新判斷）。",
+                        "en": "Click a satellite or a pair in the galaxy and Eva will explain it using this result "
+                              "(without judging again).",
+                        "ja": "星系の衛星やペアを押すと、Eva が今回の結果をもとに説明します（判定のやりなおしはしません）。",
+                        "ko": "성계의 위성이나 한 쌍을 누르면 Eva가 이번 결과로 설명합니다(다시 판단하지 않습니다)."},
+    "summary.note": {"zh": "第一期不推薦、不自動聯絡；B1–B8 與方向是 AI 推論（未經 Owner 確認）。",
+                     "en": "Phase 1 does not recommend or contact anyone automatically; B1–B8 and the directions "
+                           "are AI inferences (not confirmed by the Owner).",
+                     "ja": "第 1 期は推薦も自動の連絡もしません。B1–B8 と方向は AI の推論です（Owner はまだ確認していません）。",
+                     "ko": "1기에는 추천하거나 자동으로 연락하지 않습니다. B1–B8과 방향은 AI 추론입니다(Owner 미확인)."},
     "writeback.ask": {"zh": "要把這段補充寫回計畫書嗎？",
                       "en": "Would you like to add this supplement to your project plan?",
                       "ja": "この補足を計画書に書きもどしますか？",
