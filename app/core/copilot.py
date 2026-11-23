@@ -16,6 +16,7 @@ import logging
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.core.llm import make_llm
+from app.i18n.llm import resolve_lang, with_output_language
 from app.modules.base import ModuleContext
 
 logger = logging.getLogger(__name__)
@@ -101,19 +102,22 @@ async def run_copilot(
     api_key: str | None = None,
     user: str | None = None,
     max_rounds: int = 4,
+    lang: str | None = None,
 ) -> dict:
     """跑一輪副駕對話。回 {"reply": str, "pending": {name,args}|None}。
 
     讀類工具直接執行；寫類工具（needs_confirm）→ **停下、回 pending**，
     由 caller 出確認 UI，使用者同意後再以 confirmed=True 重打（execute_confirmed）。
     runtime: 已 load(manifest) 的 ToolRuntime；history: 之前的 langchain messages。
+    lang: 閱讀者語言（#207）；省略 → 本連線語言（current_lang）。zh 不加輸出語言指示。
     """
+    lang = resolve_lang(lang)
     tools = runtime.visible_tools()
     llm = make_llm(api_key=api_key, user=user, streaming=False)
     if tools:
         llm = llm.bind_tools(tools)
 
-    msgs: list = [SystemMessage(content=COPILOT_SYSTEM)]
+    msgs: list = [SystemMessage(content=with_output_language(COPILOT_SYSTEM, lang))]
     # 防禦：history 若混進 None（或非訊息物件）會讓 langchain 轉換炸 NotImplementedError → 濾掉
     hist = [m for m in (history or []) if m is not None]
     if history and len(hist) != len(history or []):
@@ -141,7 +145,8 @@ async def run_copilot(
                 tool_call_id=tc_id,
             ))
 
-    final = await llm.ainvoke(msgs + [HumanMessage(content="請根據以上工具結果直接回答，不要再呼叫工具。")])
+    final = await llm.ainvoke(msgs + [HumanMessage(content=with_output_language(
+        "請根據以上工具結果直接回答，不要再呼叫工具。", lang))])
     return {"reply": (final.content or "").strip() or "（查了多輪仍未完成）", "pending": None}
 
 
