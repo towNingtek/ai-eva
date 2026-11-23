@@ -143,14 +143,23 @@ def _new_element(total: int) -> cl.CustomElement:
 
 
 async def load_batch(runtime, state: dict, element) -> None:
-    """載入下一批 BATCH_SIZE 筆；每抓到一筆就 update 一次元件（逐筆呈現）。"""
+    """載入下一批 BATCH_SIZE 筆。
+
+    只在「第一筆到」與「批次過半」時 update，加上開始與結束共最多 4 次（ai-eva#219）。
+    Chainlit 每次 element.update() 都會重新編譯 MatchPicker，React 整個重建元件，
+    打開中的原生 <select> 一定會被關掉 —— 原本逐筆 update 時，載入期間點開
+    「我的專案」會一直閃跳、自動關閉（townway#89 回饋 8）。第一筆到就先顯示，
+    使用者仍然很快看得到選項。
+    """
     uuids = state["uuids"]
     start = state["cursor"]
     batch = uuids[start:start + BATCH_SIZE]
     element.props.update({"loading": True, "error": ""})
     await element.update()
     failed = 0
-    for uuid in batch:
+    shown_first = False
+    midpoint = max(len(batch) // 2, 2)
+    for i, uuid in enumerate(batch, 1):
         try:
             project = await fetch_info(runtime, uuid)
         except Exception:  # noqa: BLE001
@@ -163,7 +172,10 @@ async def load_batch(runtime, state: dict, element) -> None:
             state["projects"][uuid] = project
             element.props["options"] = element.props["options"] + [_option(project)]
         element.props["loaded"] = state["cursor"]
-        await element.update()
+        last = i == len(batch)
+        if not last and ((project is not None and not shown_first) or i == midpoint):
+            shown_first = shown_first or project is not None
+            await element.update()
     element.props["loading"] = False
     if failed:
         element.props["error"] = f"有 {failed} 筆專案資料讀取失敗，已略過。"

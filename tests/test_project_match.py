@@ -170,10 +170,20 @@ class TestBatching:
         rt = StubRuntime(pool(25))
         fake, _ = open_panel(env, rt)
         counts = [len(s["options"]) for s in fake.snapshots if s.get("loading")]
-        assert 1 in counts and max(counts) == 20
+        assert 1 in counts and max(counts) <= 20
         assert counts == sorted(counts)  # 只增不減
         first = next(s for s in fake.snapshots if s["options"])
         assert len(first["options"]) == 1 and first["loading"] is True
+        assert len(fake.get("match_element").props["options"]) == 20
+
+    def test_few_updates_per_batch(self, env):
+        """ai-eva#219（townway#89 回饋 8）：Chainlit 每次 element.update() 都會重建元件，
+        打開中的「我的專案」下拉會被關掉。一批 20 筆只能 update 少數幾次，不能逐筆。"""
+        rt = StubRuntime(pool(25))
+        fake, _ = open_panel(env, rt)
+        assert len(fake.snapshots) <= 4, len(fake.snapshots)
+        asyncio.run(pm.match_more(Action({})))
+        assert len(options(fake)) == 25
 
     def test_info_failures_are_skipped_and_reported(self, env, caplog):
         rt = StubRuntime(pool(5), broken={"u002"})
@@ -200,11 +210,13 @@ class TestBatching:
         fake, _ = open_panel(env, rt)
         el = fake.get("match_element")
         assert el.props["pickerId"]
+        before = len(fake.snapshots)
         asyncio.run(pm.match_more(Action({"mine": "u001", "partners": ["u002", "u003"], "open": True})))
         assert el.props["mine"] == "u001"
         assert el.props["partners"] == ["u002", "u003"]
         assert el.props["open"] is True
-        assert all(s["mine"] == "u001" for s in fake.snapshots[-21:])
+        during = fake.snapshots[before:]
+        assert during and all(s["mine"] == "u001" for s in during)
 
 
 class TestRun:
