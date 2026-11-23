@@ -9,15 +9,33 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
+from app.assets_version import content_hash
+
 logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).resolve().parents[3]
 EMBED = ROOT / "public" / "workspace" / "embed.html"
-SCRIPT = '<script src="./match-task.js?v=live-match"></script>'
-MARK = "match-task.js"
+TASK_JS = ROOT / "public" / "workspace" / "match-task.js"
 # #215：建議卡（收藏／略過／補資料／寄站內邀請）由 public/tangle/match-cards.js 畫在任務面板下方
-CARDS_SCRIPT = '<script src="../tangle/match-cards.js?v=live-match"></script>'
+CARDS_JS = ROOT / "public" / "tangle" / "match-cards.js"
+MARK = "match-task.js"
 CARDS_MARK = "match-cards.js"
+
+
+# #240：版本參數＝檔案內容雜湊（啟動時算一次）。寫死的版本在內容改了之後網址不變，CDN 會一直給舊檔。
+def script_tags() -> tuple[str, str]:
+    """依目前檔案內容重算 match-task.js、match-cards.js 的 <script>（測試改檔後可重呼叫）。"""
+    return (f'<script src="./match-task.js?v={content_hash(TASK_JS)}"></script>',
+            f'<script src="../tangle/match-cards.js?v={content_hash(CARDS_JS)}"></script>')
+
+
+SCRIPT, CARDS_SCRIPT = script_tags()
+
+
+def refresh() -> None:
+    """重新計算 SCRIPT／CARDS_SCRIPT（檔案內容變了之後）。"""
+    global SCRIPT, CARDS_SCRIPT
+    SCRIPT, CARDS_SCRIPT = script_tags()
 
 
 def _add(html: str, script: str) -> str:

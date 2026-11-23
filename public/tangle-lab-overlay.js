@@ -1,5 +1,7 @@
 // Keep the site's original custom.js (brand / forced light theme) exactly as it is.
-(function(){var s=document.createElement("script");s.src="/public/custom.js?v=20261123return";document.head.appendChild(s)})();
+// #240: app/main.py loads this file as ?v=<own content hash>&c=<custom.js content hash>; use c so a changed
+// custom.js always gets a new URL past the CDN cache. Without c (config.toml / lab pages) keep the fixed version.
+(function(){var s=document.createElement("script");s.src="/public/custom.js?v=20261123return";try{var c=document.currentScript&&new URL(document.currentScript.src,location.href).searchParams.get("c");if(c&&/^[0-9a-f]{6,64}$/.test(c))s.src="/public/custom.js?v="+c}catch(e){}document.head.appendChild(s)})();
 // feat/tangle-lab: runs inside Chainlit's own UI (custom_js). Default page stays Chainlit.
 // When Eva sends CopilotFunction "tangle_workspace" (after the user picks 法規/媒合):
 //   - Chainlit's left session list collapses (remembered so it can be restored)
