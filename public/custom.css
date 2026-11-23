@@ -8,3 +8,35 @@
 #theme-toggle {
   display: none !important;
 }
+
+/* ── ai-eva#233：SSO 轉跳品牌過場 ───────────────────────────────────
+ * custom.js（<head> 同步 script）看到 eva_sso_hint cookie 就在 <html> 掛 .eva-handoff；
+ * <body> 一出現、React 還沒掛載時，這層就蓋住整個畫面（logo＋依語言文字），聊天室就緒後淡出。
+ * 外觀與 /sso/handoff 過場頁（app/surfaces/sso.py render_handoff_page）一致，不會全白。 */
+html.eva-handoff body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  background:
+    url("/public/logo_light.png") center calc(50% - 30px) / 180px auto no-repeat,
+    linear-gradient(160deg, #e3f3f1 0%, #c9e8e3 100%);
+  transition: opacity .3s ease;
+}
+html.eva-handoff body::after {
+  content: "正在帶你到 AI 秘書…";
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(50% + 32px);
+  z-index: 2147483647;
+  text-align: center;
+  color: #0f5f57;
+  font: 500 18px -apple-system, system-ui, "Noto Sans TC", sans-serif;
+  transition: opacity .3s ease;
+}
+html.eva-handoff[lang="en-US"] body::after { content: "Taking you to your AI secretary…"; }
+html.eva-handoff[lang="ja"] body::after { content: "AI 秘書に移動しています…"; }
+html.eva-handoff[lang="ko"] body::after { content: "AI 비서로 이동하는 중…"; }
+html.eva-handoff.eva-handoff-out body::before,
+html.eva-handoff.eva-handoff-out body::after { opacity: 0; }

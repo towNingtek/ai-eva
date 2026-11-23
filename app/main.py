@@ -447,7 +447,6 @@ async def on_start():
     if idn:
         # CMS 副駕模式
         runtime = cl.user_session.get("cms_runtime")
-        tools = [t["function"]["name"] for t in runtime.visible_tools()]
         # ai-eva#213：一進來就提醒未回覆的媒合邀請（每次從 CMS 重讀，不存副本；失敗靜默只記 log）
         reminder = await match_invites.build_invite_reminder(runtime)
         actions = await _app_actions()
@@ -459,8 +458,8 @@ async def on_start():
                 label=match_invites.text("action", reminder.lang),
             )] + actions
         await cl.Message(
-            content=prefix + t("welcome.sso", who=idn.get("email") or idn["project"],
-                               tools=", ".join(tools) or t("welcome.no_tools")),
+            # ai-eva#233：開場只講白話功能，不列 manifest 工具的程式名（工具在下方按鈕）
+            content=prefix + t("welcome.sso", who=idn.get("email") or idn["project"]),
             actions=actions,
         ).send()
         return
