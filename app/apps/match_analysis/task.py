@@ -6,6 +6,11 @@
 - 選 A 與 2–4 個指定對象 → 背景執行一次 B1–B8 判斷與關係／狀態（handler.judge_all + handler.analyze），
   結果整理成星圖可直接吃的格式（projects[].match[Bk].{role,evidence}、pairs[] 狀態與三種關係）。
 - 點星圖衛星／一對 → action=explain：只用本次已存的結果由 Eva 在對話說明，不重判。
+- #215 判斷完成後：先切段（#199）→ engine.match（#200）→ cards.build_cards（#202）出建議卡，
+  放在快照的 cards[]，由 public/tangle/match-cards.js 顯示在工作區。
+  卡片動作 action=card_action（op=favorite/skip/supplement）→ CMS /matching/card_action；
+  action=invite 只有面板確認框按「確定」後（confirmed=true）才呼叫 CMS /matching/invite，AI 不自動寄。
+  補資料 → Eva 在對話補問，回答後依 #201 問要不要寫回自己的計畫理念。全程寫進 #198 媒合紀錄。
 
 推送走既有 overlay 的 CopilotFunction("tangle_workspace")：mode=match、v=live-match、matchTask=快照。
 視窗訊息 {tangle:{kind:"match_task",...}} 由 install_window_router() 掛在 Chainlit 既有的
@@ -26,7 +31,7 @@ from uuid import uuid4
 
 import chainlit as cl
 
-from app.matching import pair
+from app.matching import cards, engine, flow, pair
 from app.settings import ROOT
 
 from . import handler
@@ -35,7 +40,8 @@ logger = logging.getLogger(__name__)
 
 TASK_DIR = ROOT / "data" / "matching" / "tasks"
 KIND = "match_task"
-ACTIONS = ("get", "select", "new", "explain")
+ACTIONS = ("get", "select", "new", "explain", "card_action", "invite")
+CARD_TOP_N = 3
 LIVE_VERSION = "live-match"
 DEFAULT_PROJECTS = "sechome"
 ACTIVE_STATES = {"loading", "running"}
@@ -125,7 +131,8 @@ def _spawn(path: Path, coro) -> None:
 def _new_task() -> dict:
     return {"task_id": uuid4().hex, "status": "loading", "projects": [], "a": None, "targets": [],
             "min_targets": handler.MIN_TARGETS, "max_targets": handler.MAX_TARGETS,
-            "progress": [], "result": None, "error": None}
+            "progress": [], "result": None, "error": None,
+            "cards": [], "card_state": {}, "run_id": None, "clarify": None}
 
 
 def _create(path: Path, runtime) -> dict:
@@ -163,7 +170,8 @@ async def open_task(path: Path, runtime) -> dict:
     return task
 
 
-async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None) -> None:
+async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
+                       identity: Mapping | None = None) -> None:
     action, task_id = data.get("action"), data.get("task_id")
     if action not in ACTIONS:
         return
@@ -181,6 +189,10 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None) -> N
         if task["status"] == "done":
             await explain(task, data)
         return
+    if action in ("card_action", "invite"):
+        if task["status"] == "done":
+            await on_card(path, task, runtime, data)
+        return
     if action == "new" and task["status"] not in ACTIVE_STATES:
         task = _create(path, runtime)
     elif action == "select" and task["status"] == "select":
@@ -189,7 +201,8 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None) -> N
             task["error"] = err
             _save(path, task)
         else:
-            task.update(status="running", a=data["a"], targets=list(data["targets"]), error=None)
+            task.update(status="running", a=data["a"], targets=list(data["targets"]), error=None,
+                        scope=_scope(identity))
             _save(path, task)   # 先同步佔住，兩個分頁連點也只跑一次
             _spawn(path, _run(path, task, runtime, llm))
     await _publish(task)
@@ -264,10 +277,18 @@ async def _run(path: Path, task: dict, runtime, llm: Any) -> None:
             infos[uuid] = info
             task["progress"].append({"uuid": uuid, "name": info["name"], "step": "fetch"})
         a, targets = infos[task["a"]], [infos[u] for u in task["targets"]]
+        # #199：判斷前先切段，之後的原文引用都指回段落。
+        segments = {u: flow.segment(info.get("philosophy_text") or "") for u, info in infos.items()}
         judged = await handler.judge_all([a, *targets], llm)
         task["progress"].append({"step": "judged", "count": len(judged)})
         results = handler.analyze(a, targets, judged)
-        task.update(status="done", result=galaxy(a, targets, judged, results))
+        task.update(result=galaxy(a, targets, judged, results))
+        try:
+            await _suggest(task, infos, judged, segments, llm)
+        except Exception:  # noqa: BLE001 —— 建議卡失敗不影響星圖結果
+            logger.exception("match task: 建議卡產生失敗")
+            task["cards"] = []
+        task.update(status="done")
         try:
             await cl.Message(content=summary(task)).send()
         except Exception:  # noqa: BLE001
@@ -279,6 +300,141 @@ async def _run(path: Path, task: dict, runtime, llm: Any) -> None:
         _save(path, task)
         _ACTIVE.pop(path, None)
         await _publish(task)
+
+
+def _scope(identity: Mapping | None) -> dict:
+    idn = dict(identity or _session_get("law_task_identity") or {})
+    if not idn:
+        user = current_user()
+        md = getattr(user, "metadata", None) or {}
+        idn = {"project": md.get("project"), "user_id": getattr(user, "identifier", None)}
+    tenant = idn.get("project") or idn.get("tenant_id") or "unknown"
+    initiator = idn.get("user_id") or idn.get("email") or "unknown"
+    return {"tenant": str(tenant), "initiator": str(initiator)}
+
+
+async def _suggest(task: dict, infos: Mapping[str, dict], judged: Mapping[str, dict],
+                   segments: Mapping[str, list], llm: Any) -> None:
+    """#215：判斷完成 → engine.match → build_cards → 建議卡進快照；選案／判斷／卡片寫紀錄。"""
+    scope = task.get("scope") or _scope(None)
+    site = scope["tenant"]
+    projects = {u: flow.engine_project(info, judged.get(u) or {}, site=site) for u, info in infos.items()}
+    pa, pts = projects[task["a"]], [projects[u] for u in task["targets"]]
+    matched = engine.match(pa, pts)
+    try:
+        built = cards.build_cards(matched, [pa, *pts], llm=llm, top_n=CARD_TOP_N)
+    except Exception:  # noqa: BLE001 —— LLM 失敗就只用程式依引擎結果組字（不臆測）
+        logger.exception("match task: 建議卡 LLM 失敗，改用程式組字")
+        built = cards.build_cards(matched, [pa, *pts], llm=None, top_n=0)
+    chunked = {u: {"segments": segments.get(u) or [],
+                   "chunks": flow.chk.label_chunks(projects[u]["philosophy"], judged.get(u) or {})}
+               for u in projects}
+    flow.annotate_cards(built, projects, chunked)
+    task["cards"] = flow.public_cards(built)
+    task["card_state"] = {}
+    task["progress"].append({"step": "cards", "count": len(built)})
+    task["run_id"] = await flow.record_run(matched, built, tenant=scope["tenant"],
+                                           initiator=scope["initiator"], actor=scope["initiator"])
+
+
+# ── #215 卡片動作／寄站內邀請／補資料 ─────────────────────────────────
+
+def _card(task: dict, target) -> dict | None:
+    return next((c for c in task.get("cards") or [] if c["target"] == target), None)
+
+
+async def _say(text: str) -> None:
+    try:
+        await cl.Message(content=text).send()
+    except Exception:  # noqa: BLE001
+        logger.exception("match task: 訊息送出失敗")
+
+
+async def on_card(path: Path, task: dict, runtime, data: Mapping) -> None:
+    """面板上的卡片按鈕（使用者親手按的）；寄邀請另須確認框按「確定」（confirmed=true）。"""
+    card = _card(task, data.get("target"))
+    if card is None:
+        return
+    target, a = card["target"], task["a"]
+    scope = task.get("scope") or {}
+    actor = scope.get("initiator")
+    state = task.setdefault("card_state", {}).setdefault(target, {})
+    if data.get("action") == "invite":
+        if data.get("confirmed") is not True:
+            # 未確認：不呼叫 CMS，只回快照讓面板顯示確認框。
+            state["invite"] = "confirm"
+            await flow.record_action(task.get("run_id"), "invite_requested", target=target, actor=actor)
+        elif state.get("invite") == "sent":
+            return
+        else:
+            res = await flow.send_invite(runtime, project_uuid=a, target_project_uuid=target, confirmed=True)
+            ok = res.get("status") == "ok"
+            state["invite"] = "sent" if ok else "error"
+            await flow.record_action(task.get("run_id"), "invite", target=target, actor=actor,
+                                     payload={"result": res.get("status"), "reason": res.get("reason")})
+            await _say(f"已寄出站內邀請給「{card['name']}」。" if ok
+                       else f"站內邀請沒有寄出（{res.get('reason') or res.get('status')}），請稍後再試。")
+    else:
+        op = data.get("op")
+        if op not in flow.CARD_ACTIONS:
+            return
+        res = await flow.card_action(runtime, action=op, project_uuid=a, target_project_uuid=target)
+        state[op] = res.get("status") == "ok"
+        await flow.record_action(task.get("run_id"), op, target=target, actor=actor,
+                                 payload={"result": res.get("status"), "reason": res.get("reason")})
+        if op == flow.SUPPLEMENT:
+            question = card["fields"].get(cards.F_CONFIRM) or "請補充這次合作還需要確認的事。"
+            task["clarify"] = {"target": target, "uuid": a, "question": question}
+            await _say(f"**補資料｜{card['name']}**\n\n{question}\n\n請直接在對話回覆，Eva 會記在這次媒合。")
+    _save(path, task)
+    await _publish(task)
+
+
+async def answer_clarify(path: Path, runtime, answer: str, ask) -> dict | None:
+    """補資料的回答：問要不要寫回自己可管理那案的計畫理念（#201），同意才 append_philosophy。"""
+    task = _load(path)
+    pending = (task or {}).get("clarify")
+    if not pending or not (answer or "").strip():
+        return None
+    task["clarify"] = None
+    _save(path, task)
+    out = await flow.writeback_with_record(runtime, task.get("run_id"), uuid=pending["uuid"],
+                                           question=pending["question"], answer=answer, ask=ask)
+    task = _load(path) or task
+    task.setdefault("card_state", {}).setdefault(pending["target"], {})["supplement"] = out.get("result")
+    _save(path, task)
+    msg = {"ok": "已把補充附加到你的計畫理念（只附加、不改寫原文）。",
+           "declined": "好的，補充只留在這次媒合紀錄，不寫回計畫書。",
+           "not_manageable": "已記下補充；這個計畫不是你能管理的，所以不寫回。",
+           }.get(out.get("result"), "補充已記下，但寫回計畫書沒有成功，請稍後再試。")
+    await _say(msg)
+    await _publish(task)
+    return out
+
+
+async def _ask_user(prompt: str):
+    try:
+        res = await cl.AskUserMessage(content=prompt, timeout=300).send()
+    except Exception:  # noqa: BLE001
+        logger.exception("match task: 詢問寫回失敗")
+        return None
+    if isinstance(res, Mapping):
+        return res.get("output") or res.get("content")
+    return getattr(res, "output", None) or getattr(res, "content", None)
+
+
+async def on_text(text: str) -> bool:
+    """對話文字：若有待回答的補資料就接手（回 True）；否則交還原本的處理。"""
+    if not (text or "").strip() or not enabled_for(current_project()):
+        return False
+    ctx = context()
+    if ctx is None:
+        return False
+    task = _load(ctx[0])
+    if not task or not task.get("clarify"):
+        return False
+    await answer_clarify(*ctx, text, _ask_user)
+    return True
 
 
 # ── Eva 說明（只用已存結果，不重判） ──────────────────────────────────
@@ -295,6 +451,9 @@ def summary(task: dict) -> str:
         c = p["counts"]
         lines.append(f"- **{names.get(p['pb'], p['pb'])}**：{p['status_text']}"
                      f"（互補候選 {c['complement']}・共同尋找第三方 {c['third']}・可聯合或交流 {c['peer']}）")
+    if task.get("cards"):
+        lines += ["", f"工作區列出 {len(task['cards'])} 張媒合建議卡：可收藏、略過、補資料；"
+                      "要聯絡對方請按卡片上的「寄站內邀請」並確認，Eva 不會自動寄出。"]
     lines += ["", "點星球上的衛星或一對，Eva 會用這次的結果說明（不重新判斷）。",
               "第一期不推薦、不自動聯絡；B1–B8 與方向是 AI 推論（未經 Owner 確認）。"]
     return "\n".join(lines)
@@ -436,7 +595,7 @@ async def on_window_message(data) -> bool:
         return True
     ctx = context()
     if ctx:
-        await handle_event(*ctx, meta)
+        await handle_event(*ctx, meta, identity=_session_get("law_task_identity"))
     return True
 
 

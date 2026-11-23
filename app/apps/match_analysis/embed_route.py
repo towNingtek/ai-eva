@@ -15,13 +15,22 @@ ROOT = Path(__file__).resolve().parents[3]
 EMBED = ROOT / "public" / "workspace" / "embed.html"
 SCRIPT = '<script src="./match-task.js?v=live-match"></script>'
 MARK = "match-task.js"
+# #215：建議卡（收藏／略過／補資料／寄站內邀請）由 public/tangle/match-cards.js 畫在任務面板下方
+CARDS_SCRIPT = '<script src="../tangle/match-cards.js?v=live-match"></script>'
+CARDS_MARK = "match-cards.js"
+
+
+def _add(html: str, script: str) -> str:
+    at = html.rfind("</body>")
+    return html + script if at < 0 else html[:at] + script + html[at:]
 
 
 def inject(html: str) -> str:
-    if MARK in html:
-        return html
-    at = html.rfind("</body>")
-    return html + SCRIPT if at < 0 else html[:at] + SCRIPT + html[at:]
+    if MARK not in html:
+        html = _add(html, SCRIPT)
+    if CARDS_MARK not in html:
+        html = _add(html, CARDS_SCRIPT)
+    return html
 
 
 def wants(query) -> bool:
