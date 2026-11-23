@@ -21,7 +21,7 @@ if TANGLE_LAW_TASK:
     from app.apps.regulation_check import task as regulation_task
 
     if not TANGLE_LAB:
-        chainlit_config.ui.custom_js = "/public/tangle-lab-overlay.js?v=law-task-1"
+        chainlit_config.ui.custom_js = "/public/tangle-lab-overlay.js?v=law-task-2"
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import (

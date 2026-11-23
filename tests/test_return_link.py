@@ -159,3 +159,14 @@ def test_every_custom_js_loader_uses_the_same_version():
     want = re.search(r'custom_js = "(/public/custom\.js\?v=[^"]+)"', cfg).group(1)
     overlay = open("public/tangle-lab-overlay.js", encoding="utf-8").read()
     assert f's.src="{want}"' in overlay, want
+
+
+def test_overlay_version_bumped_with_its_content():
+    """CDN 依網址快取：overlay 內容改了（載入的 custom.js 版本）但 overlay 自己的 ?v= 沒改，
+    使用者會一直拿到舊 overlay（beta 實測 cf-cache-status: HIT）。overlay 的版本參數必須跟著
+    它載入的 custom.js 版本一起登記在這裡，改其中一個就要改另一個。"""
+    main = open("app/main.py", encoding="utf-8").read()
+    overlay = open("public/tangle-lab-overlay.js", encoding="utf-8").read()
+    loads = re.search(r's\.src="/public/custom\.js\?v=([^"]+)"', overlay).group(1)
+    own = re.search(r'tangle-lab-overlay\.js\?v=([^"]+)"', main).group(1)
+    assert (own, loads) == ("law-task-2", "20261123return"), (own, loads)
