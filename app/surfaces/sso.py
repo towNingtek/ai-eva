@@ -23,10 +23,10 @@ import os
 import asyncpg
 from chainlit.server import app as fastapi_app
 from fastapi import HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.auth import issuers
-from app.i18n import SESSION_KEY as LANG_KEY, chainlit_locale, normalize_lang
+from app.i18n import SESSION_KEY as LANG_KEY, chainlit_locale, normalize_lang, t
 from app.tools.runtime import ToolRuntime
 
 logger = logging.getLogger(__name__)
@@ -176,9 +176,72 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
     return None
 
 
+# ── ai-eva#233：轉跳過場 ─────────────────────────────────────────────
+# 從 CMS 點 AI 秘書 → 驗章、抓 manifest、Chainlit SPA 載入，實測約 2 秒全白。
+# 瀏覽器導覽（Accept 含 text/html）第一次打 /sso/handoff 時先回一張品牌過場頁（logo＋「正在帶你到
+# AI 秘書…」，依語言），頁面再自己轉到 ?go=1 做真正的驗章＋303 → /；後端處理期間畫面停在過場頁。
+# 到了 / 之後由 custom.css（#root 還空時）＋ custom.js（SSO splash）接手，同一套外觀，不會閃白。
+# 非瀏覽器（API／測試，Accept 不含 text/html）或 go=1 → 直接走原本的 303。
+_HANDOFF_BG = "linear-gradient(160deg,#e3f3f1 0%,#c9e8e3 100%)"
+_HANDOFF_FG = "#0f5f57"
+
+
+def _token_lang(token: str, accept_language: str = "") -> str:
+    """過場頁用的語言：讀 token 的 lang claim（**未驗章，只拿來選顯示文字**），沒有就看 Accept-Language。"""
+    try:
+        import jwt
+        claims = jwt.decode(token, options={"verify_signature": False})
+        if claims.get("lang"):
+            return normalize_lang(claims.get("lang"))
+    except Exception:  # noqa: BLE001 —— 壞 token 交給 go=1 那一步回 403
+        pass
+    return normalize_lang((accept_language or "").split(",")[0].split("-")[0].strip().lower() or None)
+
+
+def render_handoff_page(lang: str, next_url: str) -> str:
+    """品牌過場頁 HTML（logo＋依語言的「正在帶你到 AI 秘書…」），載入即轉到 next_url。"""
+    import html as _html
+    lang = normalize_lang(lang)
+    text = _html.escape(t("handoff.loading", lang=lang))
+    loc = _html.escape(chainlit_locale(lang), quote=True)
+    nxt_attr = _html.escape(next_url, quote=True)
+    nxt_js = json.dumps(next_url).replace("<", "\\u003c")
+    return f"""<!doctype html>
+<html lang="{loc}"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>AI Eva</title>
+<noscript><meta http-equiv="refresh" content="0;url={nxt_attr}"></noscript>
+<style>
+html,body{{margin:0;height:100%;background:{_HANDOFF_BG};}}
+.eva-handoff{{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+  color:{_HANDOFF_FG};font:500 18px -apple-system,system-ui,'Noto Sans TC',sans-serif;}}
+.eva-handoff img{{width:180px;max-width:50vw;height:auto;}}
+.eva-dots{{display:flex;gap:6px}}.eva-dots i{{width:8px;height:8px;border-radius:50%;background:{_HANDOFF_FG};opacity:.3;
+  animation:eva-dot 1s infinite ease-in-out}}.eva-dots i:nth-child(2){{animation-delay:.15s}}.eva-dots i:nth-child(3){{animation-delay:.3s}}
+@keyframes eva-dot{{50%{{opacity:1}}}}
+</style></head>
+<body><div class="eva-handoff" role="status" aria-live="polite">
+<img src="/public/logo_light.png" alt="AI Eva"><div>{text}</div><div class="eva-dots"><i></i><i></i><i></i></div>
+</div>
+<script>location.replace({nxt_js});</script>
+</body></html>"""
+
+
 @fastapi_app.get("/sso/handoff")
-async def sso_handoff(token: str, request: Request, refresh_token: str | None = None):
+async def sso_handoff(token: str, request: Request, refresh_token: str | None = None, go: int = 0):
     """CMS 轉址進來：?token=<RS256 handoff>。驗過 → 種 cookie → 轉址進 /。"""
+    if not go and "text/html" in request.headers.get("accept", ""):
+        from urllib.parse import urlencode
+        params = {"token": token, "go": "1"}
+        if refresh_token:
+            params["refresh_token"] = refresh_token
+        page = render_handoff_page(
+            _token_lang(token, request.headers.get("accept-language", "")),
+            "/sso/handoff?" + urlencode(params),
+        )
+        # token 在網址上：不快取、不帶 referrer
+        return HTMLResponse(page, headers={"Cache-Control": "no-store", "Referrer-Policy": "no-referrer"})
     try:
         sess = await establish_sso_session(token, refresh_token)
     except Exception as e:  # noqa: BLE001

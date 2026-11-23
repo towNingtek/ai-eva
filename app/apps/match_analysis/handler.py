@@ -117,14 +117,25 @@ def _status_text(status: str, lang: Any = None) -> str:
 
 # ── CMS ───────────────────────────────────────────────────────────────
 
-async def list_uuids(runtime) -> list[str]:
+async def list_items(runtime) -> list[dict]:
+    """list_my_projects → [{uuid, name}]（#232：CMS 有給名稱就帶著，清單可先顯示；只給 uuid 時 name 為空）。"""
     result = await runtime.execute("list_my_projects", {})
     if result.get("status") != "ok":
         reason = result.get("reason") or result.get("error") or result.get("status") or "unknown"
         raise CmsError(f"list_my_projects: {reason}")
     data = _data(result)
-    uuids = data.get("projects", []) if isinstance(data, dict) else []
-    return list(dict.fromkeys(u for u in uuids if isinstance(u, str) and u))
+    items = data.get("projects", []) if isinstance(data, dict) else []
+    out: dict[str, dict] = {}
+    for item in items if isinstance(items, list) else []:
+        uuid = item.get("uuid") if isinstance(item, dict) else item
+        if isinstance(uuid, str) and uuid and uuid not in out:
+            name = plain(item.get("name")) if isinstance(item, dict) else ""
+            out[uuid] = {"uuid": uuid, "name": name}
+    return list(out.values())
+
+
+async def list_uuids(runtime) -> list[str]:
+    return [p["uuid"] for p in await list_items(runtime)]
 
 
 async def fetch_info(runtime, uuid: str) -> dict | None:
@@ -205,7 +216,8 @@ def judge_project(project: dict, llm: Any = None) -> dict:
     return capability.analyze(project.get("philosophy_text") or plain(project.get("philosophy")), llm=llm)
 
 
-async def judge_all(projects: list[dict], llm: Any = None) -> dict[str, dict]:
+async def judge_all(projects: list[dict], llm: Any = None, on_judged: Any = None) -> dict[str, dict]:
+    """逐案判 B1–B8；on_judged(project, result)（async）在每判完一案後呼叫（#232 逐案推送進度）。"""
     llm = llm if llm is not None else _default_llm()
     out: dict[str, dict] = {}
     for p in projects:
@@ -216,6 +228,11 @@ async def judge_all(projects: list[dict], llm: Any = None) -> dict[str, dict]:
         except Exception:  # noqa: BLE001 —— 判斷失敗 = 全部無依據（不臆測），不中斷整批
             logger.exception("match_analysis: B1–B8 判斷失敗 %s", p["uuid"])
             out[p["uuid"]] = capability.judge("", {})
+        if on_judged is not None:
+            try:
+                await on_judged(p, out[p["uuid"]])
+            except Exception:  # noqa: BLE001 —— 推送進度失敗不影響判斷
+                logger.debug("match_analysis: on_judged failed", exc_info=True)
     return out
 
 

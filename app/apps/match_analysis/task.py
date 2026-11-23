@@ -45,6 +45,7 @@ CARD_TOP_N = 3
 LIVE_VERSION = "live-match"
 DEFAULT_PROJECTS = "sechome"
 ACTIVE_STATES = {"loading", "running"}
+LIST_CONCURRENCY = 4      # #232 清單背景補齊名稱時同時讀幾案
 ROLE = {pair.NEED: "need", pair.OFFER: "offer", pair.BOTH: "both", pair.NONE: "none"}
 
 _ACTIVE: dict[Path, asyncio.Task] = {}
@@ -158,9 +159,40 @@ def _create(path: Path, runtime) -> dict:
 NO_INITIABLE = "你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。"
 
 
+def _release(path: Path) -> None:
+    """worker 結束：只釋放自己（「開始新媒合」／選定後可能已換成別的 worker）。"""
+    me = asyncio.current_task()
+    if _ACTIVE.get(path) is me or me is None:
+        _ACTIVE.pop(path, None)
+
+
+def _current(path: Path, task: dict) -> dict | None:
+    """背景補齊時重讀存檔：任務已換（新媒合）或已離開選案（開始判斷）就回 None，不覆蓋。"""
+    try:
+        cur = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if cur.get("task_id") != task["task_id"] or cur.get("status") not in ("loading", "select"):
+        return None
+    return cur
+
+
+def _list_status(task: dict, final: bool) -> None:
+    n = len(task["projects"])
+    if n >= 1 + handler.MIN_TARGETS:
+        task.update(status="select", error=None)
+    elif final:
+        task.update(status="error",
+                    error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {n} 個。")
+
+
 async def _list(path: Path, task: dict, runtime) -> None:
     """#217：A 只列本站可發起媒合的案（list_match_initiable_projects）；對象清單仍用 list_my_projects，
-    但本站的案排最前面、不受 LIST_LIMIT 截斷。initiable 工具不存在或 0 案 → 錯誤，不退回 list_my_projects。"""
+    但本站的案排最前面、不受 LIST_LIMIT 截斷。initiable 工具不存在或 0 案 → 錯誤，不退回 list_my_projects。
+
+    #232：清單先用兩個清單工具回來的名稱立即推送（可選），沒有名稱的案才在背景逐案用 get_project_info 補齊，
+    每補到一案推送一次；不再等每案都讀完才可選。"""
+    stale = bg = False   # stale：任務已被換掉／已開始判斷，不再寫入這份；bg：已進入背景補齊
     try:
         if handler.has_manifest(runtime):
             initiable = await handler.list_initiable(runtime)
@@ -171,27 +203,71 @@ async def _list(path: Path, task: dict, runtime) -> None:
             # 沒有 manifest 的 runtime（離線測試替身，非 CMS 連線）沒有站別可言：清單全部可當 A。
             initiable = None
         first = [p["uuid"] for p in initiable or ()]
-        projects = await handler.load_projects(runtime, first=first)
-        listed = []
-        for p in initiable or ():   # 本站的案排最前面；get_project_info 讀不到時用 CMS 給的名稱，仍可當 A
-            info = projects.pop(p["uuid"], None)
-            listed.append({"uuid": p["uuid"],
-                           "name": info["name"] if info else (p["name"] or f"（未命名專案 {p['uuid']}）")})
-        listed += [{"uuid": u, "name": p["name"]} for u, p in projects.items()]
-        task["projects"] = listed
-        task["initiable"] = first if initiable is not None else [p["uuid"] for p in listed]
-        if len(listed) >= 1 + handler.MIN_TARGETS:
-            task["status"] = "select"
-        else:
-            task.update(status="error",
-                        error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {len(listed)} 個。")
+        names = {p["uuid"]: p["name"] for p in initiable or () if p.get("name")}
+        items = await handler.list_items(runtime)
+        for p in items:
+            if p["name"]:
+                names.setdefault(p["uuid"], p["name"])
+        rest = [p["uuid"] for p in items if p["uuid"] not in set(first)]
+        wanted = first + rest[:max(0, handler.LIST_LIMIT - len(first))]
+        order = {u: i for i, u in enumerate(wanted)}
+        task["projects"] = [{"uuid": u, "name": names[u]} for u in wanted if u in names]
+        task["initiable"] = first if initiable is not None else list(wanted)
+        missing = [u for u in wanted if u not in names]
+        task["listing"] = bool(missing)
+        _list_status(task, final=not missing)
+        if not missing:
+            return
+        _save(path, task)
+        await _publish(task)
+        bg = True
+
+        gate = asyncio.Semaphore(LIST_CONCURRENCY)
+
+        async def one(uuid):
+            try:
+                async with gate:
+                    return uuid, await handler.fetch_info(runtime, uuid)
+            except Exception:  # noqa: BLE001
+                logger.exception("match task: get_project_info %s raised", uuid)
+                return uuid, None
+
+        for job in asyncio.as_completed([one(u) for u in missing]):
+            uuid, info = await job
+            if info is None and uuid not in set(first):
+                continue   # 讀不到的對象不列（與原本相同）；本站的案用 CMS 名稱或代稱，仍可當 A
+            cur = _current(path, task)
+            if cur is None:
+                stale = True
+                return
+            name = info["name"] if info else f"（未命名專案 {uuid}）"
+            listed = [p for p in cur["projects"] if p["uuid"] != uuid] + [{"uuid": uuid, "name": name}]
+            cur["projects"] = sorted(listed, key=lambda p: order.get(p["uuid"], len(order)))
+            _list_status(cur, final=False)
+            task.clear()
+            task.update(cur)
+            _save(path, task)
+            await _publish(task)
+        cur = _current(path, task)
+        if cur is None:
+            stale = True
+            return
+        task.clear()
+        task.update(cur, listing=False)
+        _list_status(task, final=True)
     except Exception as exc:  # noqa: BLE001 —— 不可誤報成專案不足
         logger.exception("match task: 讀取專案清單失敗")
-        task.update(status="error", error=f"讀取專案清單失敗（{exc}），請按「開始新媒合」再試。")
+        if bg and _current(path, task) is None:
+            stale = True
+            return
+        task.update(status="error", error=f"讀取專案清單失敗（{exc}），請按「開始新媒合」再試。", listing=False)
     finally:
-        _save(path, task)
-        _ACTIVE.pop(path, None)   # 先釋放再推送，讓「開始新媒合」可以立刻接手
-        await _publish(task)
+        if stale:
+            _release(path)
+        else:
+            _save(path, task)
+            _release(path)   # 先釋放再推送，讓「開始新媒合」可以立刻接手
+            await _publish(task)
 
 
 # ── 對外：開啟與事件 ──────────────────────────────────────────────────
@@ -236,6 +312,7 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
             task["error"] = err
             _save(path, task)
         else:
+            task.pop("preview", None)
             task.update(status="running", a=data["a"], targets=list(data["targets"]), error=None,
                         scope=_scope(identity))
             _save(path, task)   # 先同步佔住，兩個分頁連點也只跑一次
@@ -299,6 +376,31 @@ def galaxy(a: dict, targets: list[dict], judged: Mapping[str, dict], results: li
     }
 
 
+def preview(task: dict, infos: Mapping[str, dict], judged: Mapping[str, dict]) -> dict:
+    """#232 判斷中的星圖資料：讀到的案先出現（A 在第一顆），判斷完的帶 B1–B8（亮起），未判的沒有衛星。"""
+    order = [u for u in [task["a"], *task["targets"]] if u in infos]
+    projects = []
+    for u in order:
+        info = infos[u]
+        side = galaxy(info, [], judged, [])["projects"][0] if u in judged else {
+            "pid": u, "name": info["name"], "match": {k: {"role": "none", "evidence": []} for k in pair.B_KEYS}}
+        projects.append({**side, "judged": u in judged})
+    std = pair.load_standard()
+    keys = {k: ((std.get("capability_registry") or {}).get(k) or {}).get("名稱", k) for k in pair.B_KEYS}
+    return {"demo": False, "preview": True, "keys": keys, "a": task["a"], "projects": projects, "pairs": [],
+            "total": len(task["targets"]) + 1}
+
+
+async def _step(path: Path, task: dict, entry: dict, infos: Mapping[str, dict] | None = None,
+                judged: Mapping[str, dict] | None = None) -> None:
+    """記一筆進度並立刻推送（#232：每讀完一案、每判完一案都推，不等到最後）。"""
+    task["progress"].append(entry)
+    if infos is not None:
+        task["preview"] = preview(task, infos, judged or {})
+    _save(path, task)
+    await _publish(task)
+
+
 async def _run(path: Path, task: dict, runtime, llm: Any) -> None:
     try:
         visible = set(await handler.list_uuids(runtime))   # 選定時再確認一次 CMS 權限
@@ -313,19 +415,27 @@ async def _run(path: Path, task: dict, runtime, llm: Any) -> None:
                 task.update(status="error", error="無法讀取其中一個專案，請按「開始新媒合」。")
                 return
             infos[uuid] = info
-            task["progress"].append({"uuid": uuid, "name": info["name"], "step": "fetch"})
+            await _step(path, task, {"uuid": uuid, "name": info["name"], "step": "fetch"}, infos)
         a, targets = infos[task["a"]], [infos[u] for u in task["targets"]]
         # #199：判斷前先切段，之後的原文引用都指回段落。
         segments = {u: flow.segment(info.get("philosophy_text") or "") for u, info in infos.items()}
-        judged = await handler.judge_all([a, *targets], llm)
+        done: dict[str, dict] = {}
+
+        async def on_judged(p: dict, result: dict) -> None:
+            done[p["uuid"]] = result
+            await _step(path, task, {"uuid": p["uuid"], "name": p["name"], "step": "judge"}, infos, done)
+
+        judged = await handler.judge_all([a, *targets], llm, on_judged=on_judged)
         task["progress"].append({"step": "judged", "count": len(judged)})
         results = handler.analyze(a, targets, judged)
+        await _step(path, task, {"step": "compare", "count": len(results)}, infos, judged)
         task.update(result=galaxy(a, targets, judged, results))
         try:
             await _suggest(task, infos, judged, segments, llm)
         except Exception:  # noqa: BLE001 —— 建議卡失敗不影響星圖結果
             logger.exception("match task: 建議卡產生失敗")
             task["cards"] = []
+        task.pop("preview", None)
         task.update(status="done")
         try:
             await cl.Message(content=summary(task)).send()
@@ -336,7 +446,7 @@ async def _run(path: Path, task: dict, runtime, llm: Any) -> None:
         task.update(status="error", error="媒合失敗，請稍後按「開始新媒合」。")
     finally:
         _save(path, task)
-        _ACTIVE.pop(path, None)
+        _release(path)
         await _publish(task)
 
 
@@ -369,6 +479,8 @@ async def _suggest(task: dict, infos: Mapping[str, dict], judged: Mapping[str, d
                for u in projects}
     flow.annotate_cards(built, projects, chunked)
     task["cards"] = flow.public_cards(built)
+    for c in task["cards"]:  # #235：寄站內邀請的附言（確認框顯示全文，送出同一段）
+        c["invite_message"] = flow.invite_message(pa.get("name") or "", c.get("fields"))
     task["card_state"] = {}
     task["progress"].append({"step": "cards", "count": len(built)})
     task["run_id"] = await flow.record_run(matched, built, tenant=scope["tenant"],
@@ -405,7 +517,12 @@ async def on_card(path: Path, task: dict, runtime, data: Mapping) -> None:
         elif state.get("invite") == "sent":
             return
         else:
-            res = await flow.send_invite(runtime, project_uuid=a, target_project_uuid=target, confirmed=True)
+            # #235：附言只送使用者在確認框看到的那段（面板回傳的 message 與卡上附言相同才附上）。
+            message = card.get("invite_message") or ""
+            if data.get("message") != message:
+                message = ""
+            res = await flow.send_invite(runtime, project_uuid=a, target_project_uuid=target,
+                                         confirmed=True, message=message)
             ok = res.get("status") == "ok"
             state["invite"] = "sent" if ok else "error"
             await flow.record_action(task.get("run_id"), "invite", target=target, actor=actor,
