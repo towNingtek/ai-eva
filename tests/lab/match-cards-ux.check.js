@@ -198,6 +198,8 @@ const HELPERS = () => {
 
     // (a) 對比：收起狀態
     const measure = async label => {
+      // #232 出卡有 0.6 秒淡入：等所有卡片動畫跑完才量，否則量到半透明的顏色
+      await frame.evaluate(() => Promise.all([...document.querySelectorAll('[data-match-card]')].flatMap(c => c.getAnimations({subtree: true}).map(a => a.finished.catch(() => {})))));
       const rows = await frame.evaluate(() => [...document.querySelectorAll('[data-match-card]')].flatMap(c => __ux.contrastIn(c)));
       assert.ok(rows.length >= 8, `${label}: measured text elements (${rows.length})`);
       const bad = rows.filter(r => r.ratio < 4.5);

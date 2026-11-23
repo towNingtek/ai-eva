@@ -95,12 +95,12 @@ function violations(lang, texts) {
 }
 
 // lang＝zh 時每一步的面板文字（改動前 beta 7a7b9c2 以 --dump 取得）。
+// #232：移除「更新進度」、加入步驟條後以 --dump 重新產生（差異僅此兩項，2026-11-23 PM 核對）。
 const ZH_BASELINE = {
  "loading": [
   "[aria-label] 策略工作區",
   "專案媒合工作區",
-  "載入專案清單中…",
-  "更新進度"
+  "載入專案清單中…"
  ],
  "select": [
   "[aria-label] 策略工作區",
@@ -136,13 +136,20 @@ const ZH_BASELINE = {
   "[aria-label] 策略工作區",
   "專案媒合 / 大庄社區",
   "正在判斷各案的需要／能提供…",
-  "更新進度",
+  "① 讀取計畫（1/4）",
+  "② 判斷需要與能提供（0/4）",
+  "③ 比對互補",
+  "④ 寫建議",
   "已讀取：大庄社區"
  ],
  "done": [
   "[aria-label] 策略工作區",
   "專案媒合 / 大庄社區",
   "媒合判斷完成（不推薦、不自動聯絡）",
+  "① 讀取計畫",
+  "② 判斷需要與能提供",
+  "③ 比對互補",
+  "④ 寫建議",
   "開始新媒合",
   "3 案比較（A：大庄社區）",
   "對象\t狀態\t互補候選\t共同尋找第三方\t可聯合或交流\t畫面",
@@ -224,6 +231,10 @@ const ZH_BASELINE = {
   "[aria-label] 策略工作區",
   "專案媒合 / 大庄社區",
   "媒合判斷完成（不推薦、不自動聯絡）",
+  "① 讀取計畫",
+  "② 判斷需要與能提供",
+  "③ 比對互補",
+  "④ 寫建議",
   "開始新媒合",
   "3 案比較（A：大庄社區）",
   "對象\t狀態\t互補候選\t共同尋找第三方\t可聯合或交流\t畫面",
@@ -308,6 +319,10 @@ const ZH_BASELINE = {
   "[aria-label] 策略工作區",
   "專案媒合 / 大庄社區",
   "媒合判斷完成（不推薦、不自動聯絡）",
+  "① 讀取計畫",
+  "② 判斷需要與能提供",
+  "③ 比對互補",
+  "④ 寫建議",
   "開始新媒合",
   "3 案比較（A：大庄社區）",
   "對象\t狀態\t互補候選\t共同尋找第三方\t可聯合或交流\t畫面",
@@ -453,7 +468,7 @@ async function walk(browser, port, lang, {snapshotLang, cookie}) {
     await waitAction('select');
     await collect('pending');
     await push({...base, status: 'running', projects, a: 'a', targets, progress: [{uuid: 'a', name: names.a, step: 'fetch'}]});
-    await panel.locator('[data-match-task] button').first().waitFor();
+    await panel.locator('[data-match-steps] li').first().waitFor();  // #232 判斷中不再有「更新進度」按鈕，改等步驟條
     await collect('running');
     const done = {...base, status: 'done', projects, a: 'a', targets, result, cards: cardsFor(lang)};
     await push(done);
