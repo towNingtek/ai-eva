@@ -19,6 +19,10 @@ run_analysis()：
    使用者在本工具下直接打字 → handle(payload) 轉給轉接層當草稿；按鈕由下方 action callback 處理。
 
 過渡版 project_match 不動；兩者並存，由站台工具設定（enabled_apps）決定開哪個。
+
+閱讀者語言（EPIC #205 / #227）：render_pair／render_reply／disclaimer／_status_text 與流程訊息、
+補問題目都跟 current_lang()（也可傳 lang）。規則 YAML 只有中文一份，顯示用的對照在 app.matching.i18n；
+計畫原文照「原文＋翻譯」標記呈現（原文是中文屬正常）。lang＝zh 時輸出與修改前一字不差。
 """
 from __future__ import annotations
 
@@ -32,7 +36,9 @@ import chainlit as cl
 from app.loop import Rules
 from app.loop.chainlit_adapter import ACTIONS as CLARIFY_ACTIONS
 from app.loop.chainlit_adapter import ClarifyLoop
+from app.i18n import DEFAULT_LANG
 from app.matching import capability, pair
+from app.matching import i18n as mi
 
 logger = logging.getLogger(__name__)
 
@@ -77,22 +83,23 @@ def _std() -> Mapping:
     return pair.load_standard()
 
 
-def _bname(key: str) -> str:
-    return ((_std().get("capability_registry") or {}).get(key) or {}).get("名稱", key)
+def _bname(key: str, lang: Any = DEFAULT_LANG) -> str:
+    zh = ((_std().get("capability_registry") or {}).get(key) or {}).get("名稱", key)
+    return zh if mi.resolve(lang) == DEFAULT_LANG else mi.capability_name(key, lang, default=zh)
 
 
-def not_evaluated() -> list[str]:
-    """第一期未評估的四個維度（YAML out_of_scope.not_used）。"""
-    return list((_std().get("out_of_scope") or {}).get("not_used") or [])
+def not_evaluated(lang: Any = DEFAULT_LANG) -> list[str]:
+    """第一期未評估的四個維度（YAML out_of_scope.not_used；lang≠zh 時給顯示用譯名）。"""
+    return [mi.tr(d, lang) for d in (_std().get("out_of_scope") or {}).get("not_used") or []]
 
 
-def _bridge_texts() -> dict[str, str]:
+def _bridge_texts(lang: Any = DEFAULT_LANG) -> dict[str, str]:
     """三種關係各自的揭露規則原文（YAML bridge_rules）。"""
     rules = _std().get("bridge_rules") or []
     out = {}
     for r in rules:
         rel = str(r.get("關係", ""))
-        text = r.get("原文", "")
+        text = mi.tr(r.get("原文", ""), lang)
         if rel.startswith("互補"):
             out[pair.REL_COMPLEMENT] = text
         elif "第三方" in rel:
@@ -102,9 +109,10 @@ def _bridge_texts() -> dict[str, str]:
     return out
 
 
-def _status_text(status: str) -> str:
+def _status_text(status: str, lang: Any = None) -> str:
+    """狀態規則原文（YAML status_rules）；lang 省略 → current_lang()。"""
     body = (_std().get("status_rules") or {}).get(status) or {}
-    return body.get("原文", "")
+    return mi.tr(body.get("原文", ""), mi.resolve(lang))
 
 
 # ── CMS ───────────────────────────────────────────────────────────────
@@ -232,82 +240,93 @@ def _direction(result: Mapping, key: str) -> str:
     return ((result.get("capabilities") or {}).get(key) or {}).get("direction", pair.NONE)
 
 
-def _side_lines(project: dict, result: Mapping, key: str) -> list[str]:
+def _tags(lang: str) -> tuple[str, str, str]:
+    """【事實】【推論】【建議】（依 lang）。"""
+    return mi.msg("ma.fact", lang), mi.msg("ma.infer", lang), mi.msg("ma.suggest", lang)
+
+
+def _side_lines(project: dict, result: Mapping, key: str, lang: Any = DEFAULT_LANG) -> list[str]:
+    lang = mi.resolve(lang)
+    fact, infer, _ = _tags(lang)
     quotes = _quotes(result, key)
-    lines = [f"    - {FACT}{project['name']} 計畫理念原文：" + (
-        "、".join(f"「{q}」" for q in quotes) if quotes else "（無原文依據）")]
-    lines.append(f"    - {INFER}{project['name']} 在「{_bname(key)}」判為 {_direction(result, key)}"
-                 f"（{capability.INFERENCE_LABEL}）")
+    lines = [mi.msg("ma.side_fact", lang, fact=fact, name=project["name"], quotes=(
+        mi.join([mi.quote(q, lang) for q in quotes], lang) if quotes else mi.msg("ma.no_quote", lang)))]
+    lines.append(mi.msg("ma.side_infer", lang, infer=infer, name=project["name"], b=_bname(key, lang),
+                        dir=_direction(result, key), label=mi.tr(capability.INFERENCE_LABEL, lang)))
     return lines
 
 
-def render_pair(a: dict, res: dict, judged: Mapping[str, dict]) -> str:
+def _status_label(res: Mapping, lang: str) -> str:
+    text = res.get("status_text") or pair.STATUS_TEXT.get(res["status"], "")
+    return mi.tr(text, lang) if lang != DEFAULT_LANG else text
+
+
+def render_pair(a: dict, res: dict, judged: Mapping[str, dict], lang: Any = None) -> str:
+    lang = mi.resolve(lang)
+    _, infer, suggest = _tags(lang)
     t = res["target"]
     by_id = {a["uuid"]: a, t["uuid"]: t}
-    rules = _bridge_texts()
+    rules = _bridge_texts(lang)
     status = res["status"]
     lines = [
         f"### 🧭 {a['name']} × {t['name']}",
         "",
-        f"**狀態：{res['status_text']}（{status}）**",
-        f"- {INFER}狀態依媒合標準規則、由上述 AI 判斷的方向算出；規則原文：{_status_text(status)}",
+        mi.msg("ma.status", lang, label=_status_label(res, lang), status=status),
+        mi.msg("ma.status_rule", lang, infer=infer, text=_status_text(status, lang)),
         "",
     ]
     rel = res["relations"]
     for name in RELATIONS:
         items = rel.get(name) or []
-        lines.append(f"#### {name}（{len(items)}）")
+        lines.append(mi.msg("ma.relation", lang, name=mi.tr(name, lang), n=len(items)))
         if not items:
-            lines.append("- （無）")
+            lines.append(mi.msg("ma.none", lang))
             lines.append("")
             continue
-        lines.append(f"- 揭露規則（媒合標準原文）：{rules.get(name, '')}")
+        lines.append(mi.msg("ma.disclosure", lang, text=rules.get(name, "")))
         for it in items:
             if name == pair.REL_COMPLEMENT:
                 need, offer, key = by_id[it["need"]], by_id[it["offer"]], it["key"]
-                lines.append(f"- {key} {_bname(key)}：{need['name']} 需要 ← {offer['name']} 可提供")
-                lines += _side_lines(need, judged[need["uuid"]], key)
-                lines += _side_lines(offer, judged[offer["uuid"]], key)
+                lines.append(mi.msg("ma.complement_item", lang, key=key, b=_bname(key, lang),
+                                    need=need["name"], offer=offer["name"]))
+                lines += _side_lines(need, judged[need["uuid"]], key, lang)
+                lines += _side_lines(offer, judged[offer["uuid"]], key, lang)
             else:
                 key = it
-                lines.append(f"- {key} {_bname(key)}")
-                lines += _side_lines(a, judged[a["uuid"]], key)
-                lines += _side_lines(t, judged[t["uuid"]], key)
+                lines.append(mi.msg("ma.key_item", lang, key=key, b=_bname(key, lang)))
+                lines += _side_lines(a, judged[a["uuid"]], key, lang)
+                lines += _side_lines(t, judged[t["uuid"]], key, lang)
         lines.append("")
 
-    opts = "、".join((_std().get("output") or {}).get("next_action_options") or [])
-    lines.append("#### 下一步")
+    opts = mi.join([mi.tr(o, lang) for o in (_std().get("output") or {}).get("next_action_options") or []], lang)
+    lines.append(mi.msg("ma.next", lang))
     if status == pair.CLARIFY_FIRST:
-        lines.append(f"- {SUGGEST}互補候選還缺需要方「用途」與能提供方「可提供形式」，"
-                     "請先回答下方補問，回答後會依規則重算狀態。")
+        lines.append(mi.msg("ma.next_clarify", lang, s=suggest))
     elif status == pair.EXPLORE:
-        lines.append(f"- {SUGGEST}可考慮低成本交流（{opts}），由 Owner 決定是否採用。")
+        lines.append(mi.msg("ma.next_explore", lang, s=suggest, opts=opts))
     else:
-        lines.append(f"- {SUGGEST}目前沒有互補或交流關係；可補充計畫理念後再分析，由 Owner 決定。")
+        lines.append(mi.msg("ma.next_none", lang, s=suggest))
     return "\n".join(lines)
 
 
-def disclaimer() -> str:
-    dims = "、".join(not_evaluated())
-    return (
-        "---\n"
-        "**第一期聲明**：本分析只呈現規則與原文，**不推薦**合作對象、**不自動聯絡**任何一方；"
-        "AI 不判斷合作意願，是否聯繫由人決定。\n"
-        f"**未評估的四個維度**：{dims}（未評估不代表不適合）。\n"
-        f"標示說明：{FACT}計畫書原文　{INFER}AI 判斷（未經 Owner 確認）　{SUGGEST}下一步選項（由 Owner 決定）"
-    )
+def disclaimer(lang: Any = None) -> str:
+    lang = mi.resolve(lang)
+    fact, infer, suggest = _tags(lang)
+    return mi.msg("ma.disclaimer", lang, dims=mi.join(not_evaluated(lang), lang),
+                  fact=fact, infer=infer, suggest=suggest)
 
 
-def render_reply(a: dict, results: list[dict], judged: Mapping[str, dict]) -> str:
-    parts = [f"## 媒合分析：{a['name']} × {len(results)} 個指定對象"]
-    parts += [render_pair(a, r, judged) for r in results]
-    parts.append(disclaimer())
+def render_reply(a: dict, results: list[dict], judged: Mapping[str, dict], lang: Any = None) -> str:
+    lang = mi.resolve(lang)
+    parts = [mi.msg("ma.title", lang, a=a["name"], n=len(results))]
+    parts += [render_pair(a, r, judged, lang) for r in results]
+    parts.append(disclaimer(lang))
     return "\n\n".join(parts)
 
 
 # ── 補問（Chainlit 轉接層 #178） ─────────────────────────────────────
 
-def clarify_context(a: dict, results: list[dict]) -> dict | None:
+def clarify_context(a: dict, results: list[dict], lang: Any = None) -> dict | None:
     """第一組「先補資料」的第一條互補候選 → 補問脈絡。"""
     for r in results:
         if r["status"] != pair.CLARIFY_FIRST:
@@ -319,17 +338,33 @@ def clarify_context(a: dict, results: list[dict]) -> dict | None:
         by_id = {a["uuid"]: a, r["target"]["uuid"]: r["target"]}
         return {"need": c["need"], "offer": c["offer"], "key": c["key"],
                 "need_name": by_id[c["need"]]["name"], "offer_name": by_id[c["offer"]]["name"],
-                "b_name": _bname(c["key"])}
+                "b_name": _bname(c["key"], mi.resolve(lang))}
     return None
 
 
-def rules_for(ctx: Mapping) -> Rules:
-    """一條互補候選的狀態機規則：題目套上兩案名稱與類別（題目仍取自 YAML，不靠 AI）。"""
+def _questions(std: Mapping, side: str, lang: str) -> Mapping:
+    """補問題目：zh 用 YAML 中文；其他語言用 YAML clarify_questions.i18n（人校對版），缺題退回中文。"""
+    zh = std["clarify_questions"][side]
+    if lang == DEFAULT_LANG:
+        return zh
+    loc = (((std["clarify_questions"].get("i18n") or {}).get(lang) or {}).get(side)) or {}
+    return {f: loc.get(f) or text for f, text in zh.items()}
+
+
+def rules_for(ctx: Mapping, lang: Any = None) -> Rules:
+    """一條互補候選的狀態機規則：題目套上兩案名稱與類別（題目仍取自 YAML，不靠 AI）。
+
+    lang 省略 → current_lang()；題目與類別名依閱讀者語言（欄位名維持中文）。
+    """
+    lang = mi.resolve(lang)
     base = pair.candidate_rules()
     std = _std()
+    b_name = ctx["b_name"]
+    if lang != DEFAULT_LANG and ctx.get("key"):
+        b_name = _bname(ctx["key"], lang)
     cq = {
-        side: {f: str(text).format(need=ctx["need_name"], offer=ctx["offer_name"], b=ctx["b_name"])
-               for f, text in (std["clarify_questions"][side]).items()}
+        side: {f: str(text).format(need=ctx["need_name"], offer=ctx["offer_name"], b=b_name)
+               for f, text in _questions(std, side, lang).items()}
         for side in (pair.NEED, pair.OFFER)
     }
     return Rules({
@@ -362,7 +397,7 @@ async def start_clarify(ctx: dict) -> ClarifyLoop:
 async def run_analysis(runtime, a: dict, targets: list[dict], llm: Any = None) -> dict:
     """判 B1–B8 → 關係與狀態 → 一則回覆；有「先補資料」就緊接著送出一題補問。"""
     if not (MIN_TARGETS <= len(targets) <= MAX_TARGETS):
-        await cl.Message(content=f"⚠️ 請指定 {MIN_TARGETS}–{MAX_TARGETS} 個媒合對象（目前 {len(targets)} 個）。").send()
+        await cl.Message(content=mi.msg("ma.targets_range", lo=MIN_TARGETS, hi=MAX_TARGETS, n=len(targets))).send()
         return {"results": [], "reply": None}
     judged = await judge_all([a, *targets], llm)
     results = analyze(a, targets, judged)
@@ -394,9 +429,9 @@ async def _send_targets(state: dict) -> None:
             continue
         mark = "☑" if uuid in chosen else "☐"
         actions.append(_action(ACTION_TOGGLE, f"{mark} {p['name']}", {"uuid": uuid}))
-    actions.append(_action(ACTION_RUN, f"開始媒合分析（{len(chosen)}）", {}))
-    names = "、".join(state["projects"][u]["name"] for u in chosen) or "（尚未勾選）"
-    await _send(f"A：**{a['name']}**\n請勾選 {MIN_TARGETS}–{MAX_TARGETS} 個指定對象。已選：{names}", actions)
+    actions.append(_action(ACTION_RUN, mi.msg("ma.run_button", n=len(chosen)), {}))
+    names = mi.join([state["projects"][u]["name"] for u in chosen]) or mi.msg("ma.none_selected")
+    await _send(mi.msg("ma.pick_targets", a=a["name"], lo=MIN_TARGETS, hi=MAX_TARGETS, names=names), actions)
 
 
 async def handle(payload: str, msg) -> None:
@@ -418,21 +453,21 @@ async def handle(payload: str, msg) -> None:
 
     runtime = cl.user_session.get("cms_runtime")
     if not runtime:
-        await _send("⚠️ 請先從 CMS 重新進入 AI-Eva。")
+        await _send(mi.msg("ma.reenter"))
         return
     try:
         projects = await load_projects(runtime)
     except Exception as exc:  # noqa: BLE001 —— 不可誤報成專案不足
         logger.exception("match_analysis: 取專案清單失敗")
-        await _send(f"⚠️ 媒合分析無法讀取專案清單（{exc}）。請確認 CMS 連線與帳號權限後再試。")
+        await _send(mi.msg("ma.list_failed", exc=exc))
         return
     if len(projects) < 1 + MIN_TARGETS:
-        await _send(f"⚠️ 媒合分析需要 A 加上至少 {MIN_TARGETS} 個對象，目前可用的專案只有 {len(projects)} 個。")
+        await _send(mi.msg("ma.too_few", lo=MIN_TARGETS, n=len(projects)))
         return
     state = {"projects": projects, "a": None, "targets": []}
     cl.user_session.set(STATE_KEY, state)
     actions = [_action(ACTION_PICK_A, p["name"], {"uuid": u}) for u, p in projects.items()]
-    await _send("🧭 媒合分析：請先選擇你的專案 A。", actions)
+    await _send(mi.msg("ma.pick_a"), actions)
 
 
 def _state() -> dict | None:
@@ -443,7 +478,7 @@ async def pick_a(payload: Mapping | None) -> None:
     state = _state()
     uuid = (payload or {}).get("uuid")
     if not state or uuid not in state["projects"]:
-        await _send("⚠️ 媒合分析面板已過期，請重新開啟「媒合分析」。")
+        await _send(mi.msg("ma.expired"))
         return
     state["a"], state["targets"] = uuid, []
     cl.user_session.set(STATE_KEY, state)
@@ -454,13 +489,13 @@ async def toggle_target(payload: Mapping | None) -> None:
     state = _state()
     uuid = (payload or {}).get("uuid")
     if not state or not state.get("a") or uuid not in state["projects"] or uuid == state["a"]:
-        await _send("⚠️ 媒合分析面板已過期，請重新開啟「媒合分析」。")
+        await _send(mi.msg("ma.expired"))
         return
     chosen = state["targets"]
     if uuid in chosen:
         chosen.remove(uuid)
     elif len(chosen) >= MAX_TARGETS:
-        await _send(f"⚠️ 最多指定 {MAX_TARGETS} 個對象，請先取消其中一個。")
+        await _send(mi.msg("ma.max_targets", hi=MAX_TARGETS))
         return
     else:
         chosen.append(uuid)
@@ -472,7 +507,7 @@ async def run_selected(llm: Any = None) -> dict | None:
     state = _state()
     runtime = cl.user_session.get("cms_runtime")
     if not state or not state.get("a") or not runtime:
-        await _send("⚠️ 媒合分析面板已過期，請重新開啟「媒合分析」。")
+        await _send(mi.msg("ma.expired"))
         return None
     a = state["projects"][state["a"]]
     targets = [state["projects"][u] for u in state["targets"]]
