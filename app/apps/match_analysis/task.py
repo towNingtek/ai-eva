@@ -149,11 +149,19 @@ def _new_task() -> dict:
             "cards": [], "card_state": {}, "run_id": None, "clarify": None}
 
 
-def _create(path: Path, runtime) -> dict:
+def _create(path: Path, runtime, preselect_a: str | None = None) -> dict:
     task = _new_task()
     _save(path, task)
-    _spawn(path, _list(path, task, runtime))
+    _spawn(path, _list(path, task, runtime, preselect_a))
     return task
+
+
+def _preselect(task: dict, a: str | None) -> bool:
+    """#237：從 CMS 帶 a=<uuid> 開啟 → 預選 A；只在該案在「可發起清單」裡才選（否則忽略）。"""
+    if isinstance(a, str) and a and a in (task.get("initiable") or ()):
+        task["a"] = a
+        return True
+    return False
 
 
 NO_INITIABLE = "你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。"
@@ -186,7 +194,7 @@ def _list_status(task: dict, final: bool) -> None:
                     error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {n} 個。")
 
 
-async def _list(path: Path, task: dict, runtime) -> None:
+async def _list(path: Path, task: dict, runtime, preselect_a: str | None = None) -> None:
     """#217：A 只列本站可發起媒合的案（list_match_initiable_projects）；對象清單仍用 list_my_projects，
     但本站的案排最前面、不受 LIST_LIMIT 截斷。initiable 工具不存在或 0 案 → 錯誤，不退回 list_my_projects。
 
@@ -213,6 +221,7 @@ async def _list(path: Path, task: dict, runtime) -> None:
         order = {u: i for i, u in enumerate(wanted)}
         task["projects"] = [{"uuid": u, "name": names[u]} for u in wanted if u in names]
         task["initiable"] = first if initiable is not None else list(wanted)
+        _preselect(task, preselect_a)
         missing = [u for u in wanted if u not in names]
         task["listing"] = bool(missing)
         _list_status(task, final=not missing)
@@ -272,11 +281,15 @@ async def _list(path: Path, task: dict, runtime) -> None:
 
 # ── 對外：開啟與事件 ──────────────────────────────────────────────────
 
-async def open_task(path: Path, runtime) -> dict:
-    """點工具區按鈕：有任務就接回（不重跑），沒有才建新的。"""
+async def open_task(path: Path, runtime, preselect_a: str | None = None) -> dict:
+    """點工具區按鈕：有任務就接回（不重跑），沒有才建新的。
+
+    preselect_a（#237，從 CMS 帶 a=）：新任務在清單回來後預選；接回的任務還在選案時也套用。"""
     task = _load(path)
     if task is None:
-        task = _create(path, runtime)
+        task = _create(path, runtime, preselect_a)
+    elif preselect_a and task.get("status") == "select" and _preselect(task, preselect_a):
+        _save(path, task)
     await _publish(task, opening=True)
     return task
 
@@ -787,5 +800,19 @@ async def open_from_tool() -> bool:
     install_window_router()
     from . import embed_route
     embed_route.install()
-    await open_task(*ctx)
+    await open_task(*ctx, preselect_a=take_preselect())
     return True
+
+
+PRESELECT_KEY = "match_preselect_a"   # app/main.py 開場依 eva_open cookie 自動開啟時放進 session（#237）
+
+
+def take_preselect() -> str | None:
+    """取出並清掉預選 A（只用一次）。"""
+    value = _session_get(PRESELECT_KEY)
+    if value:
+        try:
+            cl.user_session.set(PRESELECT_KEY, None)
+        except Exception:  # noqa: BLE001
+            pass
+    return value if isinstance(value, str) and value else None
