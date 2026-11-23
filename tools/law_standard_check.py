@@ -3,10 +3,11 @@
 
 - every 缺資料 field in the demo data has a clarify question; every question names a covered domain
 - every rule is numeric (hit_if_gte) or a closed choice (hit_if_in ⊆ options); no free-form judging
+- every question's ask has en/ja/ko in ask_i18n (human-reviewed) with the same placeholders as zh (#208)
 - status_transition: rule_only, affected_domain_only, unknown does not count, one question at a time
 - --hackmd: the YAML body in the repo == the ```yaml block on HackMD BJIzoEIzzg (token from $HACKMD_TOKEN)
 """
-import json, os, sys, urllib.request
+import json, os, string, sys, urllib.request
 from pathlib import Path
 import yaml
 
@@ -17,6 +18,30 @@ KV = ROOT / "public/tangle/kv-law-mock.js"
 
 def body(text):
     return text.split("standard:", 1)[1].strip()
+
+
+LANGS = ("en", "ja", "ko")   # zh = ask itself (#208)
+
+
+def placeholders(s):
+    return {f for _, f, _, _ in string.Formatter().parse(s) if f is not None}
+
+
+def clarify_i18n_problems(std):
+    """Every clarify question has zh (ask) + en/ja/ko (ask_i18n) with the same placeholders (#208)."""
+    out = []
+    for q in std.get("clarify_questions") or []:
+        zh, tr = q.get("ask"), q.get("ask_i18n") or {}
+        if not isinstance(zh, str) or not zh.strip():
+            out.append(f"{q.get('field')}: zh ask missing")
+            continue
+        for lang in LANGS:
+            s = tr.get(lang)
+            if not isinstance(s, str) or not s.strip():
+                out.append(f"{q.get('field')}: ask_i18n.{lang} missing")
+            elif placeholders(s) != placeholders(zh):
+                out.append(f"{q.get('field')}: ask_i18n.{lang} placeholders {sorted(placeholders(s))} != zh {sorted(placeholders(zh))}")
+    return out
 
 
 def check(std, kv):
@@ -39,6 +64,7 @@ def check(std, kv):
         for d, v in p["law"].items():
             if v["state"] == "gap" and v.get("missing") not in fields:
                 out.append(f"{pid} {d}: gap field {v.get('missing')} has no clarify question")
+    out += clarify_i18n_problems(std)
     want = {"recompute": "rule_only", "scope": "affected_domain_only", "unknown_counts_as_filled": False, "pace": "one_question_at_a_time"}
     for k, v in want.items():
         if st.get(k) != v:
@@ -58,7 +84,9 @@ def main():
         assert any("申請開發面積" in x for x in check(bad, kv)), "missing question not caught"
         bad = json.loads(json.dumps(std)); bad["status_transition"]["recompute"] = "llm"
         assert check(bad, kv), "llm recompute not caught"
-        print("self-test: missing question and llm recompute both rejected"); return
+        bad = json.loads(json.dumps(std)); del bad["clarify_questions"][0]["ask_i18n"]["ja"]
+        assert any("ask_i18n.ja" in x for x in check(bad, kv)), "missing language not caught"
+        print("self-test: missing question, llm recompute and missing language all rejected"); return
     problems = check(std, kv)
     if "--hackmd" in sys.argv:
         tok = os.environ.get("HACKMD_TOKEN")
