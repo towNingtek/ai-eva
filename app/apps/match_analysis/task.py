@@ -479,6 +479,8 @@ async def _suggest(task: dict, infos: Mapping[str, dict], judged: Mapping[str, d
                for u in projects}
     flow.annotate_cards(built, projects, chunked)
     task["cards"] = flow.public_cards(built)
+    for c in task["cards"]:  # #235：寄站內邀請的附言（確認框顯示全文，送出同一段）
+        c["invite_message"] = flow.invite_message(pa.get("name") or "", c.get("fields"))
     task["card_state"] = {}
     task["progress"].append({"step": "cards", "count": len(built)})
     task["run_id"] = await flow.record_run(matched, built, tenant=scope["tenant"],
@@ -515,7 +517,12 @@ async def on_card(path: Path, task: dict, runtime, data: Mapping) -> None:
         elif state.get("invite") == "sent":
             return
         else:
-            res = await flow.send_invite(runtime, project_uuid=a, target_project_uuid=target, confirmed=True)
+            # #235：附言只送使用者在確認框看到的那段（面板回傳的 message 與卡上附言相同才附上）。
+            message = card.get("invite_message") or ""
+            if data.get("message") != message:
+                message = ""
+            res = await flow.send_invite(runtime, project_uuid=a, target_project_uuid=target,
+                                         confirmed=True, message=message)
             ok = res.get("status") == "ok"
             state["invite"] = "sent" if ok else "error"
             await flow.record_action(task.get("run_id"), "invite", target=target, actor=actor,

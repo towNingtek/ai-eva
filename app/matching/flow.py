@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence
 
 from app.i18n import DEFAULT_LANG
@@ -145,6 +146,60 @@ def public_cards(cards: Sequence[Mapping]) -> list[dict]:
             _remember_record_text(c)
         out.append(card)
     return out
+
+
+# ── #235 站內邀請附言「為什麼找你」 ─────────────────────────────────
+
+INVITE_MESSAGE_MAX = 200
+_URL = re.compile(r"(?:https?://|ftp://|www\.)\S*", re.I)
+_DOMAIN = re.compile(r"\b[\w-]+(?:\.[\w-]+)*\.(?:com|net|org|tw|cc|io|jp|kr|info|gov|edu)\b\S*", re.I)
+_SENTENCE = re.compile(r"^.*?(?:[。！？!?]|\.(?=\s|$)|\n|$)", re.S)
+_TRAIL = "。．.！!？?，,、；;：: \t\n"
+
+
+def _no_links(text: str) -> str:
+    text = _DOMAIN.sub("", _URL.sub("", str(text or "")))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _has_content(value) -> bool:
+    v = str(value or "").strip()
+    if not v:
+        return False
+    return v not in {mi.msg("insufficient", lang) for lang in ("zh", "en", "ja", "ko")} | {"不足"}
+
+
+def _clip(text: str, room: int) -> str:
+    if room <= 0:
+        return ""
+    return text if len(text) <= room else text[:max(room - 1, 0)].rstrip(_TRAIL) + "…"
+
+
+def invite_message(a_name: str, fields: Mapping | None) -> str:
+    """站內邀請附言（≤ 200 字、不含網址）：
+    「{發起專案名} 想跟你合作：{建議合作}。{互補性第一句}」；欄位「不足」略過該句；
+    兩欄都不足 →「{發起專案名} 想跟你談談合作的可能」。
+    """
+    from app.matching.cards import F_COLLAB, F_COMPLEMENT
+
+    fields = fields or {}
+    name = _clip(_no_links(a_name) or "發起計畫", 60)
+    collab = _no_links(fields.get(F_COLLAB)) if _has_content(fields.get(F_COLLAB)) else ""
+    collab = collab.rstrip(_TRAIL)
+    comp = ""
+    if _has_content(fields.get(F_COMPLEMENT)):
+        comp = _no_links(_SENTENCE.match(str(fields.get(F_COMPLEMENT)).strip()).group(0))
+        if comp and comp[-1] not in "。！？!?.…":
+            comp += "。"
+    if not collab and not comp:
+        return f"{name} 想跟你談談合作的可能"
+    head = f"{name} 想跟你合作" + ("：" if collab else "。")
+    room = INVITE_MESSAGE_MAX - len(head)
+    if collab:
+        collab = _clip(collab, room - 1 - min(len(comp), 40)) if len(collab) + 1 + len(comp) > room else collab
+        collab = collab + ("" if collab.endswith("…") else "。")
+    comp = _clip(comp, room - len(collab))
+    return (head + collab + comp)[:INVITE_MESSAGE_MAX]
 
 
 def _remember_record_text(card: Mapping) -> None:
