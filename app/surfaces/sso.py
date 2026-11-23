@@ -219,6 +219,18 @@ async def sso_handoff(token: str, request: Request, refresh_token: str | None = 
         "eva_lang", chainlit_locale(idn.get(LANG_KEY)),
         httponly=False, secure=True, samesite="lax", max_age=_SESSION_TTL,
     )
+    # ai-eva#172：通用「返回來源網站」。值已由 issuers.safe_return 驗過（https＋issuer 登記的網域）；
+    # 非 HttpOnly 給 custom.js 畫頁首按鈕，非機密。沒帶或不合格 → 刪掉舊的，不留上一次的連結。
+    ret = idn.get("return")
+    if ret:
+        # cookie 值只能是 ASCII → JSON 再 URL-encode（站名是中文），custom.js 端 decodeURIComponent。
+        from urllib.parse import quote
+        resp.set_cookie(
+            "eva_return", quote(json.dumps(ret, ensure_ascii=False, separators=(",", ":")), safe=""),
+            httponly=False, secure=True, samesite="lax", max_age=_SESSION_TTL,
+        )
+    else:
+        resp.delete_cookie("eva_return")
     return resp
 
 

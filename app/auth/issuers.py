@@ -32,6 +32,10 @@ logger = logging.getLogger(__name__)
 # tenant_project_map：tenant → project 覆寫（#94 雲林雙軌）：特定租戶獨立成自己的
 #   project，讓用量/LiteLLM key 分流（見 projects.metadata.litellm_key）。
 #   沒列到的 tenant 沿用 issuer 的預設 project（如一般 CMS 租戶 → sechome）。
+# return_hosts：通用的「返回來源網站」（ai-eva#172）。issuer 可在 handoff token 帶
+#   `return_url`／`return_label`，AI-Eva 頁首顯示「← 返回 {label}」。只接受 https 且
+#   host 符合這份清單（完整網域或 "*.網域" 萬用字元）的網址，其餘一律忽略——避免被拿來
+#   轉址到任意網站。沒設 return_hosts 的 issuer 不顯示返回鈕。
 ISSUERS: dict[str, dict] = {
     # dev / beta CMS（dev.4impact.cc、yunlin-beta.4impact.cc、beta.sechome.cc）
     "tplanet-cms": {
@@ -52,6 +56,7 @@ ISSUERS: dict[str, dict] = {
         "tenant_project_map": {
             "yunlin": "yunlin",   # 雲林租戶 → 走 yunlin project 的 LiteLLM key/team
         },
+        "return_hosts": ["dev.4impact.cc", "yunlin-beta.4impact.cc", "*.sechome.cc"],
     },
     # stable CMS（stable.4impact.cc、sechome.cc、yunlin.4impact.cc）
     # stable backend 需設 AI_EVA_ISSUER=tplanet-cms-stable（各環境自己的 RS256 key）
@@ -67,8 +72,45 @@ ISSUERS: dict[str, dict] = {
         "tenant_project_map": {
             "yunlin": "yunlin",
         },
+        "return_hosts": ["stable.4impact.cc", "yunlin.4impact.cc", "sechome.cc", "*.sechome.cc"],
     },
 }
+
+
+def _host_allowed(host: str, patterns: list[str]) -> bool:
+    host = host.lower().rstrip(".")
+    for p in patterns or []:
+        p = p.lower()
+        if p.startswith("*."):
+            if host.endswith(p[1:]) and host != p[2:]:
+                return True
+        elif host == p:
+            return True
+    return False
+
+
+def safe_return(issuer_id: str | None, url: Any, label: Any) -> dict | None:
+    """通行證帶的返回網址（ai-eva#172）→ {"url","label"}，不合格回 None。
+
+    只接受：字串、https、沒有帳密、host 在該 issuer 的 return_hosts 內。
+    label 只留純文字、最多 40 字；沒給就用 host。
+    """
+    from urllib.parse import urlsplit
+
+    issuer = ISSUERS.get(issuer_id or "") or {}
+    if not isinstance(url, str) or len(url) > 2000:
+        return None
+    try:
+        parts = urlsplit(url.strip())
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not parts.hostname or parts.username or parts.password:
+        return None
+    if not _host_allowed(parts.hostname, issuer.get("return_hosts", [])):
+        return None
+    text = label.strip() if isinstance(label, str) else ""
+    text = "".join(ch for ch in text if ch.isprintable() and ch not in "<>\"'`")[:40].strip()
+    return {"url": parts.geturl(), "label": text or parts.hostname}
 
 _AUDIENCE_DEFAULT = "ai-eva"
 
@@ -147,6 +189,8 @@ def verify_handoff(token: str) -> dict:
         "email": claims.get("email"),
         "lang": normalize_lang(claims.get("lang")),
         "issuer": iss,
+        # ai-eva#172：通用「返回來源網站」；不合格（非 https、網域不在 return_hosts）→ None
+        "return": safe_return(iss, claims.get("return_url"), claims.get("return_label")),
         "claims": claims,
     }
 
