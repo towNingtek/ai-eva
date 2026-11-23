@@ -368,6 +368,10 @@ async def handle(payload: str, msg) -> None:
         if await match_task.open_from_tool():
             return
     if text:
+        # #215：工作區卡片「補資料」的回答 → 問要不要寫回自己的計畫理念。
+        from . import task as match_task
+        if await match_task.on_text(text):
+            return
         loop = _clarify_loop()
         if loop is not None and await loop.on_message(text):
             return
