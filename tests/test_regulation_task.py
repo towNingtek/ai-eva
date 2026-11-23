@@ -18,6 +18,14 @@ class CMS:
         return {"status": "ok", "result": {"data": data}}
 
 
+async def _settle(path):
+    """Wait for the task's worker if it is still running. A fast worker may already have finished
+    and removed itself from _ACTIVE (that is the intended behaviour), so do not index blindly."""
+    worker = task._ACTIVE.get(path)
+    if worker is not None:
+        await worker
+
+
 def setup_task(monkeypatch, tmp_path):
     monkeypatch.setattr(task, "TASK_DIR", tmp_path)
     calls = []
@@ -69,7 +77,7 @@ def test_task_full_lifecycle_and_original_attachment(monkeypatch, tmp_path):
         nonlocal release, ready
         release, ready = asyncio.Event(), asyncio.Event()
         await task.open_task(path, cms)
-        await task._ACTIVE[path]
+        await _settle(path)
         current = task._load(path)
         assert current["status"] == "select"
         assert current["projects"] == [{"uuid": "p1", "name": "測試計畫"}]
@@ -106,7 +114,7 @@ def test_task_full_lifecycle_and_original_attachment(monkeypatch, tmp_path):
         run_check.assert_awaited_once()
         notify.assert_awaited_once()
         await event("new")
-        await task._ACTIVE[path]
+        await _settle(path)
         assert task._load(path)["task_id"] != current["task_id"]
         assert task._load(path)["status"] == "select"
 
@@ -126,7 +134,7 @@ def test_task_scope_restart_and_revoked_cms_permission(monkeypatch, tmp_path):
 
     async def run():
         await task.open_task(path, cms)
-        await task._ACTIVE[path]
+        await _settle(path)
         task_id = task._load(path)["task_id"]
         push_count = len(pushes)
         await task.handle_event(task.scope_path(identity, "chat-b"), cms,
@@ -134,7 +142,7 @@ def test_task_scope_restart_and_revoked_cms_permission(monkeypatch, tmp_path):
         assert len(pushes) == push_count
         cms.allowed = []
         await task.handle_event(path, cms, {"action": "select", "task_id": task_id, "uuid": "p1"}, None)
-        await task._ACTIVE[path]
+        await _settle(path)
         assert task._load(path)["status"] == "error"
         assert "無法管理" in task._load(path)["error"]
         task._save(path, {**task._load(path), "status": "running"})

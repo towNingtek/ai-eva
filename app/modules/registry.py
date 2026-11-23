@@ -53,7 +53,9 @@ def discover() -> dict[str, Module]:
     def _iter_meta_dirs(root: Path):
         """掃 meta.py：支援一層（chart/）與兩層（sustainability/sdg/）巢狀。"""
         for path in sorted(root.glob("**/meta.py")):
-            if any(part.startswith("_") or part.startswith(".") for part in path.parts):
+            # Only look at parts below modules/: the checkout itself may live under a dot-directory
+            # (e.g. the swarm runner's ~/.local/share/... worktree), which must not hide every module.
+            if any(part.startswith("_") or part.startswith(".") for part in path.relative_to(root).parts):
                 continue
             yield path.parent.relative_to(root)
 
