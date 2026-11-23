@@ -5,6 +5,7 @@
 """
 import json
 import os
+import string
 import sys
 import urllib.request
 from pathlib import Path
@@ -16,6 +17,39 @@ F = ROOT / "app/matching/standard_yunlin_v1.yaml"
 NOTE = "VFUJQzdQR1OdZZBQrkwB-g"   # https://hackmd.io/@yillkid/BkKiUSPRMl
 B_REG = {"B1": "空間與場域", "B2": "產品與生產", "B3": "服務與體驗", "B4": "內容與品牌",
          "B5": "人才與專業", "B6": "社群與關係", "B7": "市場與通路", "B8": "治理與平台"}   # SH-METHOD-02 §6
+
+
+LANGS = ("en", "ja", "ko")   # zh = clarify_questions.NEED / OFFER itself (#208)
+
+
+def placeholders(s):
+    """{need} {offer} {b} … used in a question template."""
+    return {f for _, f, _, _ in string.Formatter().parse(s) if f is not None}
+
+
+def clarify_i18n_problems(d):
+    """Every clarify question has zh/en/ja/ko (human-reviewed, in the YAML) with the same placeholders (#208)."""
+    out, q = [], d.get("clarify_questions", {})
+    tr = q.get("i18n") or {}
+    for lang in LANGS:
+        if lang not in tr:
+            out.append(f"clarify_questions.i18n.{lang} missing")
+    for side in ("NEED", "OFFER"):
+        for field, zh in (q.get(side) or {}).items():
+            if not isinstance(zh, str) or not zh.strip():
+                out.append(f"clarify {side}.{field}: zh missing")
+                continue
+            for lang in LANGS:
+                s = ((tr.get(lang) or {}).get(side) or {}).get(field)
+                if not isinstance(s, str) or not s.strip():
+                    out.append(f"clarify {side}.{field}: {lang} missing")
+                elif placeholders(s) != placeholders(zh):
+                    out.append(f"clarify {side}.{field}: {lang} placeholders {sorted(placeholders(s))} != zh {sorted(placeholders(zh))}")
+        for lang in LANGS:
+            extra = set(((tr.get(lang) or {}).get(side) or {})) - set(q.get(side) or {})
+            if extra:
+                out.append(f"clarify_questions.i18n.{lang}.{side} has fields not in zh: {sorted(extra)}")
+    return out
 
 
 def body(text):
@@ -51,6 +85,7 @@ def problems(d):
         out.append("Q6: minimum_fields must be question fields")
     if "一次只問一題" not in q.get("pace", ""):
         out.append("Q7: one question at a time")
+    out += clarify_i18n_problems(d)
     if any("待拍板" in json.dumps(v, ensure_ascii=False) for v in d.values()):
         out.append("still contains 待拍板")
     return out

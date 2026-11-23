@@ -45,6 +45,15 @@ from app.core.copilot import (
 from app.core.storage import LocalStorageClient
 from app.matching import invites as match_invites
 from app.dispatch import Envelope, handle_device_intent
+from app.i18n import (
+    SESSION_KEY as LANG_KEY,
+    all_app_labels,
+    app_label,
+    chainlit_locale,
+    normalize_lang,
+    set_current_lang,
+    t,
+)
 from app.nodes import commands as node_commands
 from app.settings import ROOT
 from app.surfaces import line as line_surface  # 註冊 /webhook/line route
@@ -99,6 +108,7 @@ async def sso_header_auth(headers) -> Optional[cl.User]:
             "project": idn["project"],
             "tenant_id": idn.get("tenant_id"),
             "role": "cms-user",
+            LANG_KEY: normalize_lang(idn.get(LANG_KEY)),
         },
     )
 
@@ -181,13 +191,14 @@ async def _guard_app(app) -> bool:
     if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
         logger.info("dispatch blocked: app=%s not enabled for project=%s", app.full_id, project)
         await cl.Message(
-            content="⚠️「{}」在此環境（{}）尚未啟用。".format(app.label, project or "預設")
+            content=t("guard.not_enabled", app=app_label(app.id, app.label),
+                      project=project or t("guard.default_project"))
         ).send()
         return False
     if not role_allows(app, _role_apps()):
         logger.info("dispatch blocked: app=%s not allowed for role (user=%s)",
                     app.full_id, getattr(user, "identifier", None))
-        await cl.Message(content="⚠️ 你的帳號權限無法使用「{}」。".format(app.label)).send()
+        await cl.Message(content=t("guard.role_denied", app=app_label(app.id, app.label))).send()
         return False
     return True
 
@@ -196,7 +207,8 @@ async def _register_commands():
     user = cl.user_session.get("user")
     project = await _current_user_project(user)
     enabled = await _enabled_apps_for(project)
-    cmds = [c for c in chainlit_commands(enabled)
+    cmds = [dict(c, description=app_label(c["id"], c.get("description") or ""))
+            for c in chainlit_commands(enabled)
             if role_allows(get_by_id(c["id"]), _role_apps())]
     await cl.context.emitter.set_commands(cmds)
     logger.info("Registered %d command(s) for project=%s: %s",
@@ -222,7 +234,7 @@ async def _app_actions() -> list[cl.Action]:
     # 標籤裡的 emoji 要去掉 variation selector（U+FE0F）：帶著它的圖示（如 ⚖️）
     # 會讓 Chainlit 算不出可讀名稱，按鈕直接顯示成 action name「open_app」。
     def _label(a) -> str:
-        return f"{a.icon} {a.label}".replace("\ufe0f", "")
+        return f"{a.icon} {app_label(a.id, a.label)}".replace("\ufe0f", "")
 
     return [
         cl.Action(name="open_app", payload={"app": a.id}, label=_label(a))
@@ -247,7 +259,7 @@ async def _handle_app(app, payload, msg):
     if TANGLE_LAW_TASK and app.id == "regulation_check":
         ctx = await _law_task_context()
         if ctx is None:
-            await cl.Message(content="⚠️ 請先從 CMS 重新進入 AI-Eva（法規檢核需要讀取你的專案）。").send()
+            await cl.Message(content=t("law.need_sso")).send()
             return
         await regulation_task.open_task(*ctx)
     else:
@@ -275,7 +287,7 @@ async def open_app(action: cl.Action):
     app_id = (action.payload or {}).get("app") or ""
     app = get_by_id(app_id)
     if app is None:
-        await cl.Message(content=f"⚠️ 找不到工具 `{app_id}`。").send()
+        await cl.Message(content=t("app.not_found", app_id=app_id)).send()
         return
 
     # #127／#308：按鈕是依當下矩陣與角色產的，但再擋一層 —— session 換人/矩陣變動時
@@ -286,7 +298,7 @@ async def open_app(action: cl.Action):
     logger.info("action open_app → %s", app.id)
     # 傳一個已送出的訊息當 msg：handler 可能拿它的 id 當 parent_id，
     # 給沒送出過的訊息會讓輸出掛到不存在的父節點而消失。
-    anchor = await cl.Message(content=f"▶ {app.label}").send()
+    anchor = await cl.Message(content=t("app.opening", label=app_label(app.id, app.label))).send()
     await _handle_app(app, "", anchor)
 
 
@@ -365,6 +377,7 @@ async def _load_sso_runtime():
     if cl.user_session.get("cms_history") is None:
         cl.user_session.set("cms_history", [])
     idn = sess["identity"]
+    await _apply_lang(idn.get(LANG_KEY))
     if TANGLE_LAW_TASK and (idn.get("user_id") or idn.get("email")):
         cl.user_session.set("law_task_identity", idn)
     # 階段2：依 project 帶對應 LiteLLM virtual key（用量分流到各 team）；無設定則 fallback 預設 key
@@ -376,6 +389,21 @@ async def _load_sso_runtime():
     # RS256 簽章瀏覽器改不了，且由 CMS 決定給誰，呼叫端說了不算。
     cl.user_session.set("judge_model", (idn.get("claims") or {}).get("judge_model"))
     return idn
+
+
+async def _apply_lang(lang) -> str:
+    """#206：SSO identity 的語言 → user_session（current_lang() 讀這裡）+ 使用者 metadata，
+    並通知前端（custom.js）切換 Chainlit 介面語系（refresh 後語言變了也跟上）。"""
+    norm = set_current_lang(lang)
+    user = cl.user_session.get("user")
+    md = getattr(user, "metadata", None)
+    if isinstance(md, dict):
+        md[LANG_KEY] = norm
+    try:
+        await cl.context.emitter.send_window_message({"eva_lang": chainlit_locale(norm)})
+    except Exception:  # noqa: BLE001 — 前端通知失敗不影響功能
+        logger.debug("send eva_lang window message failed", exc_info=True)
+    return norm
 
 
 async def _refresh_sso_runtime():
@@ -398,6 +426,7 @@ async def _refresh_sso_runtime():
             _attach_refresh_handler(runtime, sid)
         cl.user_session.set("cms_runtime", runtime)
         _set_role_apps(refreshed.get("manifest"))
+        await _apply_lang((refreshed.get("identity") or {}).get(LANG_KEY))
         return True
     except Exception:
         logger.exception("_refresh_sso_runtime failed unexpectedly")
@@ -430,24 +459,13 @@ async def on_start():
                 label=match_invites.text("action", reminder.lang),
             )] + actions
         await cl.Message(
-            content=prefix + (
-                f"嗨，我是你在 CMS 的 AI 副駕（{idn.get('email') or idn['project']}）。\n\n"
-                f"我可以幫你查：{', '.join(tools) or '（目前無可用工具）'}。\n"
-                "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
-                "或直接點下面的工具："
-            ),
+            content=prefix + t("welcome.sso", who=idn.get("email") or idn["project"],
+                               tools=", ".join(tools) or t("welcome.no_tools")),
             actions=actions,
         ).send()
         return
 
-    await cl.Message(
-        content=(
-            "嗨，我是 **Eva**。\n\n"
-            "- 直接輸入問題 → 一般對話（OpenAI gpt-4o-mini）\n"
-            "- 或直接點下面的工具："
-        ),
-        actions=await _app_actions(),
-    ).send()
+    await cl.Message(content=t("welcome.guest"), actions=await _app_actions()).send()
 
 
 # ── 附件（#66 file_to_project MVP）────────────────────────────
@@ -487,7 +505,7 @@ def _read_text_file(path: str | None, mime: str, name: str) -> Optional[str]:
         logger.exception("read attachment failed: %s", name)
         return None
     if len(text) > _MAX_FILE_CHARS:
-        text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
+        text = text[:_MAX_FILE_CHARS] + t("attach.truncated")
     return text.strip() or None
 
 
@@ -521,7 +539,7 @@ def _read_pdf_file(path: str | None, mime: str, name: str) -> Optional[str]:
     if not text.strip():
         return None
     if len(text) > _MAX_FILE_CHARS:
-        text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
+        text = text[:_MAX_FILE_CHARS] + t("attach.truncated")
     return text.strip()
 
 
@@ -578,7 +596,7 @@ def _read_docx_file(path: str | None, mime: str, name: str) -> Optional[str]:
     if not text.strip():
         return None
     if len(text) > _MAX_FILE_CHARS:
-        text = text[:_MAX_FILE_CHARS] + "\n…（內容過長已截斷）"
+        text = text[:_MAX_FILE_CHARS] + t("attach.truncated")
     return text.strip()
 
 
@@ -609,8 +627,8 @@ async def _emit_copilot(ans: str, pending, user_label: str, history: list) -> No
     if pending:
         cl.user_session.set("pending_tool", pending)
         await cl.Message(content=ans, actions=[
-            cl.Action(name="cms_confirm", payload={"decision": "yes"}, label="✅ 確認"),
-            cl.Action(name="cms_confirm", payload={"decision": "no"}, label="✖ 取消"),
+            cl.Action(name="cms_confirm", payload={"decision": "yes"}, label=t("btn.confirm")),
+            cl.Action(name="cms_confirm", payload={"decision": "no"}, label=t("btn.cancel")),
         ]).send()
     else:
         cl.user_session.set("pending_tool", None)
@@ -627,7 +645,7 @@ async def _run_copilot_emit(runtime, user_text: str, user_label: str, history: l
         ans, pending = result["reply"], result.get("pending")
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS copilot failed")
-        ans, pending = f"⚠️ 查詢失敗，請再試一次（{type(e).__name__}）", None
+        ans, pending = t("copilot.failed", err=type(e).__name__), None
     await _emit_copilot(ans, pending, user_label, history)
 
 
@@ -642,7 +660,7 @@ async def _run_with_attachments(runtime, intent: str, atts: list, history: list)
         blocks.append(_frame_file(a["name"], text))
     # 不在這裡消費：附件留著讓使用者多輪追問；建成專案成功（cms_confirm）或換新上傳時才清
     if not blocks:
-        await cl.Message(content="檔案讀不到內容（可能是空檔或編碼問題），請確認後再試。").send()
+        await cl.Message(content=t("attach.unreadable")).send()
         return
     user_text = intent + "".join(blocks)
     label = intent if len(intent) < 40 else f"（依上傳檔案 {'、'.join(ok)} 處理）"
@@ -653,7 +671,7 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
     """附件進來：分流可讀(txt/md)/不可讀；有意圖直接跑，純上傳則存起來 + 問 + chips。"""
     readable, rejected = [], []
     for e in (msg.elements or []):
-        name = e.name or "檔案"
+        name = e.name or t("attach.default_name")
         ext = os.path.splitext(name)[1].lower()
         mime = (e.mime or "").lower()
         if (ext in _TEXT_EXTS or mime in _TEXT_MIMES or ext in _PDF_EXTS or mime in _PDF_MIMES
@@ -665,9 +683,9 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
                 [a["name"] for a in readable], rejected, bool(content))
     note = ""
     if rejected:
-        note = f"\n（{'、'.join(rejected)} 目前還不能解析 —— 目前支援 .txt / .md、PDF 與 .docx）"
+        note = t("attach.unsupported_note", names="、".join(rejected))
     if not readable:
-        await cl.Message(content=("我收到檔案了，但這種格式目前還不能處理。" + note)).send()
+        await cl.Message(content=t("attach.unsupported", note=note)).send()
         return
     # lazy：只存 name+path，先不讀內容（新上傳取代舊的）
     cl.user_session.set("pending_attachments", readable)
@@ -680,11 +698,11 @@ async def _handle_cms_attachments(msg: cl.Message, content: str, runtime, histor
     tools = [t["function"]["name"] for t in runtime.visible_tools()]
     actions = []
     if "create_project" in tools:
-        actions.append(cl.Action(name="cms_attach", payload={"action": "create_project"}, label="📄 建成專案"))
-    actions.append(cl.Action(name="cms_attach", payload={"action": "summarize"}, label="📝 幫我摘要"))
-    actions.append(cl.Action(name="cms_attach", payload={"action": "dismiss"}, label="💤 先放著"))
+        actions.append(cl.Action(name="cms_attach", payload={"action": "create_project"}, label=t("btn.attach_create")))
+    actions.append(cl.Action(name="cms_attach", payload={"action": "summarize"}, label=t("btn.attach_summarize")))
+    actions.append(cl.Action(name="cms_attach", payload={"action": "dismiss"}, label=t("btn.attach_dismiss")))
     await cl.Message(
-        content=f"收到檔案：{names}。我先放著、還沒打開它 —— 要我拿它做什麼？{note}",
+        content=t("attach.received", names=names, note=note),
         actions=actions,
     ).send()
 
@@ -711,7 +729,8 @@ async def on_message(msg: cl.Message):
     command_is_followup = (
         msg.command == "social_post"
         and cl.user_session.get("social_post_completed")
-        and content not in {"社群貼文", "請開始社群貼文製作，不要要求我另外輸入 prompt。"}
+        and content not in ({"請開始社群貼文製作，不要要求我另外輸入 prompt。"}
+                            | all_app_labels("social_post"))
     )
     if msg.command and not command_is_followup:
         app = get_by_id(msg.command)
@@ -739,7 +758,7 @@ async def on_message(msg: cl.Message):
                 await _handle_cms_attachments(msg, content, runtime, history)
             except Exception as e:  # noqa: BLE001
                 logger.exception("attachment handling failed")
-                await cl.Message(content=f"⚠️ 處理附件時出錯（{type(e).__name__}），請再試一次。").send()
+                await cl.Message(content=t("attach.error", err=type(e).__name__)).send()
             return
         if not content:
             return
@@ -755,19 +774,11 @@ async def on_message(msg: cl.Message):
     # 免得 LLM 沒工具硬答 CMS 問題（#100：問「你有哪些專案」卻回「我將進行專案建立」）。
     if _is_sso_user() and not cl.user_session.get("cms_runtime_warned"):
         cl.user_session.set("cms_runtime_warned", True)
-        await cl.Message(
-            content=(
-                "⚠️ 目前讀不到你的 CMS 資料（登入憑證已失效）——"
-                "專案查詢、SROI、圖表匯出、法規檢核都暫時無法使用。\n\n"
-                "請回 CMS 重新點一次「進 AI 秘書」。在那之前，以下回答**不含**你的專案資料。"
-            )
-        ).send()
+        await cl.Message(content=t("runtime.lost")).send()
 
     # runtime 仍為 None：若使用者上傳了附件（期待副駕），多半是 SSO session 過期 → 明講、別靜默丟
     if msg.elements:
-        await cl.Message(
-            content="⚠️ 你的登入可能過期了，附件沒被處理。請重新從 CMS 點一次「進 AI 秘書」再上傳。"
-        ).send()
+        await cl.Message(content=t("session.expired_attach")).send()
         return
 
     if not content:
@@ -793,7 +804,7 @@ async def on_message(msg: cl.Message):
                     nodes.add(nid)
                     await node_commands.enqueue_command(nid, WEB_DEVICE_PROJECT, c, source="web")
             await cl.Message(
-                content=f"好，已請 {'、'.join(sorted(nodes))} 處理（{len(cmds)} 個動作），結果會傳到 LINE 👌"
+                content=t("device.dispatched", nodes="、".join(sorted(nodes)), count=len(cmds))
             ).send()
             return
 
@@ -801,7 +812,7 @@ async def on_message(msg: cl.Message):
     if app is None:
         app = default_app()
     if app is None:
-        await cl.Message(content="⚠️ 沒有可用的處理器").send()
+        await cl.Message(content=t("no_handler")).send()
         return
 
     # #127／#308 dispatch guard：啟用矩陣遮蔽、或角色不能用的 app，直接被呼叫 → 擋下，不跑 handler。
@@ -831,22 +842,20 @@ async def cms_confirm(action: cl.Action):
     runtime = cl.user_session.get("cms_runtime")
     cl.user_session.set("pending_tool", None)
     if not (pending and runtime):
-        await cl.Message(content="這個確認已失效，請重新說一次需求。").send()
+        await cl.Message(content=t("confirm.expired")).send()
         return
     if (action.payload or {}).get("decision") != "yes":
-        await cl.Message(content="好，已取消，沒有送出。").send()
+        await cl.Message(content=t("confirm.cancelled")).send()
         return
     try:
         if not await _refresh_sso_runtime():
-            await cl.Message(
-                content="⚠️ 登入授權已過期，這次沒有送出。請回 CMS 重新點一次「進 AI 秘書」後再確認。"
-            ).send()
+            await cl.Message(content=t("confirm.auth_expired")).send()
             return
         runtime = cl.user_session.get("cms_runtime") or runtime
         res = await execute_confirmed(runtime, pending["name"], pending["args"])
     except Exception as e:  # noqa: BLE001
         logger.exception("CMS confirm execute failed")
-        res = {"reply": f"⚠️ 執行失敗（{type(e).__name__}）", "ok": False, "data": {}}
+        res = {"reply": t("confirm.failed", err=type(e).__name__), "ok": False, "data": {}}
     reply = res["reply"]
     history = cl.user_session.get("cms_history") or []
 
@@ -859,18 +868,15 @@ async def cms_confirm(action: cl.Action):
             sdg_msg = await generate_and_save_sdg(runtime, info, uuid, api_key=cl.user_session.get("llm_key"), user=cl.user_session.get("llm_user"))
         except Exception:  # noqa: BLE001
             logger.exception("auto SDG failed")
-            sdg_msg = "（SDG 自動產生失敗，可稍後再說「幫我產 SDG」）"
+            sdg_msg = t("sdg.failed")
         cl.user_session.set("sroi_target", {"uuid": uuid, "info": info})
-        full = (
-            f"{reply}\n\n{sdg_msg}\n\n"
-            "要不要順便產一版 **SROI 草稿**？會花一點時間，產完你可進試算表自己修。"
-        )
+        full = f"{reply}\n\n{sdg_msg}\n\n{t('sroi.offer')}"
         history += [HumanMessage(content=f"（已建立專案 {info.get('name')}）"), AIMessage(content=full)]
         cl.user_session.set("cms_history", history[-12:])
         # uuid/info 放進 payload（跟訊息一起存）→ reload/reconnect 後點按鈕仍有效，不靠暫存 session
         await cl.Message(content=full, actions=[
-            cl.Action(name="cms_sroi", payload={"decision": "yes", "uuid": uuid, "info": info}, label="✅ 產 SROI 草稿"),
-            cl.Action(name="cms_sroi", payload={"decision": "no"}, label="✖ 不用"),
+            cl.Action(name="cms_sroi", payload={"decision": "yes", "uuid": uuid, "info": info}, label=t("btn.sroi_yes")),
+            cl.Action(name="cms_sroi", payload={"decision": "no"}, label=t("btn.sroi_no")),
         ]).send()
         return
 
@@ -885,7 +891,7 @@ async def cms_sroi(action: cl.Action):
     payload = action.payload or {}
     runtime = cl.user_session.get("cms_runtime")
     if payload.get("decision") != "yes":
-        await cl.Message(content="好，這次先不做 SROI；需要時再跟我說。").send()
+        await cl.Message(content=t("sroi.skip")).send()
         return
     # 優先讀 payload（reload 也在）；退回暫存 session
     tgt = cl.user_session.get("sroi_target") or {}
@@ -893,14 +899,14 @@ async def cms_sroi(action: cl.Action):
     info = payload.get("info") or tgt.get("info") or {}
     cl.user_session.set("sroi_target", None)
     if not (runtime and uuid):
-        await cl.Message(content="找不到要做 SROI 的專案，請重新說一次。").send()
+        await cl.Message(content=t("sroi.not_found")).send()
         return
-    await cl.Message(content="好，開始估算 SROI 草稿…（會花一點時間，請稍候）").send()
+    await cl.Message(content=t("sroi.start")).send()
     try:
         reply = await estimate_and_save_sroi(runtime, info, uuid, api_key=cl.user_session.get("llm_key"), user=cl.user_session.get("llm_user"))
     except Exception as e:  # noqa: BLE001
         logger.exception("SROI estimate failed")
-        reply = f"⚠️ SROI 估算失敗（{type(e).__name__}）"
+        reply = t("sroi.failed", err=type(e).__name__)
     await cl.Message(content=reply).send()
 
 
@@ -911,12 +917,12 @@ async def chart_query(action: cl.Action):
     payload = action.payload or {}
     if not element or not runtime or not runtime.is_allowed("dashboard_sdg_data"):
         if element:
-            element.props["error"] = "目前帳號沒有圖表資料權限。"
+            element.props["error"] = t("chart.no_permission")
             await element.update()
         return
     element.props.update({"loading": True, "error": ""})
     await element.update()
-    await cl.Message(content="⏳ 正在查詢圖表資料，請稍候…").send()
+    await cl.Message(content=t("chart.querying")).send()
     try:
         result = await runtime.execute("dashboard_sdg_data", {
             "year": str(payload.get("year") or "2025"),
@@ -937,12 +943,12 @@ async def chart_query(action: cl.Action):
         })
     except Exception as exc:  # noqa: BLE001
         logger.exception("chart query failed")
-        element.props.update({"loading": False, "error": f"查詢失敗：{type(exc).__name__}"})
+        element.props.update({"loading": False, "error": t("chart.query_error", err=type(exc).__name__)})
     await element.update()
     if element.props.get("error"):
-        await cl.Message(content="⚠️ 圖表查詢失敗，請稍後再試。").send()
+        await cl.Message(content=t("chart.query_failed")).send()
     else:
-        await cl.Message(content="✅ 圖表資料已更新。").send()
+        await cl.Message(content=t("chart.updated")).send()
 
 
 @cl.action_callback("chart_export")
@@ -950,9 +956,9 @@ async def chart_export(action: cl.Action):
     runtime = cl.user_session.get("cms_runtime")
     payload = action.payload or {}
     if not runtime or not runtime.is_allowed("chart_export"):
-        await cl.Message(content="⚠️ 目前帳號沒有圖表匯出權限。").send()
+        await cl.Message(content=t("export.no_permission")).send()
         return
-    await cl.Message(content=f"⏳ 正在產生 {payload.get('format', 'pdf').upper()} 檔案，請稍候…").send()
+    await cl.Message(content=t("export.generating", fmt=payload.get("format", "pdf").upper())).send()
     try:
         result = await runtime.execute("chart_export", {
             "year": str(payload.get("year") or "2025"),
@@ -969,12 +975,12 @@ async def chart_export(action: cl.Action):
             output.write(content)
             path = output.name
         await cl.Message(
-            content=f"✅ 已匯出 {data.get('filename', 'sdg-chart' + suffix)}。",
+            content=t("export.done", filename=data.get("filename", "sdg-chart" + suffix)),
             elements=[cl.File(name=data.get("filename", "sdg-chart" + suffix), path=path)],
         ).send()
     except Exception as exc:  # noqa: BLE001
         logger.exception("chart export failed")
-        await cl.Message(content=f"⚠️ 圖表匯出失敗（{type(exc).__name__}）。").send()
+        await cl.Message(content=t("export.failed", err=type(exc).__name__)).send()
 
 
 @cl.action_callback("cms_attach")
@@ -986,15 +992,15 @@ async def cms_attach(action: cl.Action):
     act = (action.payload or {}).get("action")
     if act == "dismiss":
         # 不清掉：檔案留著，之後點按鈕、或直接打字問都還能用（A 版行為）
-        await cl.Message(content="好，先放著。檔案我留著，之後點上面的按鈕、或直接打字問我都行。").send()
+        await cl.Message(content=t("attach.dismissed")).send()
         return
     if not (atts and runtime):
-        await cl.Message(content="找不到剛剛的檔案了，請再上傳一次。").send()
+        await cl.Message(content=t("attach.gone")).send()
         return
     if not act:
         return
     intent = _ATTACH_INTENTS.get(act)
     if not intent:
-        await cl.Message(content="這個動作我還不會，請直接打字告訴我需求。").send()
+        await cl.Message(content=t("attach.unknown_action")).send()
         return
     await _run_with_attachments(runtime, intent, atts, history)

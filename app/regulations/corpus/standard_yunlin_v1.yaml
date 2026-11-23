@@ -114,33 +114,54 @@ clauses_source: negative_list.json
 
 # 每個「缺資料」對應一題。field = 要問的資料；domain = 影響哪個法領域；
 # rule = 拿到答案後怎麼判（只用門檻數字或是非，不做語意判斷）。
+# ask_i18n = ask 的英日韓版（#208）：由人校對後放入，執行時不即時機器翻譯；佔位符與中文相同（tools/law_standard_check.py 檢查）。
 clarify_questions:
   - field: 申請開發面積
     domain: 開發審議
     ask: 這次申請開發或變更編定的基地面積多大？（單位：公頃或平方公尺）
+    ask_i18n:
+      en: "How large is the site you are applying to develop or rezone this time? (unit: hectares or square meters)"
+      ja: "今回、開発または用途変更を申請する敷地の面積はどのくらいですか？（単位：ヘクタールまたは平方メートル）"
+      ko: "이번에 개발 또는 용도 변경을 신청하는 부지 면적은 얼마인가요? (단위: 헥타르 또는 제곱미터)"
     unit: 公頃
     rule: { law: 非都市土地使用管制規則, article: "§11", hit_if_gte: 1.0, else: 不觸及 }
     note: 判斷的是本次申請的基地面積，不是社區行政區總面積（同 applicability_gate）
   - field: 開發戶數
     domain: 開發審議
     ask: 這次開發預計涉及多少戶？
+    ask_i18n:
+      en: "How many households will this development involve?"
+      ja: "今回の開発には何戸が関わる予定ですか？"
+      ko: "이번 개발에는 몇 가구가 관련될 예정인가요?"
     unit: 戶
     rule: { law: 非都市土地使用管制規則, article: "§11", hit_if_gte: 50, else: 不觸及 }
   - field: 工程規模與位置
     domain: 環境影響評估
     ask: 這次工程的規模（面積）多大？是否位於山坡地、保護區或水源區？
+    ask_i18n:
+      en: "How large (in area) is this construction project? Is it located on slope land, in a protected area, or in a water source area?"
+      ja: "今回の工事の規模（面積）はどのくらいですか？山坡地（傾斜地）、保護区、水源区域に位置していますか？"
+      ko: "이번 공사의 규모(면적)는 얼마인가요? 산비탈지, 보호구역 또는 수원 구역에 위치하나요?"
     unit: 公頃
     rule: { law: 環境影響評估法, article: "§5", hit_if_gte: 1.0, hit_if_sensitive_area: true, else: 不觸及 }
     note: 環評附表門檻依開發類型不同，此處 1 公頃為暫定，待資策會核定（同 scale_thresholds）
   - field: 土地使用編定
     domain: 非都市土地使用管制
     ask: 要整建的土地目前編定為哪一種用地？（例：鄉村區乙種建築用地、農牧用地）
+    ask_i18n:
+      en: "What land-use category is the land to be redeveloped currently zoned as? (e.g. Class B building land in a rural district, agricultural and pastoral land)"
+      ja: "整備する土地は現在どの用地に編定されていますか？（例：郷村区乙種建築用地、農牧用地）"
+      ko: "정비하려는 토지는 현재 어떤 용지로 지정되어 있나요? (예: 농촌구역 을종 건축용지, 농목용지)"
     options: [建築用地, 農牧用地, 其他, 還不知道]
     rule: { hit_if_in: [農牧用地, 其他], else: 不觸及 }
     note: 非建築用地要做建築使用，才需辦變更編定
   - field: 是否作農業使用
     domain: 農地農用認定
     ask: 這塊地目前是否作農業使用？
+    ask_i18n:
+      en: "Is this land currently used for agriculture?"
+      ja: "この土地は現在、農業に使われていますか？"
+      ko: "이 토지는 현재 농업에 사용되고 있나요?"
     options: [是, 否, 還不知道]
     rule: { hit_if_in: [是], else: 不觸及 }
 

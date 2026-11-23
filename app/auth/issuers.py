@@ -22,6 +22,8 @@ import httpx
 import jwt
 from jwt.algorithms import RSAAlgorithm
 
+from app.i18n import normalize_lang
+
 logger = logging.getLogger(__name__)
 
 # ── issuer registry（誰可信 + 怎麼驗 + 映哪個 project）──────────────
@@ -114,7 +116,10 @@ def verify_handoff(token: str) -> dict:
     raises:
       jwt.PyJWTError（簽章/aud/exp/iss 不對）、ValueError（未知 issuer / kid）
     回：
-      {"project","tenant_id","user_id","email","issuer","claims"}
+      {"project","tenant_id","user_id","email","lang","issuer","claims"}
+
+    lang：通行證的 `lang` claim（tplanet-multi-tenant#507），只接受 zh／en／ja／ko，
+    其他值或缺少 → zh（#206）。
     """
     # 先看未驗 header / iss（決定用哪個 issuer 的公鑰）
     header = jwt.get_unverified_header(token)
@@ -140,9 +145,28 @@ def verify_handoff(token: str) -> dict:
         "tenant_id": tenant_id,
         "user_id": claims.get("user_id"),
         "email": claims.get("email"),
+        "lang": normalize_lang(claims.get("lang")),
         "issuer": iss,
         "claims": claims,
     }
+
+
+def lang_from_refresh(manifest: Any, current: Any = None) -> str:
+    """refresh 回應（新 manifest）帶的語言（#206：refresh 時一併更新）。
+
+    CMS refresh 端點帶 `lang`（或換發新的 handoff `token`，其 claim 帶 lang）→ 用新值；
+    回應完全沒提語言 → 沿用目前的（不因舊版 CMS 沒帶就把使用者打回 zh）。
+    """
+    if isinstance(manifest, dict):
+        if "lang" in manifest:
+            return normalize_lang(manifest.get("lang"))
+        tok = manifest.get("token") or manifest.get("handoff_token")
+        if isinstance(tok, str) and tok:
+            try:
+                return verify_handoff(tok)["lang"]
+            except Exception:  # noqa: BLE001 — 驗不過的 token 不採信
+                logger.warning("refresh token claim rejected; keep current lang", exc_info=True)
+    return normalize_lang(current)
 
 
 def fetch_manifest(issuer_id: str, token: str, *, tenant_id: str | None = None,

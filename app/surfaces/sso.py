@@ -26,6 +26,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from app.auth import issuers
+from app.i18n import SESSION_KEY as LANG_KEY, chainlit_locale, normalize_lang
 from app.tools.runtime import ToolRuntime
 
 logger = logging.getLogger(__name__)
@@ -132,7 +133,8 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
     current = await get_sso_session(session_id, allow_expired=True)
     if not current or not _DATABASE_URL:
         return None
-    identity = current["identity"]
+    identity = dict(current["identity"])
+    identity[LANG_KEY] = normalize_lang(identity.get(LANG_KEY))
     refresh_token = current.get("refresh_token")
     if refresh_token:
         try:
@@ -140,12 +142,16 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
                 identity["issuer"], refresh_token, tenant_id=identity.get("tenant_id")
             )
             next_refresh_token = manifest.get("refresh_token") or refresh_token
+            # #206：refresh 時語言一併更新（CMS 端使用者改了語言，下次換 credential 就跟上）
+            identity[LANG_KEY] = issuers.lang_from_refresh(manifest, identity.get(LANG_KEY))
             conn = await _connect()
             try:
                 await conn.execute(
                     "UPDATE sso_sessions SET manifest = $2::jsonb, refresh_token = $3, "
-                    "expires_at = NOW() + ($4 || ' seconds')::interval WHERE id = $1",
+                    "expires_at = NOW() + ($4 || ' seconds')::interval, identity = $5::jsonb "
+                    "WHERE id = $1",
                     session_id, json.dumps(manifest), next_refresh_token, str(_SESSION_TTL),
+                    json.dumps(identity),
                 )
             finally:
                 await conn.close()
@@ -194,6 +200,7 @@ async def sso_handoff(token: str, request: Request, refresh_token: str | None = 
             "project": idn["project"],
             "tenant_id": idn.get("tenant_id"),
             "role": "cms-user",
+            LANG_KEY: normalize_lang(idn.get(LANG_KEY)),
         },
     )))
     resp.set_cookie(
@@ -204,6 +211,12 @@ async def sso_handoff(token: str, request: Request, refresh_token: str | None = 
     # 不含 secret（只是 "1"），所以可被 JS 讀；真正的 session 仍在 HttpOnly 的 eva_sso。
     resp.set_cookie(
         "eva_sso_hint", "1",
+        httponly=False, secure=True, samesite="lax", max_age=_SESSION_TTL,
+    )
+    # #206：介面語言提示（非 HttpOnly，給 custom.js 在 Chainlit SPA 啟動前覆寫 navigator.language，
+    # 讓 .chainlit/translations/ 的對應語系生效）。值是 Chainlit locale（zh-TW／en-US／ja／ko），非機密。
+    resp.set_cookie(
+        "eva_lang", chainlit_locale(idn.get(LANG_KEY)),
         httponly=False, secure=True, samesite="lax", max_age=_SESSION_TTL,
     )
     return resp
