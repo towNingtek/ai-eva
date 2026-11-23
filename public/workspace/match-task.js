@@ -72,10 +72,13 @@
   function renderSelect(s) {
     const options = (Array.isArray(s.projects) ? s.projects : []).filter(p => p?.uuid && p?.name);
     const min = s.min_targets || 2, max = s.max_targets || 4;
+    // #217：A 只能選本站可發起媒合的案（伺服器給 initiable）；對象仍是整份清單扣掉 A。
+    const initiable = Array.isArray(s.initiable) ? new Set(s.initiable) : null;
+    const choices = initiable ? options.filter(p => initiable.has(p.uuid)) : options;
     const label = node('label', '專案 A ');
     const a = node('select', null, {'aria-label': '專案 A', 'data-match-a': ''});
-    for (const p of options) { const o = node('option', p.name); o.value = p.uuid; a.append(o); }
-    if (s.a) a.value = s.a;
+    for (const p of choices) { const o = node('option', p.name); o.value = p.uuid; a.append(o); }
+    if (s.a && choices.some(p => p.uuid === s.a)) a.value = s.a;
     label.append(a);
     const set = node('fieldset');
     set.append(node('legend', `比較對象（${min}–${max} 個）`));
@@ -183,7 +186,7 @@
     const text = pending ? '已送出，等待工作區更新…' : (LABELS[phase] || LABELS.loading);
     if (status.textContent !== text) status.textContent = text;
     setTitle(s.a ? `專案媒合 / ${nameOf(s.a)}` : '專案媒合工作區');
-    const key = JSON.stringify([s.task_id, phase, s.projects, s.error, !!pending]);
+    const key = JSON.stringify([s.task_id, phase, s.projects, s.initiable, s.error, !!pending]);
     if (controlsKey !== key) {
       controlsKey = key;
       controls.replaceChildren();
