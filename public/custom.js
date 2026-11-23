@@ -33,58 +33,55 @@ function evaLangCookie() {
   });
 })();
 
-// #43：SSO 來源（帶 eva_sso cookie）進站時，session 解析完成前蓋一層「登入中…」splash，
-// 避免 Chainlit SPA 先 render 登入表單再切 chatroom 的那一閃。
-// 只在有 eva_sso cookie 時動作 → 沒 session 的 standalone 訪客完全不受影響（照常看登入頁）。
+// #43／ai-eva#233：SSO 來源（帶 eva_sso_hint cookie）進站時，聊天室就緒前蓋一層品牌過場
+// （logo＋「正在帶你到 AI 秘書…」，依語言），避免 Chainlit SPA 載入期間全白、或先閃登入表單。
+// 外觀全在 custom.css（html.eva-handoff body::before/::after）：這支 JS 是 <head> 裡的同步 <script>，
+// 這裡就把 class 掛上，<body> 一出現（React 還沒掛載）過場就在，不必等 DOMContentLoaded。
+// 只在有 hint cookie 時動作 → 沒 session 的 standalone 訪客完全不受影響。
 (function () {
   console.info("[eva] panel launcher loaded");
   // 用非 HttpOnly 的 eva_sso_hint 偵測（真正的 eva_sso 是 HttpOnly，JS 讀不到）。
   if (!/(^|;\s*)eva_sso_hint=/.test(document.cookie)) return;  // 非 SSO 來源 → 不蓋，standalone 照舊
-
-  var splash = document.createElement("div");
-  splash.id = "eva-sso-splash";
-  var SPLASH_TEXT = { "zh-TW": "登入中…", "en-US": "Signing in…", "ja": "ログイン中…", "ko": "로그인 중…" };
-  splash.textContent = SPLASH_TEXT[evaLangCookie()] || "登入中…";
-  Object.assign(splash.style, {
-    position: "fixed", inset: "0", zIndex: "99999",
-    display: "flex", alignItems: "center", justifyContent: "center",
-    background: "#ffffff", color: "#555",
-    font: "500 18px -apple-system, system-ui, 'Noto Sans TC', sans-serif",
-    transition: "opacity .3s ease",
-  });
-
-  function mount() {
-    if (document.body && !document.getElementById("eva-sso-splash")) {
-      document.body.appendChild(splash);
-    }
-  }
+  var root = document.documentElement;
+  root.classList.add("eva-handoff");
+  var done = false;
   function remove() {
-    splash.style.opacity = "0";
-    setTimeout(function () { try { splash.remove(); } catch (e) {} }, 350);
+    if (done) return;
+    done = true;
+    try { obs.disconnect(); } catch (e) {}
+    root.classList.add("eva-handoff-out");   // 淡出（custom.css transition）
+    setTimeout(function () { root.classList.remove("eva-handoff", "eva-handoff-out"); }, 350);
   }
-
-  if (document.body) mount();
-  else document.addEventListener("DOMContentLoaded", mount);
-
-  // chatroom 出現（訊息輸入框 = textarea / contenteditable，登入頁沒有）→ 再等版面 settle
-  // 才淡出。直接移除會瞥見側邊欄（過去7天/歷史）還在 hydrate 的那一閃。
-  var obs = new MutationObserver(function () {
-    if (document.querySelector('textarea, [contenteditable="true"]')) {
-      obs.disconnect();
-      setTimeout(remove, 500);  // 留時間給 sidebar/layout 畫完
-    }
-  });
-  document.addEventListener("DOMContentLoaded", function () {
-    mount();
+  // 聊天室就緒 = 輸入框出現（登入頁沒有）且開場訊息已到；只有輸入框就再等一下，
+  // 免得瞥見側邊欄／訊息還在 hydrate 的空殼。
+  var inputAt = 0;
+  function check() {
+    if (!document.body) return;
+    var input = document.querySelector('textarea, [contenteditable="true"]');
+    if (!input) return;
+    if (!inputAt) inputAt = Date.now();
+    var msg = document.querySelector('[data-step-type], .step, .message-content, .prose');
+    if (msg) setTimeout(remove, 200);
+    else if (Date.now() - inputAt > 2500) remove();
+  }
+  var obs = new MutationObserver(check);
+  function start() {
     obs.observe(document.body, { childList: true, subtree: true });
-  });
-
-  // 硬上限：4 秒一定移除（偵測失敗時不讓 splash 卡住）
-  setTimeout(function () { try { obs.disconnect(); } catch (e) {} remove(); }, 4000);
+    check();
+  }
+  if (document.body) start();
+  else document.addEventListener("DOMContentLoaded", start);
+  // 輸入框出現但訊息遲遲不來時，MutationObserver 不一定再觸發 → 定時補看一次
+  var tick = setInterval(function () { if (done) clearInterval(tick); else check(); }, 500);
+  // 硬上限：8 秒一定移除（偵測失敗時不讓過場卡住）
+  setTimeout(remove, 8000);
+})();
 
 // Chainlit selects commands without sending a message. Submit panel commands
 // explicitly so each app can seed its flow.
+// （原本這段寫在 SSO splash 的函式裡面，只有 SSO 來源才生效；#233 把 splash 拆出來，行為照舊。）
 (function () {
+  if (!/(^|;\s*)eva_sso_hint=/.test(document.cookie)) return;
   function visibleInput() {
     return Array.from(document.querySelectorAll("textarea, [contenteditable='true']")).find(function (node) {
       var rect = node.getBoundingClientRect();
@@ -142,7 +139,6 @@ function evaLangCookie() {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
-})();
 })();
 
 // 鎖定淺色主題。

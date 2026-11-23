@@ -22,22 +22,25 @@ APP_LABELS: dict[str, dict[str, str]] = {
 STRINGS: dict[str, dict[str, str]] = {
     # 歡迎訊息
     "welcome.sso": {
-        "zh": "嗨，我是你在 CMS 的 AI 副駕（{who}）。\n\n"
-              "我可以幫你查：{tools}。\n"
-              "試試問「**列出我的專案**」或「**我的 SROI**」。\n\n"
-              "或直接點下面的工具：",
-        "en": "Hi, I'm your AI copilot for the CMS ({who}).\n\n"
-              "I can help you with: {tools}.\n"
-              "Try asking \"**List my projects**\" or \"**My SROI**\".\n\n"
-              "Or just click one of the tools below:",
-        "ja": "こんにちは、CMS の AI アシスタントです（{who}）。\n\n"
-              "お手伝いできること：{tools}。\n"
-              "「**プロジェクト一覧を見せて**」や「**私の SROI**」と聞いてみてください。\n\n"
-              "または下のツールをクリックしてください：",
-        "ko": "안녕하세요, CMS의 AI 코파일럿입니다（{who}）.\n\n"
-              "도와드릴 수 있는 것: {tools}.\n"
-              "\"**내 프로젝트 목록**\" 또는 \"**내 SROI**\"라고 물어보세요.\n\n"
-              "또는 아래 도구를 바로 클릭하세요:",
+        # ai-eva#233：只列白話功能，不列任何工具的程式名（工具清單在下方按鈕）；手機一屏要看得到按鈕 → 保持精簡。
+        "zh": "嗨，我是你的 AI 秘書（{who}）。\n\n"
+              "可以幫你查專案、看圖表、算 SROI、找媒合對象。點下面的工具開始，或直接問我：",
+        "en": "Hi, I'm your AI secretary ({who}).\n\n"
+              "I can look up your projects, show charts, estimate SROI and find matching partners. "
+              "Pick a tool below or just ask me:",
+        "ja": "こんにちは、AI 秘書です（{who}）。\n\n"
+              "プロジェクトの確認、グラフ表示、SROI の試算、マッチング相手探しをお手伝いします。"
+              "下のツールを選ぶか、そのまま質問してください：",
+        "ko": "안녕하세요, AI 비서입니다（{who}）.\n\n"
+              "프로젝트 조회, 차트 보기, SROI 계산, 매칭 상대 찾기를 도와드립니다. "
+              "아래 도구를 선택하거나 바로 물어보세요:",
+    },
+    # ai-eva#233：SSO 轉跳過場（/sso/handoff 先回的品牌頁）
+    "handoff.loading": {
+        "zh": "正在帶你到 AI 秘書…",
+        "en": "Taking you to your AI secretary…",
+        "ja": "AI 秘書に移動しています…",
+        "ko": "AI 비서로 이동하는 중…",
     },
     "welcome.no_tools": {
         "zh": "（目前無可用工具）",
