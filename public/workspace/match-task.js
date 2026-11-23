@@ -14,7 +14,7 @@
       compare: (n, name) => `${n} 案比較（A：${name}）`,
       cols: ['對象', '狀態', '互補候選', '共同尋找第三方', '可聯合或交流', '畫面'],
       inGalaxy: '星圖中', toGalaxy: '放進星圖', askEva: '請 Eva 說明',
-      galaxyLimit: '星圖最多同時畫 A 與 3 個對象；用「放進星圖」切換。', galaxyTitle: '本次媒合星系',
+      galaxyLimit: '星圖最多同時畫 A 與 3 個對象；用「放進星圖」切換。', galaxyTitle: '本次媒合星系', galaxyFit: '重設',
       galaxyNote: 'B1–B8 與需要／能提供是 AI 推論（未經 Owner 確認）；evidence 是計畫理念原文。第一期不推薦、不自動聯絡。',
       refresh: '更新進度', again: '開始新媒合', fetched: list => `已讀取：${list.join('、')}`,
       status: {CLARIFY_FIRST: '先補資料', EXPLORE: '可探索', ELIGIBLE: '可排序・未建議', RECOMMEND: '推薦', EXCLUDED: '不在範圍'},
@@ -36,7 +36,7 @@
       cols: ['Project', 'Status', 'Complementary candidates', 'Seek a third party together', 'Can join forces or exchange', 'View'],
       inGalaxy: 'In the galaxy', toGalaxy: 'Show in galaxy', askEva: 'Ask Eva to explain',
       galaxyLimit: 'The galaxy shows A and at most 3 projects at a time; use "Show in galaxy" to switch.',
-      galaxyTitle: 'Matching galaxy for this run',
+      galaxyTitle: 'Matching galaxy for this run', galaxyFit: 'Reset view',
       galaxyNote: 'B1–B8 and needs / offers are AI inferences (not confirmed by the owner); evidence is the original plan text. Phase 1 does not recommend or contact anyone automatically.',
       refresh: 'Refresh progress', again: 'Start a new match', fetched: list => `Read: ${list.join(', ')}`,
       status: {CLARIFY_FIRST: 'Add details first', EXPLORE: 'Worth exploring', ELIGIBLE: 'Rankable, not suggested',
@@ -60,7 +60,7 @@
       cols: ['相手', 'ステータス', '補完の候補', '一緒に第三者を探す', '連携・交流できる', '表示'],
       inGalaxy: '星図に表示中', toGalaxy: '星図に入れる', askEva: 'Eva に説明してもらう',
       galaxyLimit: '星図には A と最大 3 件までを同時に表示します。「星図に入れる」で切り替えてください。',
-      galaxyTitle: '今回のマッチングの星系',
+      galaxyTitle: '今回のマッチングの星系', galaxyFit: '表示をリセット',
       galaxyNote: 'B1–B8 と「必要／提供できる」は AI の推論です（オーナー未確認）。evidence はプランの理念の原文です。第 1 期は推薦も自動連絡もしません。',
       refresh: '進み具合を更新', again: '新しいマッチングを開始', fetched: list => `読み込み済み：${list.join('、')}`,
       status: {CLARIFY_FIRST: '先に情報を補う', EXPLORE: '検討できる', ELIGIBLE: '順位付けのみ・提案なし', RECOMMEND: 'おすすめ', EXCLUDED: '対象外'},
@@ -82,7 +82,7 @@
       compare: (n, name) => `${n}개 비교(A: ${name})`,
       cols: ['대상', '상태', '보완 후보', '함께 제3자 찾기', '연대·교류 가능', '화면'],
       inGalaxy: '성도에 표시 중', toGalaxy: '성도에 넣기', askEva: 'Eva에게 설명 요청',
-      galaxyLimit: '성도에는 A와 최대 3개 대상까지 동시에 표시됩니다. "성도에 넣기"로 전환하세요.', galaxyTitle: '이번 매칭 성계',
+      galaxyLimit: '성도에는 A와 최대 3개 대상까지 동시에 표시됩니다. "성도에 넣기"로 전환하세요.', galaxyTitle: '이번 매칭 성계', galaxyFit: '보기 초기화',
       galaxyNote: 'B1–B8과 필요／제공 가능 항목은 AI 추론입니다(소유자 미확인). evidence는 계획 이념 원문입니다. 1기에는 추천하거나 자동으로 연락하지 않습니다.',
       refresh: '진행 상황 새로고침', again: '새 매칭 시작', fetched: list => `읽음: ${list.join(', ')}`,
       status: {CLARIFY_FIRST: '먼저 정보 보완', EXPLORE: '탐색 가능', ELIGIBLE: '순위만·제안 없음', RECOMMEND: '추천', EXCLUDED: '범위 밖'},
@@ -136,7 +136,9 @@
     .live-match .mt-box tr[data-shown="1"] td:first-child{font-weight:600}
     .live-match .mt-galaxy iframe{width:100%;height:540px;border:0;border-radius:10px;background:#0b1020}
     .live-match .mt-error{color:#a33}
-    .live-match .mt-note{color:#5f6b7a;font-size:12px}`;
+    .live-match .mt-note{color:#5f6b7a;font-size:12px}
+    /* #229 真實媒合任務不用雲林示範的選案、比較與「確認並開始分析」：整段收起，只留本任務面板。 */
+    .live-match .desk .analysis{display:none!important}`;
   document.head.append(style);
   const box = node('div', null, {class: 'mt-box', 'data-match-task': ''});
   const status = node('p', null, {role: 'status'});
@@ -282,6 +284,14 @@
     }
   }
 
+  // #229 星圖頁（tangle-match.html）裡唯一的介面字是「重設」按鈕的提示；依語言換掉（zh 保持原字）。
+  function localizeGalaxy() {
+    try {
+      const fit = frame && frame.contentDocument && frame.contentDocument.getElementById('zFit');
+      if (fit && fit.getAttribute('title') !== T.galaxyFit) fit.setAttribute('title', T.galaxyFit);
+    } catch (_) { /* 不同源時不動 */ }
+  }
+
   function renderGalaxy(s) {
     const res = s.status === 'done' ? s.result : null;
     const targets = res ? (res.projects || []).slice(1).map(p => p.pid) : [];
@@ -295,6 +305,7 @@
     if (!key) return;
     frame = node('iframe', null, {title: T.galaxyTitle, 'data-match-galaxy': ''});
     frame.addEventListener('load', postStatus);
+    frame.addEventListener('load', localizeGalaxy);
     frame.src = '/public/tangle/tangle-match.html?liveMatch=1&v=live-match&t=' + encodeURIComponent(s.task_id)
       + '&ps=' + [res.a, ...shown].map(encodeURIComponent).join(',');
     galaxy.append(frame);

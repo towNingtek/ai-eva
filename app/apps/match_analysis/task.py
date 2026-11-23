@@ -481,19 +481,22 @@ def _names(task: dict) -> dict[str, str]:
     return {p["pid"]: p["name"] for p in (task.get("result") or {}).get("projects") or []}
 
 
-def summary(task: dict) -> str:
+def summary(task: dict, lang: str | None = None) -> str:
+    """聊天裡的媒合摘要；依使用者語言（#229，預設本連線語言）。專案名稱不翻；zh 與修改前一字不差。"""
+    from app.matching import i18n as mi18n
+
+    lang = mi18n.resolve(lang) if lang else _lang()
     res = task["result"]
     names = _names(task)
-    lines = [f"## 🧭 媒合星球：{names.get(res['a'], '')} × {len(res['pairs'])} 個指定對象", ""]
+    lines = [mi18n.msg("summary.head", lang, a=names.get(res["a"], ""), n=len(res["pairs"])), ""]
     for p in res["pairs"]:
         c = p["counts"]
-        lines.append(f"- **{names.get(p['pb'], p['pb'])}**：{p['status_text']}"
-                     f"（互補候選 {c['complement']}・共同尋找第三方 {c['third']}・可聯合或交流 {c['peer']}）")
+        lines.append(mi18n.msg("summary.pair", lang, name=names.get(p["pb"], p["pb"]),
+                               status=mi18n.tr(p["status_text"], lang),
+                               c=c["complement"], t=c["third"], p=c["peer"]))
     if task.get("cards"):
-        lines += ["", f"工作區列出 {len(task['cards'])} 張媒合建議卡：可收藏、略過、補資料；"
-                      "要聯絡對方請按卡片上的「寄站內邀請」並確認，Eva 不會自動寄出。"]
-    lines += ["", "點星球上的衛星或一對，Eva 會用這次的結果說明（不重新判斷）。",
-              "第一期不推薦、不自動聯絡；B1–B8 與方向是 AI 推論（未經 Owner 確認）。"]
+        lines += ["", mi18n.msg("summary.cards", lang, n=len(task["cards"]))]
+    lines += ["", mi18n.msg("summary.explain", lang), mi18n.msg("summary.note", lang)]
     return "\n".join(lines)
 
 
