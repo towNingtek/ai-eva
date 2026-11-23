@@ -185,6 +185,7 @@ async def refresh_sso_session(session_id: str | None) -> dict | None:
 # 非瀏覽器（API／測試，Accept 不含 text/html）或 go=1 → 直接走原本的 303。
 _HANDOFF_BG = "linear-gradient(160deg,#e3f3f1 0%,#c9e8e3 100%)"
 _HANDOFF_FG = "#0f5f57"
+_HANDOFF_BG_SOLID = "#d6eeea"   # #244：<html> 先上實色底（漸層的中間色），任何一格都不出白底
 
 
 def _token_lang(token: str, accept_language: str = "") -> str:
@@ -200,7 +201,11 @@ def _token_lang(token: str, accept_language: str = "") -> str:
 
 
 def render_handoff_page(lang: str, next_url: str) -> str:
-    """品牌過場頁 HTML（logo＋依語言的「正在帶你到 AI 秘書…」），載入即轉到 next_url。"""
+    """品牌過場頁 HTML（logo＋依語言的「正在帶你到 AI 秘書…」），畫面至少繪製一次後才轉到 next_url。
+
+    #244：手機曾截到只畫左半邊的過場（轉頁太快、截到繪製中途）→ 轉頁放在兩層
+    requestAnimationFrame 之後；分頁在背景時 rAF 不跑，另以 setTimeout 保底。
+    """
     import html as _html
     lang = normalize_lang(lang)
     text = _html.escape(t("handoff.loading", lang=lang))
@@ -208,12 +213,13 @@ def render_handoff_page(lang: str, next_url: str) -> str:
     nxt_attr = _html.escape(next_url, quote=True)
     nxt_js = json.dumps(next_url).replace("<", "\\u003c")
     return f"""<!doctype html>
-<html lang="{loc}"><head><meta charset="utf-8">
+<html lang="{loc}" style="background:{_HANDOFF_BG_SOLID};"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>AI Eva</title>
 <noscript><meta http-equiv="refresh" content="0;url={nxt_attr}"></noscript>
 <style>
+html{{background:{_HANDOFF_BG_SOLID};background:{_HANDOFF_BG};}}
 html,body{{margin:0;height:100%;background:{_HANDOFF_BG};}}
 .eva-handoff{{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
   color:{_HANDOFF_FG};font:500 18px -apple-system,system-ui,'Noto Sans TC',sans-serif;}}
@@ -225,7 +231,10 @@ html,body{{margin:0;height:100%;background:{_HANDOFF_BG};}}
 <body><div class="eva-handoff" role="status" aria-live="polite">
 <img src="/public/logo_light.png" alt="AI Eva"><div>{text}</div><div class="eva-dots"><i></i><i></i><i></i></div>
 </div>
-<script>location.replace({nxt_js});</script>
+<script>(function(){{var u={nxt_js},done=false;
+function go(){{if(done)return;done=true;location.replace(u);}}
+if(window.requestAnimationFrame){{requestAnimationFrame(function(){{requestAnimationFrame(go);}});
+setTimeout(go,1000);}}else{{setTimeout(go,50);}}}})();</script>
 </body></html>"""
 
 
