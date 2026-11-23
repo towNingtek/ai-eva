@@ -150,3 +150,12 @@ def test_custom_js_only_shows_button_with_cookie():
     assert "eva_return" in block and "if (!ret) return;" in block
     assert "/^https:\\/\\//" in block           # 前端再擋一次非 https
     assert "innerHTML" not in block             # 只用 textContent，不插 HTML
+
+
+def test_every_custom_js_loader_uses_the_same_version():
+    """法規工作區（TANGLE_LAW_TASK=1）改用 tangle-lab-overlay.js 載入 custom.js；
+    兩處版本參數不一致時，瀏覽器／CDN 會一直拿到舊的 custom.js，返回鈕不會出現（beta 實測踩到）。"""
+    cfg = open(".chainlit/config.toml", encoding="utf-8").read()
+    want = re.search(r'custom_js = "(/public/custom\.js\?v=[^"]+)"', cfg).group(1)
+    overlay = open("public/tangle-lab-overlay.js", encoding="utf-8").read()
+    assert f's.src="{want}"' in overlay, want

@@ -1,5 +1,5 @@
 // Keep the site's original custom.js (brand / forced light theme) exactly as it is.
-(function(){var s=document.createElement("script");s.src="/public/custom.js?v=20260820brand";document.head.appendChild(s)})();
+(function(){var s=document.createElement("script");s.src="/public/custom.js?v=20261123return";document.head.appendChild(s)})();
 // feat/tangle-lab: runs inside Chainlit's own UI (custom_js). Default page stays Chainlit.
 // When Eva sends CopilotFunction "tangle_workspace" (after the user picks 法規/媒合):
 //   - Chainlit's left session list collapses (remembered so it can be restored)
