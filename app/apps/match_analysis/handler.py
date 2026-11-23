@@ -361,6 +361,12 @@ async def _send_targets(state: dict) -> None:
 
 async def handle(payload: str, msg) -> None:
     text = (payload or "").strip()
+    if not text:
+        # #203：按租戶開關。sechome 從工具區點進來 → 打開／接回媒合星球任務（同一對話不重跑）；
+        # 其他租戶（雲林共用 beta-eva）維持下面原本的聊天流程。
+        from . import task as match_task
+        if await match_task.open_from_tool():
+            return
     if text:
         loop = _clarify_loop()
         if loop is not None and await loop.on_message(text):
