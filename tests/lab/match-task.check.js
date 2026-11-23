@@ -84,7 +84,11 @@ const result = {
     ok(await panel.locator('.desk-foot').isHidden(), 'demo desk footer is replaced by the live task');
 
     // 2. 選 A 與 2–4 個對象
-    await push({...base, status: 'select', projects});
+    // #217：A 只列本站可發起媒合的案（initiable），對象仍是整份清單
+    await push({...base, status: 'select', projects, initiable: ['live-c', 'live-a']});
+    const aOpts = await panel.locator('[data-match-a] option').evaluateAll(os => os.map(o => o.value));
+    ok(aOpts.join() === 'live-a,live-c', `A options are only the initiable projects (${aOpts})`);
+    ok(await panel.locator('[data-match-target]').count() === ids.length, 'targets still list every project');
     await panel.locator('[data-match-a]').selectOption('live-a');
     ok(await panel.locator('[data-match-target="live-a"]').isDisabled(), 'A cannot also be a target');
     const start = panel.locator('[data-match-start]');
