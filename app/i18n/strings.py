@@ -10,6 +10,7 @@ APP_LABELS: dict[str, dict[str, str]] = {
     "regulation_check": {"zh": "法規檢核", "en": "Regulation check", "ja": "法規チェック", "ko": "법규 검토"},
     "chart_analysis": {"zh": "圖表查詢", "en": "Chart query", "ja": "グラフ照会", "ko": "차트 조회"},
     "project_match": {"zh": "專案媒合", "en": "Project matching", "ja": "プロジェクトマッチング", "ko": "프로젝트 매칭"},
+    "match_analysis": {"zh": "媒合分析", "en": "Matching analysis", "ja": "マッチング分析", "ko": "매칭 분석"},
     "social_post": {"zh": "社群貼文", "en": "Social post", "ja": "SNS投稿", "ko": "소셜 게시물"},
     "web_search": {"zh": "網頁搜尋", "en": "Web search", "ja": "ウェブ検索", "ko": "웹 검색"},
     "knowledge_base": {"zh": "法規知識庫", "en": "Regulation library", "ja": "法規ナレッジベース", "ko": "법규 지식베이스"},

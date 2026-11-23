@@ -43,6 +43,7 @@ from app.core.copilot import (
     estimate_and_save_sroi,
 )
 from app.core.storage import LocalStorageClient
+from app.matching import invites as match_invites
 from app.dispatch import Envelope, handle_device_intent
 from app.i18n import (
     SESSION_KEY as LANG_KEY,
@@ -447,10 +448,20 @@ async def on_start():
         # CMS 副駕模式
         runtime = cl.user_session.get("cms_runtime")
         tools = [t["function"]["name"] for t in runtime.visible_tools()]
+        # ai-eva#213：一進來就提醒未回覆的媒合邀請（每次從 CMS 重讀，不存副本；失敗靜默只記 log）
+        reminder = await match_invites.build_invite_reminder(runtime)
+        actions = await _app_actions()
+        prefix = ""
+        if reminder:
+            prefix = reminder.content + "\n\n---\n\n"
+            actions = [cl.Action(
+                name=match_invites.ACTION_NAME, payload={"lang": reminder.lang},
+                label=match_invites.text("action", reminder.lang),
+            )] + actions
         await cl.Message(
-            content=t("welcome.sso", who=idn.get("email") or idn["project"],
-                      tools=", ".join(tools) or t("welcome.no_tools")),
-            actions=await _app_actions(),
+            content=prefix + t("welcome.sso", who=idn.get("email") or idn["project"],
+                               tools=", ".join(tools) or t("welcome.no_tools")),
+            actions=actions,
         ).send()
         return
 
@@ -810,6 +821,18 @@ async def on_message(msg: cl.Message):
 
     logger.info("dispatch → %s (command=%s, payload=%r)", app.id, msg.command, content[:60])
     await _handle_app(app, content, msg)
+
+
+@cl.action_callback(match_invites.ACTION_NAME)
+async def match_invites_open(action: cl.Action):
+    """「查看／回覆媒合邀請」入口：交給 copilot 用 CMS 工具即時查（不讀本地副本）。"""
+    runtime = cl.user_session.get("cms_runtime")
+    if runtime is None:
+        return
+    lang = (action.payload or {}).get("lang")
+    history = cl.user_session.get("cms_history") or []
+    label = match_invites.text("action", lang)
+    await _run_copilot_emit(runtime, match_invites.text("ask", lang), label, history)
 
 
 @cl.action_callback("cms_confirm")
