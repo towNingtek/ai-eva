@@ -1,0 +1,66 @@
+# 媒合引擎排序設定（ai-eva #200，MVP 步驟 7，第一期兩維）
+#
+# RD 維護，不開後台。改規則或權重時：換 profile_id、改 effective_at，舊結果靠媒合紀錄
+# （#198 matching.runs.ranking_config 快照）重播。
+# 第一期只算兩維（yillkid 2026-11-23：先做兩維）；各維度分開輸出，不合成單一總分。
+
+profile_id: yunlin-v1-phase1-r1
+effective_at: "2026-11-23"
+standard: standard_yunlin_v1.yaml
+
+# 指定對象數（A × 2–4 個）
+targets:
+  min: 2
+  max: 4
+
+# 第一期評估的兩維（名稱與 #198 matching.judgements.dimension 一致）
+dimensions:
+  need_offer:
+    name: Need／Offer 互補
+    原文: Primary Bridge 成立須有明確 Need、相對應 Offer 及可行合作形式
+  b1_b8:
+    name: B1–B8 能力互補
+    原文: 一方 NEED，另一方 OFFER（或 BOTH），同一類能力 → 互補（Primary Bridge 候選）
+
+# 其他四維第一期一律輸出「未評估」（媒合標準 out_of_scope.not_used）
+not_evaluated:
+  label: 未評估
+  dimensions:
+    topic: 議題與目標對象
+    feasibility: 合作可執行性
+    cross_border_cost: 跨國語境與成本
+    stage_timeline: 階段與時程
+  原文: 計畫書理念文字不足以判斷；預設權重 25/20/15/15/10/15 先不套用（2026-11-15 定案 Q2）
+
+# 硬條件：任一不符就排除並記原因（寫入媒合紀錄 exclude 事件）
+# （對象重複或包含 A 本身是輸入錯誤，engine 直接拒絕，不在這裡）
+hard_filters:
+  - id: public
+    name: 須為公開計畫
+    field: public
+    rule: is_true
+    reason: 非公開
+    原文: 只媒合公開的計畫；非公開計畫不進入候選
+  - id: same_site
+    name: 須與 A 同站
+    field: site
+    rule: equals_a
+    reason: 不同站
+    原文: 指定媒合限同一站台（租戶）內的計畫
+
+# 排序規則：依序比較，前一條分出高下就不看下一條；全部相同依 tie_break
+ranking_rules:
+  - id: bidirectional
+    name: 雙向互補優先
+    metric: bidirectional
+    order: desc
+    原文: A 需要的對方能提供、對方需要的 A 也能提供（雙向互補）排在只有單向互補之前；單向互補排在無互補之前（雙向 2、單向 1、無 0）
+  - id: complement_count
+    name: 互補候選數多者優先
+    metric: complement_count
+    order: desc
+    原文: 同一類能力一方 NEED、另一方 OFFER（或 BOTH）算一條互補候選；條數多者在前
+tie_break:
+  id: input_order
+  name: 同分依指定順序
+  原文: 前面規則都相同時，依使用者指定對象的順序，確保同一 profile 重跑順序相同
