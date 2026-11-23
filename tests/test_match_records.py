@@ -61,6 +61,12 @@ class SqliteConn:
         return "OK"
 
     async def fetchrow(self, sql, *args):
+        # sqlite < 3.35 不支援 RETURNING：拿掉後以 lastrowid 模擬 `RETURNING id`
+        m = re.search(r"\s+RETURNING\s+id\s*$", sql, re.IGNORECASE)
+        if m:
+            self.statements.append(sql)
+            cur = self.db.execute(self._translate(sql[:m.start()]), args)
+            return _Row({"id": cur.lastrowid})
         r = self._run(sql, args).fetchone()
         return None if r is None else _Row(dict(r))
 
