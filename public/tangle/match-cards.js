@@ -135,7 +135,22 @@
     .live-match .mc-card button.mc-primary:not(.mc-toggle):hover{background:#174a96}
     .live-match .mc-card button:not(.mc-toggle):disabled{color:#3e4c59;background:#e4e7eb;border-color:#cbd2d9;cursor:default}
     .live-match .mc-dialog{position:fixed;inset:0;background:rgba(10,16,32,.45);display:flex;align-items:center;justify-content:center;z-index:50}
-    .live-match .mc-dialog>div{background:#fff;color:#1f2933;border-radius:10px;padding:14px 16px;max-width:380px}`;
+    .live-match .mc-dialog>div{background:#fff;color:#1f2933;border-radius:10px;padding:14px 16px;max-width:380px}
+    .live-match .mc-card{min-width:0;overflow-wrap:anywhere;word-break:break-word}
+    .live-match .mc-card dd,.live-match .mc-card dt{min-width:0}
+    /* #234 手機（≤ 760）：「標籤｜內容」改上下排、任何文字都折行不超出卡片；卡片與確認框按鈕 ≥ 44×44。 */
+    @media(max-width:760px){
+      .live-match .mc-cards{min-width:0;max-width:100%}
+      .live-match .mc-card{padding:10px}
+      .live-match .mc-card dl{grid-template-columns:minmax(0,1fr);gap:0}
+      .live-match .mc-card dt{margin-top:6px;font-size:12px}
+      .live-match .mc-actions{gap:8px}
+      .live-match .mc-card button,.live-match .mc-dialog button{min-height:44px;min-width:44px;box-sizing:border-box}
+      .live-match .mc-card .mc-toggle{display:inline-flex;align-items:center;padding:0 4px}
+      .live-match .mc-dialog{padding:16px}
+      .live-match .mc-dialog>div{max-width:calc(100vw - 32px);box-sizing:border-box;overflow-wrap:anywhere}
+      .live-match .mc-dialog .mc-actions button{flex:1}
+    }`;
   document.head.append(style);
 
   const send = (action, extra) => parent.postMessage({tangle: {
