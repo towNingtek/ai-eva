@@ -22,7 +22,11 @@ if TANGLE_LAW_TASK:
     from app.apps.regulation_check import task as regulation_task
 
     if not TANGLE_LAB:
-        chainlit_config.ui.custom_js = "/public/tangle-lab-overlay.js?v=law-task-2"
+        # #240：版本參數改依內容雜湊（舊的寫死 "/public/tangle-lab-overlay.js?v=law-task-2"
+        # 在內容改了之後網址不變，CDN 一直給舊檔）。
+        from app.assets_version import custom_js_url
+
+        chainlit_config.ui.custom_js = custom_js_url()
 from langchain_core.messages import AIMessage, HumanMessage
 
 from app.apps._registry import (
