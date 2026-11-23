@@ -133,9 +133,49 @@ async def fetch_info(runtime, uuid: str) -> dict | None:
             "philosophy_text": plain(info.get("philosophy"))}
 
 
-async def load_projects(runtime, limit: int = LIST_LIMIT) -> dict[str, dict]:
+INITIABLE_TOOL = "list_match_initiable_projects"   # CMS #520：本站可發起媒合／寄邀請的專案
+
+
+def has_manifest(runtime) -> bool:
+    """runtime 能不能回答「某工具在不在 manifest」（正式的 ToolRuntime 都可以）。"""
+    return callable(getattr(runtime, "is_allowed", None))
+
+
+async def list_initiable(runtime) -> list[dict] | None:
+    """本站可發起媒合的專案 [{uuid, name}]（CMS 排序）；工具不存在（舊版 CMS）回 None。
+
+    讀取失敗（非「工具不存在」）丟 CmsError，和「沒有可發起的案」分開回報。
+    """
+    if has_manifest(runtime) and not runtime.is_allowed(INITIABLE_TOOL):
+        return None
+    result = await runtime.execute(INITIABLE_TOOL, {})
+    status = result.get("status")
+    if status == "denied":
+        return None
+    if status != "ok":
+        reason = result.get("reason") or result.get("error") or status or "unknown"
+        raise CmsError(f"{INITIABLE_TOOL}: {reason}")
+    data = _data(result)
+    items = data.get("items", []) if isinstance(data, dict) else data
+    out: dict[str, dict] = {}
+    for item in items if isinstance(items, list) else []:
+        uuid = item.get("uuid") if isinstance(item, dict) else item
+        if isinstance(uuid, str) and uuid and uuid not in out:
+            name = plain(item.get("name")) if isinstance(item, dict) else ""
+            out[uuid] = {"uuid": uuid, "name": name}
+    return list(out.values())
+
+
+async def load_projects(runtime, limit: int = LIST_LIMIT, first: list[str] | tuple = ()) -> dict[str, dict]:
+    """list_my_projects → {uuid: info}。
+
+    first（本站的案）一律排最前面、不受 limit 截斷；其餘照 list_my_projects 順序補到 limit 案。
+    """
+    first = list(dict.fromkeys(u for u in first if isinstance(u, str) and u))
+    rest = [u for u in await list_uuids(runtime) if u not in set(first)]
+    wanted = first + rest[:max(0, limit - len(first))]
     projects: dict[str, dict] = {}
-    for uuid in (await list_uuids(runtime))[:limit]:
+    for uuid in wanted:
         try:
             info = await fetch_info(runtime, uuid)
         except Exception:  # noqa: BLE001

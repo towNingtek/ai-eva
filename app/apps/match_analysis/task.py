@@ -129,7 +129,7 @@ def _spawn(path: Path, coro) -> None:
 
 
 def _new_task() -> dict:
-    return {"task_id": uuid4().hex, "status": "loading", "projects": [], "a": None, "targets": [],
+    return {"task_id": uuid4().hex, "status": "loading", "projects": [], "initiable": [], "a": None, "targets": [],
             "min_targets": handler.MIN_TARGETS, "max_targets": handler.MAX_TARGETS,
             "progress": [], "result": None, "error": None,
             "cards": [], "card_state": {}, "run_id": None, "clarify": None}
@@ -142,21 +142,43 @@ def _create(path: Path, runtime) -> dict:
     return task
 
 
+NO_INITIABLE = "你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。"
+
+
 async def _list(path: Path, task: dict, runtime) -> None:
+    """#217：A 只列本站可發起媒合的案（list_match_initiable_projects）；對象清單仍用 list_my_projects，
+    但本站的案排最前面、不受 LIST_LIMIT 截斷。initiable 工具不存在或 0 案 → 錯誤，不退回 list_my_projects。"""
     try:
-        projects = await handler.load_projects(runtime)
-        task["projects"] = [{"uuid": u, "name": p["name"]} for u, p in projects.items()]
-        if len(projects) >= 1 + handler.MIN_TARGETS:
+        if handler.has_manifest(runtime):
+            initiable = await handler.list_initiable(runtime)
+            if not initiable:
+                task.update(status="error", error=NO_INITIABLE, initiable=[])
+                return
+        else:
+            # 沒有 manifest 的 runtime（離線測試替身，非 CMS 連線）沒有站別可言：清單全部可當 A。
+            initiable = None
+        first = [p["uuid"] for p in initiable or ()]
+        projects = await handler.load_projects(runtime, first=first)
+        listed = []
+        for p in initiable or ():   # 本站的案排最前面；get_project_info 讀不到時用 CMS 給的名稱，仍可當 A
+            info = projects.pop(p["uuid"], None)
+            listed.append({"uuid": p["uuid"],
+                           "name": info["name"] if info else (p["name"] or f"（未命名專案 {p['uuid']}）")})
+        listed += [{"uuid": u, "name": p["name"]} for u, p in projects.items()]
+        task["projects"] = listed
+        task["initiable"] = first if initiable is not None else [p["uuid"] for p in listed]
+        if len(listed) >= 1 + handler.MIN_TARGETS:
             task["status"] = "select"
         else:
             task.update(status="error",
-                        error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {len(projects)} 個。")
+                        error=f"媒合需要 A 加上至少 {handler.MIN_TARGETS} 個對象，目前可用的專案只有 {len(listed)} 個。")
     except Exception as exc:  # noqa: BLE001 —— 不可誤報成專案不足
         logger.exception("match task: 讀取專案清單失敗")
         task.update(status="error", error=f"讀取專案清單失敗（{exc}），請按「開始新媒合」再試。")
-    _save(path, task)
-    _ACTIVE.pop(path, None)   # 先釋放再推送，讓「開始新媒合」可以立刻接手
-    await _publish(task)
+    finally:
+        _save(path, task)
+        _ACTIVE.pop(path, None)   # 先釋放再推送，讓「開始新媒合」可以立刻接手
+        await _publish(task)
 
 
 # ── 對外：開啟與事件 ──────────────────────────────────────────────────
@@ -212,6 +234,9 @@ def _validate(task: dict, a, targets) -> str | None:
     ids = {p["uuid"] for p in task["projects"]}
     if not isinstance(a, str) or a not in ids:
         return "請先選擇你的專案 A。"
+    initiable = task.get("initiable")
+    if initiable is not None and a not in initiable:
+        return "這個專案不能在本站發起媒合（寄不出邀請），請改選清單中的專案 A。"
     if not isinstance(targets, list) or not all(isinstance(t, str) for t in targets):
         return "請勾選媒合對象。"
     if len(set(targets)) != len(targets) or a in targets or not set(targets) <= ids:
