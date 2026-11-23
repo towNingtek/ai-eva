@@ -191,28 +191,28 @@
     @keyframes mt-pulse{0%,100%{box-shadow:0 0 0 0 rgba(47,107,214,.45)}50%{box-shadow:0 0 0 5px rgba(47,107,214,0)}}
     @keyframes mt-fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
     .live-match .mt-fade{animation:mt-fade .6s ease-out both}
-    .live-match .mt-stale{background:none;border:0;padding:0;color:#5f6b7a;font-size:12px;text-decoration:underline;cursor:pointer;align-self:flex-start}
+    .live-match .mt-stale{background:none;border:0;padding:0;color:#b4bfcc;font-size:12px;text-decoration:underline;cursor:pointer;align-self:flex-start}
     @media (max-width:640px){.live-match .mt-box{padding:8px 10px;gap:8px}.live-match .mt-stage{height:min(400px,46vh)}
       .live-match .mt-steps{font-size:12px}.live-match .mt-steps li{padding:2px 7px}}
     @media (prefers-reduced-motion:reduce){.live-match .mt-steps li[data-state="active"],.live-match .mt-fade{animation:none}}
-    .live-match .mt-error{color:#a33}
-    /* #238 媒合準備度：選好 A 先看資料夠不夠；只提示、不擋開始 */
+    .live-match .mt-error{color:#ff8f8f}
+    /* #238 媒合準備度：選好 A 先看資料夠不夠；只提示、不擋開始。#242 區塊在深色工作區（#13161c＋紫色光暈）上，文字色都要 ≥ 4.5:1 */
     .live-match .mt-ready{border:1px solid #d8dee6;border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
     .live-match .mt-ready ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 10px}
-    .live-match .mt-ready li[data-state="ok"]{color:#21714a}
-    .live-match .mt-ready li[data-state="vague"]{color:#8a5a00}
-    .live-match .mt-ready li[data-state="missing"]{color:#5f6b7a}
+    .live-match .mt-ready li[data-state="ok"]{color:#5fd08f}
+    .live-match .mt-ready li[data-state="vague"]{color:#f0b54a}
+    .live-match .mt-ready li[data-state="missing"]{color:#b4bfcc}
     .live-match .mt-ready p{margin:0}
     .live-match .mt-ready-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .live-match .mt-ready-q{font-weight:600}
     .live-match .mt-ready input[type=text]{flex:1;min-width:160px;padding:5px 8px;border:1px solid #9aa5b1;border-radius:6px;font:inherit}
-    .live-match .mt-note{color:#5f6b7a;font-size:12px}
+    .live-match .mt-note{color:#b4bfcc;font-size:12px}
     .live-match .mt-search{display:block;width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid #9aa5b1;border-radius:8px;font:inherit}
     .live-match .mt-box label.mt-pick{display:flex;align-items:center;gap:8px;margin:0;padding:3px 4px;border-radius:6px;cursor:pointer}
     .live-match .mt-box label.mt-pick[hidden]{display:none}
     .live-match .mt-pick input{flex:none;margin:0}
     .live-match .mt-pick-text{display:flex;flex-direction:column;min-width:0}
-    .live-match .mt-pick-sub{font-size:12px;color:#7b8794;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .live-match .mt-pick-sub{font-size:12px;color:#aab4c0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .live-match .mt-compare-scroll{overflow-x:auto;max-width:100%}
     /* #234 手機：點擊目標 ≥ 44px、勾選整列可點、表格橫向捲動不撐破版面。 */
     @media(max-width:760px){
