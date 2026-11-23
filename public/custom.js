@@ -1,3 +1,38 @@
+// #206：介面語系跟著 CMS 通行證的 lang 走。
+// 後端 SSO handoff 會寫非 HttpOnly 的 eva_lang cookie（zh-TW / en-US / ja / ko），
+// Chainlit 前端用 navigator.language 決定翻譯檔（.chainlit/translations/<locale>.json），
+// 所以在 bundle 載入前（custom_js 是同步 <script>）覆寫 navigator.language(s)。
+// 連線後若 session 語言與 cookie 不同（例如 refresh 後語言變了），後端送 window message
+// {eva_lang}，這裡更新 cookie 並重新載入一次。
+var EVA_LOCALES = ["zh-TW", "en-US", "ja", "ko"];
+function evaLangCookie() {
+  var m = document.cookie.match(/(?:^|;\s*)eva_lang=([^;]+)/);
+  var v = m ? decodeURIComponent(m[1]) : "";
+  return EVA_LOCALES.indexOf(v) >= 0 ? v : "";
+}
+(function () {
+  var lang = evaLangCookie();
+  if (!lang) return;
+  try {
+    Object.defineProperty(navigator, "language", { get: function () { return lang; }, configurable: true });
+    Object.defineProperty(navigator, "languages", { get: function () { return [lang]; }, configurable: true });
+  } catch (e) { console.warn("[eva] cannot override navigator.language", e); }
+  try { document.documentElement.lang = lang; } catch (e) {}
+})();
+(function () {
+  var reloaded = false;
+  window.addEventListener("message", function (ev) {
+    var data = ev && ev.data;
+    if (!data || typeof data !== "object" || !data.eva_lang) return;
+    var want = String(data.eva_lang);
+    if (EVA_LOCALES.indexOf(want) < 0 || want === evaLangCookie() || reloaded) return;
+    var secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = "eva_lang=" + encodeURIComponent(want) + "; path=/; max-age=28800; SameSite=Lax" + secure;
+    reloaded = true;
+    location.reload();
+  });
+})();
+
 // #43：SSO 來源（帶 eva_sso cookie）進站時，session 解析完成前蓋一層「登入中…」splash，
 // 避免 Chainlit SPA 先 render 登入表單再切 chatroom 的那一閃。
 // 只在有 eva_sso cookie 時動作 → 沒 session 的 standalone 訪客完全不受影響（照常看登入頁）。
@@ -8,7 +43,8 @@
 
   var splash = document.createElement("div");
   splash.id = "eva-sso-splash";
-  splash.textContent = "登入中…";
+  var SPLASH_TEXT = { "zh-TW": "登入中…", "en-US": "Signing in…", "ja": "ログイン中…", "ko": "로그인 중…" };
+  splash.textContent = SPLASH_TEXT[evaLangCookie()] || "登入中…";
   Object.assign(splash.style, {
     position: "fixed", inset: "0", zIndex: "99999",
     display: "flex", alignItems: "center", justifyContent: "center",
