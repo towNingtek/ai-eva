@@ -174,3 +174,51 @@ function evaLangCookie() {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
   else start();
 })();
+
+// ai-eva#172：通用「返回來源網站」。由誰帶使用者進來（issuer）決定要不要顯示：
+// issuer 在 handoff token 帶 return_url／return_label，後端驗過（https＋該 issuer 登記的網域）
+// 才寫 eva_return cookie。沒有 cookie（直接使用 AI-Eva、或 issuer 沒帶）→ 什麼都不顯示。
+(function () {
+  function readReturn() {
+    var m = document.cookie.match(/(?:^|;\s*)eva_return=([^;]+)/);
+    if (!m) return null;
+    try {
+      var raw = decodeURIComponent(m[1]);
+      if (raw.charAt(0) === '"') raw = JSON.parse(raw);
+      var v = JSON.parse(raw);
+      return v && typeof v.url === "string" && /^https:\/\//.test(v.url) ? v : null;
+    } catch (e) { return null; }
+  }
+  var ret = readReturn();
+  if (!ret) return;
+  var LABEL = { "zh-TW": "\u8fd4\u56de", "en-US": "Back to", "ja": "\u623b\u308b\uff1a", "ko": "\ub3cc\uc544\uac00\uae30:" };  // 返回／戻る：／돌아가기:（escape：不依賴伺服器 charset）
+  var prefix = LABEL[evaLangCookie()] || "\u8fd4\u56de";
+
+  function mount() {
+    if (document.getElementById("eva-return-link")) return true;
+    var bar = document.querySelector("#header") || document.querySelector("header");
+    if (!bar) return false;
+    var a = document.createElement("a");
+    a.id = "eva-return-link";
+    a.href = ret.url;
+    a.textContent = "\u2190 " + prefix + " " + (ret.label || "");
+    a.setAttribute("aria-label", a.textContent);
+    Object.assign(a.style, {
+      display: "inline-flex", alignItems: "center", gap: "4px", padding: "6px 12px",
+      marginRight: "8px", borderRadius: "999px", border: "1px solid rgba(0,0,0,.12)",
+      font: "500 14px -apple-system, system-ui, 'Noto Sans TC', sans-serif",
+      color: "inherit", textDecoration: "none", whiteSpace: "nowrap", background: "#fff",
+    });
+    var right = bar.lastElementChild || bar;
+    right.insertBefore(a, right.firstChild);
+    return true;
+  }
+  // Chainlit 是 SPA：頁首在 React 掛載後才出現，換頁也可能重畫 → 一直盯著，不見了就補回。
+  var obs = new MutationObserver(function () { mount(); });
+  function start() {
+    mount();
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start);
+  else start();
+})();
