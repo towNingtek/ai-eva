@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from typing import Any, Awaitable, Callable, Iterable
 
 from app.i18n import DEFAULT_LANG, current_lang, normalize_lang
@@ -26,6 +27,19 @@ LANG_NAMES: dict[str, str] = {
 }
 
 DIRECTIVE_MARK = "[output-language]"
+
+# #222：外文回覆不在括號附中文原詞（韓文出現「프로젝트 철학(計畫理念)」）
+NO_ZH_GLOSS_MARK = "[no-chinese-gloss]"
+NO_ZH_GLOSS_RULE = (
+    f"{NO_ZH_GLOSS_MARK} Do not append the original Chinese term after translated words, "
+    "and never put Chinese in parentheses as a gloss "
+    "(wrong: \"프로젝트 철학(計畫理念)\"; right: \"프로젝트 철학\"). "
+    "Explain tool names, feature names and proper nouns in the reader's language. "
+    "Tool descriptions you are given may be written in Chinese: paraphrase them in the "
+    "reader's language instead of copying the Chinese text. "
+    "Exception: when quoting the original project document, follow the original + "
+    "translation rule (the original quote may stay in Chinese)."
+)
 
 # 翻譯器：async (text, target_lang) -> translated text
 Translator = Callable[[str, str], Awaitable[str]]
@@ -48,7 +62,8 @@ def language_directive(lang: Any = None) -> str:
         f"instructions above or in the data (rules, tool results, documents). "
         f"Keep JSON keys, codes, ids, numbers and URLs unchanged. "
         f"When quoting an original document verbatim, keep the quote in its original "
-        f"language exactly as written; do not translate inside the quote."
+        f"language exactly as written; do not translate inside the quote. "
+        f"{NO_ZH_GLOSS_RULE}"
     )
 
 
@@ -74,6 +89,63 @@ def apply_output_language(messages: list, lang: Any = None) -> list:
             out[i] = _with_content(m, with_output_language(_content(m), lang))
             return out
     return [_make_system(directive, like=out[0] if out else None)] + out
+
+
+# ── #222 輸出後處理：移除外文回覆中「括號內的中文註記」 ─────────────────────
+
+_HAN = r"\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff"
+# 括號內容：只能是漢字＋空白／中文標點／頓號等（夾雜其他文字 → 不是單純註記，不動）
+_GLOSS_RE = re.compile(
+    r"[ \t\u3000]*[(（]"
+    r"((?=[^()（）\n]*[" + _HAN + r"])"
+    r"[" + _HAN + r"\s、，,・·／/\-—「」『』\u3000]+)"
+    r"[)）]"
+)
+# 日文本身就用漢字：只在括號內出現日文不用的繁體中文字形時才視為中文註記
+_ZH_ONLY_CHARS = frozenset(
+    "們這個與為說畫劃體會國時區對發開關應實經營總覽從來進還過運連達裡"
+    "將專項計團隊產業務點場書內參數據檔權條設織資訊價錢補導"
+)
+
+
+def _is_zh_gloss(inner: str, lang: str) -> bool:
+    if lang == "ja":
+        return any(ch in _ZH_ONLY_CHARS for ch in inner)
+    return True
+
+
+def _strip_segment(text: str, lang: str) -> str:
+    def _sub(m: re.Match) -> str:
+        return "" if _is_zh_gloss(m.group(1), lang) else m.group(0)
+
+    out = []
+    for line in text.split("\n"):
+        # Markdown 引用行（> …）多半是原文引用：不動
+        out.append(line if line.lstrip().startswith(">") else _GLOSS_RE.sub(_sub, line))
+    return "\n".join(out)
+
+
+def strip_zh_gloss(text: str, lang: Any = None) -> str:
+    """外文回覆的輸出後處理：移除括號中的中文原詞（「프로젝트 철학(計畫理念)」→「프로젝트 철학」）。
+
+    - zh（預設語言）原樣回傳。
+    - 原文引用區塊（`app.i18n.quote` 的原文／翻譯段標記內）與 Markdown 引用行不動：
+      引用計畫書原文時照「原文＋翻譯」規則，原文是中文屬正常。
+    - 括號內夾雜非漢字文字（例：「(計畫理念, philosophy)」）不視為單純註記，不動。
+    """
+    lang = resolve_lang(lang)
+    if lang == DEFAULT_LANG or not text:
+        return text
+    from app.i18n.quote import _ORIG_CLOSE, _ORIG_OPEN, _TR_CLOSE, _TR_OPEN
+
+    protected = re.compile(
+        "(" + re.escape(_ORIG_OPEN) + ".*?" + re.escape(_ORIG_CLOSE)
+        + "|" + re.escape(_TR_OPEN) + ".*?" + re.escape(_TR_CLOSE) + ")",
+        re.S,
+    )
+    parts = protected.split(text)
+    # split 帶捕獲群組：奇數索引為受保護的引用區塊
+    return "".join(p if i % 2 else _strip_segment(p, lang) for i, p in enumerate(parts))
 
 
 def _role(m: Any) -> str | None:
@@ -183,11 +255,14 @@ def _walk_item(container: Any, key: Any, value: Any, rest: list[str], path: str)
 __all__ = [
     "DIRECTIVE_MARK",
     "LANG_NAMES",
+    "NO_ZH_GLOSS_MARK",
+    "NO_ZH_GLOSS_RULE",
     "Translator",
     "apply_output_language",
     "language_directive",
     "localize_result",
     "make_llm_translator",
     "resolve_lang",
+    "strip_zh_gloss",
     "with_output_language",
 ]
