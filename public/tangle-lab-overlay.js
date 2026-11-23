@@ -16,25 +16,53 @@
   s.textContent='#'+KEY+'{position:fixed;top:60px;left:0;bottom:0;z-index:40;background:#101519;border-right:1px solid #24302f;box-shadow:8px 0 30px #0002;transition:transform .32s ease}'
   +'#'+KEY+'.hide{transform:translateX(-102%)}#'+KEY+' iframe{width:100%;height:100%;border:0;display:block}'
   +'body.'+KEY+'-on #root{padding-left:var(--tws-w)}body.'+KEY+'-on #root{transition:padding-left .32s ease}'
-  +'#'+KEY+'-close{position:absolute;right:14px;top:12px;z-index:2;font:13px system-ui;color:#e3efed;background:#1b2a29;border:1px solid #2f5d59;border-radius:9px;padding:6px 12px;cursor:pointer}';
+  +'#'+KEY+'-close{position:absolute;right:14px;top:12px;z-index:2;font:13px system-ui;color:#e3efed;background:#1b2a29;border:1px solid #2f5d59;border-radius:9px;padding:6px 12px;cursor:pointer}'
+  // #234 手機（≤ 760）：頂端「工作區｜對話」分頁＋收合鈕；工作區佔滿寬度，一次只顯示一側，兩者不互相覆蓋。
+  +'#'+KEY+'-tabs{display:none}'
+  +'@media(max-width:760px){'
+  +'body.'+KEY+'-on #'+KEY+'-tabs{display:flex;position:fixed;top:0;left:0;right:0;height:56px;z-index:45;box-sizing:border-box;padding:6px 8px;gap:6px;align-items:center;background:#101519;border-bottom:1px solid #24302f;font:14px system-ui}'
+  +'#'+KEY+'-tabs button{min-height:44px;min-width:44px;box-sizing:border-box;border-radius:10px;border:1px solid #2f5d59;background:#1b2a29;color:#e3efed;font:inherit;padding:0 12px;cursor:pointer}'
+  +'#'+KEY+'-tabs [role=tab]{flex:1}#'+KEY+'-tabs [role=tab][aria-selected=true]{background:#2f5d59;color:#fff;font-weight:600}'
+  +'#'+KEY+'-tabs .tws-sep{color:#5d7a77}'
+  +'body.'+KEY+'-on #root{padding-left:0!important;padding-top:56px;box-sizing:border-box}'
+  +'#'+KEY+'{top:56px;right:0;width:auto!important;border-right:0}#'+KEY+'-close{display:none}'
+  +'body.'+KEY+'-on:not(.'+KEY+'-chat) #root{visibility:hidden}'
+  +'body.'+KEY+'-chat #'+KEY+'{visibility:hidden;transform:translateX(-102%)}'
+  +'}';
   document.head.appendChild(s)}
  // #229 外框文字依使用者語言：任務狀態帶的 lang 優先（matchTask／lawTask），沒有時讀 eva_lang cookie，都沒有用 zh（與改版前相同）。
  var FRAME_I18N={zh:{close:"收合 ↙",tip:"收合工作區，回到原本的聊天畫面",frame:"雲林專案工作區"},
   en:{close:"Collapse ↙",tip:"Collapse the workspace and return to the chat",frame:"Project workspace"},
   ja:{close:"折りたたむ ↙",tip:"ワークスペースを折りたたんで、もとのチャットにもどります",frame:"プロジェクトのワークスペース"},
   ko:{close:"접기 ↙",tip:"작업 공간을 접고 원래 대화 화면으로 돌아갑니다",frame:"프로젝트 작업 공간"}};
+ var TAB_I18N={zh:{desk:"工作區",chat:"對話",tabs:"工作區與對話"},en:{desk:"Workspace",chat:"Chat",tabs:"Workspace and chat"},
+  ja:{desk:"ワークスペース",chat:"チャット",tabs:"ワークスペースとチャット"},ko:{desk:"작업 공간",chat:"대화",tabs:"작업 공간과 대화"}};
  var LANG_ALIAS={zh:"zh",en:"en",ja:"ja",jp:"ja",ko:"ko",kr:"ko"};
  function normLang(v){return LANG_ALIAS[String(v||"").trim().toLowerCase().split(/[-_]/)[0]]||null}
  function cookieLang(){var m=document.cookie.match(/(?:^|;\s*)eva_lang=([^;]*)/);try{return m?normLang(decodeURIComponent(m[1])):null}catch(_){return null}}
  function langOf(a){a=a||{};var t=a.matchTask||a.lawTask||{};return normLang(t.lang)||normLang(a.lang)||cookieLang()||"zh"}
  function localize(p,lang){p=p||document.getElementById(KEY);if(!p)return;var T=FRAME_I18N[lang]||FRAME_I18N.zh,b=document.getElementById(KEY+"-close"),f=p.querySelector("iframe");
   if(b){if(b.textContent!==T.close)b.textContent=T.close;if(b.getAttribute("title")!==T.tip)b.setAttribute("title",T.tip)}
-  if(f&&f.getAttribute("title")!==T.frame)f.setAttribute("title",T.frame)}
+  if(f&&f.getAttribute("title")!==T.frame)f.setAttribute("title",T.frame);
+  var bar=document.getElementById(KEY+"-tabs");if(bar){var L=TAB_I18N[lang]||TAB_I18N.zh,c=bar.querySelector("[data-tws-close]");
+   bar.setAttribute("aria-label",L.tabs);bar.querySelector('[data-tws-tab="desk"]').textContent=L.desk;bar.querySelector('[data-tws-tab="chat"]').textContent=L.chat;
+   if(c){c.textContent=T.close;c.setAttribute("title",T.tip)}}}
+ // #234 手機分頁：desk＝工作區、chat＝聊天（Chainlit）。只在 ≤ 760 的 CSS 生效，桌機不受影響。
+ function setTab(t){var chat=t==="chat";document.body.classList.toggle(KEY+"-chat",chat);var bar=document.getElementById(KEY+"-tabs");
+  if(bar)bar.querySelectorAll("[data-tws-tab]").forEach(function(b){b.setAttribute("aria-selected",String(b.getAttribute("data-tws-tab")===(chat?"chat":"desk")))})}
+ function tabs(){var bar=document.getElementById(KEY+"-tabs");
+  if(!bar){bar=document.createElement("div");bar.id=KEY+"-tabs";bar.setAttribute("role","tablist");
+   bar.innerHTML='<button type="button" role="tab" class="mobile-toggle" data-tws-tab="desk" aria-selected="true">工作區</button><span class="tws-sep" aria-hidden="true">｜</span>'
+    +'<button type="button" role="tab" class="mobile-toggle" data-tws-tab="chat" aria-selected="false">對話</button><button type="button" data-tws-close>收合 ↙</button>';
+   bar.querySelector('[data-tws-tab="desk"]').onclick=function(){setTab("desk")};bar.querySelector('[data-tws-tab="chat"]').onclick=function(){setTab("chat")};
+   bar.querySelector("[data-tws-close]").onclick=function(){close()}}
+  if(!document.body.contains(bar))document.body.appendChild(bar);return bar}
  function width(){return Math.max(520,Math.round(window.innerWidth*0.62))}
  function open(args){css();var p=document.getElementById(KEY);
   if(!p){p=document.createElement("div");p.id=KEY;p.className="hide";
    p.innerHTML='<button id="'+KEY+'-close" title="收合工作區，回到原本的聊天畫面">收合 ↙</button><iframe title="雲林專案工作區"></iframe>';
    document.body.appendChild(p);document.getElementById(KEY+"-close").onclick=close}
+  tabs();setTab("desk");
   localize(p,langOf(args));
   state.liveLaw=args.mode==='law'&&!!args.lawTask;state.lawTask=state.liveLaw?args.lawTask:null;
    var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+encodeURIComponent(args.v||"1")+"&b=law-task-1"+(state.liveLaw?'&liveLaw=1':'');
@@ -43,16 +71,17 @@
   var f=p.querySelector("iframe");f.onload=function(){postLaw(f)};if(f.getAttribute("src")!==src)f.setAttribute("src",src);else postLaw(f);
   var w=width();p.style.width=w+"px";document.body.style.setProperty("--tws-w",w+"px");document.body.classList.add(KEY+"-on");
   requestAnimationFrame(function(){p.classList.remove("hide")})}
- function close(){var p=document.getElementById(KEY);if(!p||!state.open)return;p.classList.add("hide");document.body.classList.remove(KEY+"-on");
+ function close(){var p=document.getElementById(KEY);if(!p||!state.open)return;p.classList.add("hide");document.body.classList.remove(KEY+"-on",KEY+"-chat");
   if(state.hadSidebar&&sidebarOpen()===false)toggleSidebar();state.open=false;
   var f=p.querySelector("iframe");f&&f.contentWindow&&f.contentWindow.postMessage({type:"tangle-ws-closed"},location.origin)}
  // Chainlit may re-render the layout (e.g. first message navigates to /thread/<id>), which re-expands the
  // session list. While the workspace is open, keep it collapsed; "收合" restores the user's original state.
  new MutationObserver(function(){if(!state.open)return;if(sidebarOpen()===true){toggleSidebar()}
   var p=document.getElementById(KEY);if(p&&!document.body.contains(p))document.body.appendChild(p);
+  var bar=document.getElementById(KEY+"-tabs");if(bar&&!document.body.contains(bar))document.body.appendChild(bar);
   if(!document.body.classList.contains(KEY+"-on"))document.body.classList.add(KEY+"-on")})
   .observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:["data-state"]});
- window.__tangleWS={open:open,close:close,state:state};
+ window.__tangleWS={open:open,close:close,state:state,setTab:setTab};
  // Eva -> page
  window.addEventListener("chainlit-call-fn",function(e){var d=e.detail||{};
   if(d.name==="tangle_workspace"){var a=d.args||{};
@@ -63,7 +92,8 @@
   else if(d.name==="tangle_close"){close();d.callback&&d.callback({ok:true})}});
  // workspace (iframe) -> Eva : forward as a hidden system message on the same Chainlit chat
  window.addEventListener("message",function(e){if(e.origin!==location.origin)return;var m=e.data||{};
-  if(m.type==="tangle-ws-close")close()});
+  if(m.type==="tangle-ws-close")close();
+  if(m.type==="tangle-ws-tab"&&state.open)setTab(m.tab==="chat"?"chat":"desk")});
  // Workspace events need no relay here: Chainlit's own UI already forwards every window "message"
  // (including ones from this iframe) to the server as window_message -> @cl.on_window_message.
 })();

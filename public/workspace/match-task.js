@@ -10,7 +10,7 @@
       labels: {loading: '載入專案清單中…', select: '請選擇 A，以及 2–4 個要比較的對象。',
         running: '正在判斷各案的需要／能提供…', done: '媒合判斷完成（不推薦、不自動聯絡）', error: '媒合未完成'},
       noReply: '尚未收到回應，正在重新確認目前進度…', pending: '已送出，等待工作區更新…',
-      projectA: '專案 A', targets: (min, max) => `比較對象（${min}–${max} 個）`, start: '開始媒合 →', picked: n => `已選 ${n} 個`,
+      search: '搜尋名稱', searchLabel: '依名稱搜尋對象', projectA: '專案 A', targets: (min, max) => `比較對象（${min}–${max} 個）`, start: '開始媒合 →', picked: n => `已選 ${n} 個`,
       compare: (n, name) => `${n} 案比較（A：${name}）`,
       cols: ['對象', '狀態', '互補候選', '共同尋找第三方', '可聯合或交流', '畫面'],
       inGalaxy: '星圖中', toGalaxy: '放進星圖', askEva: '請 Eva 說明',
@@ -32,7 +32,7 @@
         running: 'Working out what each project needs / can offer…',
         done: 'Matching complete (no recommendation, no automatic contact)', error: 'Matching not completed'},
       noReply: 'No response yet; checking the current progress again…', pending: 'Sent; waiting for the workspace to update…',
-      projectA: 'Project A', targets: (min, max) => `Projects to compare (${min}–${max})`, start: 'Start matching →',
+      search: 'Search by name', searchLabel: 'Search projects by name', projectA: 'Project A', targets: (min, max) => `Projects to compare (${min}–${max})`, start: 'Start matching →',
       picked: n => `${n} selected`,
       compare: (n, name) => `Comparing ${n} projects (A: ${name})`,
       cols: ['Project', 'Status', 'Complementary candidates', 'Seek a third party together', 'Can join forces or exchange', 'View'],
@@ -58,7 +58,7 @@
         running: '各プロジェクトの「必要なもの／提供できるもの」を判定しています…',
         done: 'マッチングの判定が完了しました（推薦・自動連絡はしません）', error: 'マッチングは完了していません'},
       noReply: 'まだ応答がありません。現在の進み具合を確認し直しています…', pending: '送信しました。ワークスペースの更新を待っています…',
-      projectA: 'プロジェクト A', targets: (min, max) => `比較する相手（${min}～${max} 件）`, start: 'マッチングを開始 →',
+      search: '名前で検索', searchLabel: '名前で相手を検索', projectA: 'プロジェクト A', targets: (min, max) => `比較する相手（${min}～${max} 件）`, start: 'マッチングを開始 →',
       picked: n => `${n} 件を選択`,
       compare: (n, name) => `${n} 件の比較（A：${name}）`,
       cols: ['相手', 'ステータス', '補完の候補', '一緒に第三者を探す', '連携・交流できる', '表示'],
@@ -84,7 +84,7 @@
         running: '각 프로젝트의 필요／제공 가능 항목을 판단하는 중…', done: '매칭 판단 완료(추천하지 않으며 자동으로 연락하지 않음)',
         error: '매칭이 완료되지 않았습니다'},
       noReply: '아직 응답이 없습니다. 현재 진행 상황을 다시 확인하는 중…', pending: '보냈습니다. 작업 공간 업데이트를 기다리는 중…',
-      projectA: '프로젝트 A', targets: (min, max) => `비교 대상(${min}–${max}개)`, start: '매칭 시작 →', picked: n => `${n}개 선택됨`,
+      search: '이름으로 검색', searchLabel: '이름으로 대상 검색', projectA: '프로젝트 A', targets: (min, max) => `비교 대상(${min}–${max}개)`, start: '매칭 시작 →', picked: n => `${n}개 선택됨`,
       compare: (n, name) => `${n}개 비교(A: ${name})`,
       cols: ['대상', '상태', '보완 후보', '함께 제3자 찾기', '연대·교류 가능', '화면'],
       inGalaxy: '성도에 표시 중', toGalaxy: '성도에 넣기', askEva: 'Eva에게 설명 요청',
@@ -161,6 +161,23 @@
     @media (prefers-reduced-motion:reduce){.live-match .mt-steps li[data-state="active"],.live-match .mt-fade{animation:none}}
     .live-match .mt-error{color:#a33}
     .live-match .mt-note{color:#5f6b7a;font-size:12px}
+    .live-match .mt-search{display:block;width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid #9aa5b1;border-radius:8px;font:inherit}
+    .live-match .mt-box label.mt-pick{display:flex;align-items:center;gap:8px;margin:0;padding:3px 4px;border-radius:6px;cursor:pointer}
+    .live-match .mt-box label.mt-pick[hidden]{display:none}
+    .live-match .mt-pick input{flex:none;margin:0}
+    .live-match .mt-pick-text{display:flex;flex-direction:column;min-width:0}
+    .live-match .mt-pick-sub{font-size:12px;color:#7b8794;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .live-match .mt-compare-scroll{overflow-x:auto;max-width:100%}
+    /* #234 手機：點擊目標 ≥ 44px、勾選整列可點、表格橫向捲動不撐破版面。 */
+    @media(max-width:760px){
+      .live-match .mt-box{padding:8px 0;min-width:0}
+      .live-match .mt-box fieldset{min-width:0}
+      .live-match .mt-box label.mt-pick{min-height:44px;padding:4px 6px}
+      .live-match .mt-pick input{width:22px;height:22px}
+      .live-match .mt-box button,.live-match .mt-box select,.live-match .mt-search{min-height:44px;min-width:44px}
+      .live-match .mt-box select{max-width:100%}
+      .live-match .mt-galaxy iframe{height:420px}
+    }
     /* #229 真實媒合任務不用雲林示範的選案、比較與「確認並開始分析」：整段收起，只留本任務面板。 */
     .live-match .desk .analysis{display:none!important}`;
   document.head.append(style);
@@ -195,7 +212,7 @@
   setTitle(T.match + T.workspace);
   localizeDesk();
 
-  let snapshot = null, pending = null, controlsKey = null, frame = null, frameKey = null, shown = [];
+  let snapshot = null, pending = null, controlsKey = null, frame = null, frameKey = null, shown = [], query = '';
   let polling = null, closed = false;
   // #232：沒有「更新進度」鈕；超過 STALE_MS 沒收到新進度才出現一行小字讓使用者手動重新整理。
   const STALE_MS = 30000;
@@ -218,6 +235,14 @@
   }
   const nameOf = pid => (snapshot?.projects || []).find(p => p.uuid === pid)?.name
     || (snapshot?.result?.projects || []).find(p => p.pid === pid)?.name || pid;
+
+  // 地點／主題：伺服器有給才顯示（欄位名稱容許幾種常見寫法）。
+  const pickText = v => (Array.isArray(v) ? v.filter(Boolean).join('、') : (typeof v === 'string' ? v.trim() : ''));
+  const subline = p => {
+    const place = pickText(p.location ?? p.place ?? p.city ?? p.area ?? p.region);
+    const topic = pickText(p.topic ?? p.topics ?? p.theme ?? p.category);
+    return [place, topic].filter(Boolean).join('・');
+  };
 
   function renderSelect(s) {
     const options = (Array.isArray(s.projects) ? s.projects : []).filter(p => p?.uuid && p?.name);
@@ -252,20 +277,41 @@
       start.disabled = !!pending || n < min || n > max;
       hint.textContent = T.picked(n);
     };
+    // #234 清單上方的搜尋框：依名稱過濾（不分大小寫）；勾選狀態不受過濾影響。
+    // 對象少（≤ SEARCH_MIN）時一眼看得完，不放搜尋框。
+    const SEARCH_MIN = 6;
+    const search = node('input', null, {type: 'search', class: 'mt-search', 'data-match-search': '',
+      placeholder: T.search, 'aria-label': T.searchLabel, autocomplete: 'off'});
+    search.value = query;
+    const rows = [];
+    const filter = () => {
+      query = search.value;
+      const want = query.trim().toLowerCase();
+      for (const [row, name] of rows) row.hidden = !!want && !name.toLowerCase().includes(want);
+    };
+    search.oninput = filter;
+    if (options.length > SEARCH_MIN) set.append(search);
     const touch = () => {
       sync();
       draft = {task: s.task_id, a: a.value, targets: checks.filter(c => c.checked).map(c => c.value)};
     };
     for (const p of options) {
-      const row = node('label');
+      // 整列（label）都可點；名稱下一行顯示地點或主題（有資料時）。
+      const row = node('label', null, {class: 'mt-pick', 'data-match-row': p.uuid});
       const c = node('input', null, {type: 'checkbox', 'data-match-target': p.uuid});
       c.value = p.uuid;
       c.checked = (mine ? mine.targets : s.targets || []).includes(p.uuid);
       c.onchange = touch;
       checks.push(c);
-      row.append(c, document.createTextNode(' ' + p.name));
+      const text = node('span', null, {class: 'mt-pick-text'});
+      text.append(node('span', p.name, {class: 'mt-pick-name'}));
+      const sub = subline(p);
+      if (sub) text.append(node('span', sub, {class: 'mt-pick-sub', 'data-match-sub': ''}));
+      row.append(c, text);
+      rows.push([row, String(p.name)]);
       set.append(row);
     }
+    filter();
     const hint = node('span', '', {class: 'mt-note'});
     a.onchange = touch;
     a.disabled = !!pending;
@@ -295,7 +341,9 @@
       tr.append(td);
       body.append(tr);
     }
-    compare.append(table);
+    const scroll = node('div', null, {class: 'mt-compare-scroll'});
+    scroll.append(table);
+    compare.append(scroll);
     if (pairs.length > 3) compare.append(node('p', T.galaxyLimit, {class: 'mt-note'}));
   }
 
@@ -477,6 +525,7 @@
     if (snapshot?.task_id !== next.task_id || (next.status === 'done' && snapshot?.status !== 'done')) {
       shown = []; frameKey = undefined;
     }
+    if (snapshot?.task_id !== next.task_id) query = '';
     snapshot = next;
     render();
     if ((next.status === 'loading' || next.status === 'running') && !closed) {
