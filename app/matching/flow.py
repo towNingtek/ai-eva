@@ -16,6 +16,9 @@ app/apps/match_analysis/task.py（媒合任務完成那一步）。
 - 紀錄（#198）：選案（run + candidate）、判斷（judgements + ranked，同 engine.write_record）、
   建議卡（status / type=cards）、每個動作（favorite / skip / invite / status）。
   沒有 DATABASE_URL 就不寫（比照 schema.ensure_matching_tables），不影響使用者流程。
+- 閱讀者語言（#227）：面板上的卡片、動作名稱、寫回詢問跟 current_lang()；
+  **紀錄與 CMS 寫回一律中文**：卡片紀錄用 card["record_fields"]，補問題目換回中文版再記，
+  寫回內容（回答＋來源標註）照 writeback 原樣。
 """
 from __future__ import annotations
 
@@ -23,8 +26,10 @@ import logging
 import os
 from typing import Any, Awaitable, Callable, Mapping, Optional, Sequence
 
+from app.i18n import DEFAULT_LANG
 from app.matching import chunks as chk
 from app.matching import engine as eng
+from app.matching import i18n as mi
 from app.matching import records as rec
 from app.matching import writeback as wb
 
@@ -36,6 +41,21 @@ INVITE_TOOL = "/matching/invite"
 FAVORITE, SKIP, SUPPLEMENT = "favorite", "skip", "supplement"
 CARD_ACTIONS = (FAVORITE, SKIP, SUPPLEMENT)
 ACTION_LABEL = {FAVORITE: "收藏", SKIP: "略過", SUPPLEMENT: "補資料", "invite": "寄站內邀請"}
+
+
+def action_labels(lang: Any = None) -> dict[str, str]:
+    """卡片動作的顯示名稱（依閱讀者語言；zh 與 ACTION_LABEL 相同）。"""
+    return {k: mi.msg(f"action.{k}", lang) for k in ACTION_LABEL}
+
+
+# 面板上顯示的（外文）補問題目 → 中文版：寫回紀錄只記中文。public_cards 登記，clarify_writeback 查。
+_RECORD_TEXT: dict[str, str] = {}
+_RECORD_TEXT_MAX = 2048
+
+
+def record_text(text: str) -> str:
+    """顯示文字 → 紀錄用中文；沒登記過（本來就是中文）原樣。"""
+    return _RECORD_TEXT.get(text, text)
 # 紀錄的事件種類（records.EVENT_KINDS）；補資料沒有專屬種類，記成 status。
 EVENT_KIND = {FAVORITE: "favorite", SKIP: "skip", SUPPLEMENT: "status", "invite": "invite"}
 
@@ -105,17 +125,37 @@ def annotate_cards(cards: list[dict], projects: Mapping[str, Mapping],
 
 
 def public_cards(cards: Sequence[Mapping]) -> list[dict]:
-    """給面板的卡：只帶白話欄位（不含內部結構與 B 代號）。"""
+    """給面板的卡：只帶白話欄位（不含內部結構與 B 代號）。
+
+    外文卡（build_cards 附 lang）另帶 lang 與動作名稱 action_labels；鍵名維持中文（面板依鍵取值）。
+    """
     out = []
     for c in cards:
-        out.append({
+        card = {
             "rank": c["rank"], "target": c["target"], "name": c["name"],
             "fields": dict(c["fields"]),
             "未評估": dict(c.get("未評估") or {}),
             "原文段落": list(c.get("原文段落") or []),
             "合作起步草案": c.get("合作起步草案"),
-        })
+        }
+        lang = c.get("lang")
+        if lang and lang != DEFAULT_LANG:
+            card["lang"] = lang
+            card["action_labels"] = action_labels(lang)
+            _remember_record_text(c)
+        out.append(card)
     return out
+
+
+def _remember_record_text(card: Mapping) -> None:
+    from app.matching.cards import F_CONFIRM
+
+    shown = (card.get("fields") or {}).get(F_CONFIRM)
+    zh = (card.get("record_fields") or {}).get(F_CONFIRM)
+    if shown and zh and shown != zh:
+        if len(_RECORD_TEXT) >= _RECORD_TEXT_MAX:
+            _RECORD_TEXT.clear()
+        _RECORD_TEXT[shown] = zh
 
 
 # ── CMS 工具 ────────────────────────────────────────────────────────
@@ -171,9 +211,24 @@ async def _call(runtime, endpoint: str, args: dict) -> dict:
 async def clarify_writeback(runtime, *, uuid: str, question: str, answer: str,
                             ask: Callable[[str], Awaitable[Any] | Any], conn=None,
                             run_id: Optional[int] = None, philosophy: Optional[str] = None) -> dict:
-    """補問回答後：問要不要寫回自己可管理那案的計畫理念；同意才 append_philosophy。"""
-    return await wb.offer_writeback(runtime, uuid=uuid, question=question, answer=answer, ask=ask,
-                                    conn=conn, run_id=run_id, philosophy=philosophy)
+    """補問回答後：問要不要寫回自己可管理那案的計畫理念；同意才 append_philosophy。
+
+    詢問句依閱讀者語言（zh 與 writeback.ASK_PROMPT 相同），日韓的「好／不要」換成中文同意詞再判斷；
+    紀錄的題目換回中文版，寫回內容（回答＋中文來源標註）不翻。
+    """
+    lang = mi.resolve(None)
+    if lang != DEFAULT_LANG:
+        inner = ask
+
+        async def ask(prompt: str):  # noqa: F811 —— 換成閱讀者語言的詢問句
+            text = mi.msg("writeback.ask", lang) if prompt == wb.ASK_PROMPT else prompt
+            reply = inner(text)
+            if hasattr(reply, "__await__"):
+                reply = await reply
+            return mi.normalize_consent(reply)
+
+    return await wb.offer_writeback(runtime, uuid=uuid, question=record_text(question), answer=answer,
+                                    ask=ask, conn=conn, run_id=run_id, philosophy=philosophy)
 
 
 # ── 紀錄（#198） ────────────────────────────────────────────────────
@@ -260,7 +315,8 @@ async def record_run(result: Mapping, cards: Sequence[Mapping], *, tenant: str, 
         await rec.add_event(conn, run_id, "status", actor=actor,
                             payload={"type": "cards",
                                      "cards": [{"rank": c["rank"], "target": c["target"], "name": c["name"],
-                                                "fields": c["fields"]} for c in cards]})
+                                                "fields": c.get("record_fields") or c["fields"]}
+                                               for c in cards]})
         return run_id
     return await _with_conn(go)
 
