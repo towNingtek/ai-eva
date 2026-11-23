@@ -21,7 +21,7 @@
       state: {favorite: '已收藏', skip: '已略過', asked: '已請 Eva 問補資料', noted: '補充已記下',
         invite: {confirm: '等待確認寄出', sent: '已寄出站內邀請', error: '邀請沒有寄出'},
         supplement: {ok: '補充已寫回計畫理念', declined: '補充只留在紀錄', not_manageable: '補充已記下（不可寫回）'}},
-      confirm: name => `確定要寄站內邀請給「${name}」嗎？寄出後對方會收到通知。`, ok: '確定寄出', cancel: '取消',
+      confirm: name => `確定要寄站內邀請給「${name}」嗎？寄出後對方會收到通知。`, messageLabel: '附言：', ok: '確定寄出', cancel: '取消',
       invite: '寄站內邀請', invited: '已寄出邀請',
       fields: {'為何推薦': '為何推薦', '互補性': '互補性', '互惠價值': '互惠價值', '建議合作': '建議合作', '待確認': '待確認', '風險': '風險'},
       quote: (plan, n, text) => `${plan}・第 ${n} 段：「${text}」`, quoteLabel: '原文',
@@ -38,7 +38,7 @@
         invite: {confirm: 'Waiting for you to confirm', sent: 'Site invitation sent', error: 'Invitation was not sent'},
         supplement: {ok: 'Details written back to the plan', declined: 'Details kept in the log only',
           not_manageable: 'Details noted (cannot be written back)'}},
-      confirm: name => `Send a site invitation to "${name}"? They will be notified once it is sent.`, ok: 'Send', cancel: 'Cancel',
+      confirm: name => `Send a site invitation to "${name}"? They will be notified once it is sent.`, messageLabel: 'Message:', ok: 'Send', cancel: 'Cancel',
       invite: 'Send site invitation', invited: 'Invitation sent',
       fields: {'為何推薦': 'Why suggested', '互補性': 'Complementarity', '互惠價值': 'Mutual value', '建議合作': 'Suggested collaboration',
         '待確認': 'To confirm', '風險': 'Risks'},
@@ -56,7 +56,7 @@
       state: {favorite: 'お気に入り済み', skip: 'スキップ済み', asked: 'Eva に情報の補足を頼みました', noted: '補足を記録しました',
         invite: {confirm: '送信の確認待ち', sent: 'サイト内招待を送りました', error: '招待は送られませんでした'},
         supplement: {ok: '補足をプランの理念に書き戻しました', declined: '補足は記録のみに残しました', not_manageable: '補足を記録しました（書き戻しはできません）'}},
-      confirm: name => `「${name}」にサイト内招待を送りますか？送ると相手に通知されます。`, ok: '送信する', cancel: 'キャンセル',
+      confirm: name => `「${name}」にサイト内招待を送りますか？送ると相手に通知されます。`, messageLabel: 'メッセージ：', ok: '送信する', cancel: 'キャンセル',
       invite: 'サイト内招待を送る', invited: '招待を送りました',
       fields: {'為何推薦': 'おすすめの理由', '互補性': '補完性', '互惠價值': '相互のメリット', '建議合作': '協力の提案', '待確認': '確認すること', '風險': 'リスク'},
       quote: (plan, n, text) => `${plan}・${n} 段落目：「${text}」`, quoteLabel: '原文',
@@ -72,7 +72,7 @@
       state: {favorite: '즐겨찾기함', skip: '건너뜀', asked: 'Eva에게 정보 보완을 요청함', noted: '보완 내용 기록됨',
         invite: {confirm: '보내기 확인 대기 중', sent: '사이트 내 초대를 보냄', error: '초대를 보내지 못함'},
         supplement: {ok: '보완 내용을 계획 이념에 반영함', declined: '보완 내용은 기록에만 남김', not_manageable: '보완 내용 기록됨(반영 불가)'}},
-      confirm: name => `"${name}"에게 사이트 내 초대를 보낼까요? 보내면 상대방에게 알림이 갑니다.`, ok: '보내기', cancel: '취소',
+      confirm: name => `"${name}"에게 사이트 내 초대를 보낼까요? 보내면 상대방에게 알림이 갑니다.`, messageLabel: '메시지:', ok: '보내기', cancel: '취소',
       invite: '사이트 내 초대 보내기', invited: '초대를 보냄',
       fields: {'為何推薦': '추천 이유', '互補性': '보완성', '互惠價值': '상호 가치', '建議合作': '협력 제안', '待確認': '확인할 점', '風險': '위험'},
       quote: (plan, n, text) => `${plan}・${n}번째 단락: "${text}"`, quoteLabel: '원문',
@@ -135,6 +135,7 @@
     .live-match .mc-card button.mc-primary:not(.mc-toggle):hover{background:#174a96}
     .live-match .mc-card button:not(.mc-toggle):disabled{color:#3e4c59;background:#e4e7eb;border-color:#cbd2d9;cursor:default}
     .live-match .mc-dialog{position:fixed;inset:0;background:rgba(10,16,32,.45);display:flex;align-items:center;justify-content:center;z-index:50}
+    .live-match .mc-invite-message{margin:6px 0 10px;padding:6px 10px;border-left:3px solid #9aa5b1;background:#f5f7fa;white-space:pre-wrap}
     .live-match .mc-dialog>div{background:#fff;color:#1f2933;border-radius:10px;padding:14px 16px;max-width:380px}`;
   document.head.append(style);
 
@@ -162,13 +163,21 @@
     dialog = node('div', null, {class: 'mc-dialog', 'data-invite-confirm': card.target, role: 'dialog', 'aria-modal': 'true'});
     const inner = node('div');
     inner.append(node('p', T.confirm(card.name)));
+    // #235：附言全文（伺服器由建議卡組成）；使用者看得到要寄什麼，送出的就是這一段。
+    const message = typeof card.invite_message === 'string' ? card.invite_message : '';
+    if (message) {
+      inner.append(node('p', T.messageLabel, {class: 'mc-invite-label'}));
+      const quote = node('blockquote', null, {class: 'mc-invite-message', 'data-invite-message': ''});
+      quote.textContent = message;  // 原文照列（不經 clean），與送出的 message 一字不差
+      inner.append(quote);
+    }
     const row = node('div', null, {class: 'mc-actions'});
     const ok = node('button', T.ok, {type: 'button', 'data-invite-ok': ''});
     const cancel = node('button', T.cancel, {type: 'button', 'data-invite-cancel': ''});
     ok.onclick = () => {
       closeDialog();
       if (snapshot?.task_id !== taskId) return;
-      send('invite', {target: card.target, confirmed: true});
+      send('invite', message ? {target: card.target, confirmed: true, message} : {target: card.target, confirmed: true});
     };
     cancel.onclick = closeDialog;
     row.append(ok, cancel);
