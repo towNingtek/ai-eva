@@ -102,8 +102,21 @@ def snapshot(task: dict) -> dict:
     return copy.deepcopy(task)
 
 
+def _lang() -> str:
+    """面板介面語言（#226）：session 語言（zh／en／ja／ko）；取不到一律 zh。"""
+    try:
+        from app.i18n import current_lang
+
+        return current_lang()
+    except Exception:  # noqa: BLE001
+        return "zh"
+
+
 async def _publish(task: dict, *, opening: bool = False) -> None:
-    args = {"mode": "match", "v": LIVE_VERSION, "matchTask": snapshot(task)}
+    state = snapshot(task)
+    # #226：任務狀態帶使用者語言，面板依它顯示介面文字（cookie eva_lang 只是備用）。
+    state["lang"] = _lang()
+    args = {"mode": "match", "v": LIVE_VERSION, "matchTask": state}
     if not opening:
         args["update"] = True
     try:
