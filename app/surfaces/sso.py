@@ -16,6 +16,7 @@ CMS 使用者點「進 AI-Eva」→ CMS 簽 RS256 handoff token（aud=ai-eva，�
 安全：token 驗不過 → 403（un-authed 打這個端點就是 403，不放行）。
 """
 import logging
+import re
 import secrets
 import json
 import os
@@ -96,7 +97,7 @@ async def establish_sso_session(token: str, refresh_token: str | None = None) ->
         "SSO session %s… project=%s user=%s → %d tool(s)",
         sid[:8], identity["project"], identity.get("user_id"), len(tools),
     )
-    return {"session_id": sid, "identity": identity, "tools": tools}
+    return {"session_id": sid, "identity": identity, "tools": tools, "manifest": manifest}
 
 
 async def get_sso_session(session_id: str | None, *, allow_expired: bool = False) -> dict | None:
@@ -228,14 +229,107 @@ html,body{{margin:0;height:100%;background:{_HANDOFF_BG};}}
 </body></html>"""
 
 
+# ── ai-eva#237：從 CMS 直接開啟某個工具（open=<app_id>，媒合可再帶 a=<專案 uuid> 預選 A）──────
+# /sso/handoff 驗過之後才看 open：只接受「已註冊、在工具列上、該 project 啟用、角色允許」的 app id，
+# 其餘一律忽略（不報錯，照常進開場）。合格的 open／a 放進 eva_open cookie（短效、HttpOnly），開場
+# （app/main.py on_chat_start）讀到就等同按下該工具按鈕；每個 cookie 帶一次性 nonce，只生效一次
+# （之後重新整理／開新對話不再自動開）。a 只在 open=match_analysis 時保留，真正能不能當 A 由
+# 媒合任務拿到「可發起清單」後再判斷（不在清單就不預選）。
+OPEN_COOKIE = "eva_open"
+OPEN_TTL = 300               # cookie 只需撐過「轉址 → 開場」；過期後就算 nonce 紀錄遺失也不會再開
+_OPEN_MAX_USED = 4096
+_OPEN_USED: dict[str, None] = {}   # 已用過的 nonce（insertion-ordered，超量丟最舊的）
+_SAFE_ID = re.compile(r"^[A-Za-z0-9_.:-]{1,80}$")
+
+
+def resolve_open(open_id: str | None, a: str | None, manifest: dict | None,
+                 enabled: set[str] | None, project: str | None = None) -> dict | None:
+    """open／a 參數 → {"app": id, "a": uuid?}；不合格（未註冊、不在工具列、未啟用、角色不允許）→ None。純函式。"""
+    from app.apps._registry import DEFAULT_PROJECT, get_by_id, is_enabled_for, menu_apps, role_allows
+
+    if not isinstance(open_id, str) or not _SAFE_ID.match(open_id):
+        return None
+    app = get_by_id(open_id)
+    if app is None or app not in menu_apps():
+        return None
+    if not is_enabled_for(app, project or DEFAULT_PROJECT, enabled):
+        return None
+    role_apps = (manifest or {}).get("apps")
+    if not role_allows(app, role_apps if isinstance(role_apps, dict) else None):
+        return None
+    out = {"app": app.id}
+    if app.id == "match_analysis" and isinstance(a, str) and _SAFE_ID.match(a):
+        out["a"] = a
+    return out
+
+
+def encode_open(intent: dict) -> str:
+    """eva_open cookie 值：JSON（含一次性 nonce）再 URL-encode。"""
+    from urllib.parse import quote
+    body = {**intent, "n": secrets.token_urlsafe(12)}
+    return quote(json.dumps(body, separators=(",", ":")), safe="")
+
+
+def read_open(cookie_header: str | None) -> dict | None:
+    """從 Cookie 標頭解出 eva_open（不消耗）；壞值 → None。"""
+    from urllib.parse import unquote
+    for part in (cookie_header or "").split(";"):
+        k, _, v = part.strip().partition("=")
+        if k != OPEN_COOKIE or not v:
+            continue
+        try:
+            data = json.loads(unquote(v))
+        except ValueError:
+            return None
+        if not isinstance(data, dict) or not isinstance(data.get("app"), str) or not isinstance(data.get("n"), str):
+            return None
+        out = {"app": data["app"], "n": data["n"]}
+        if isinstance(data.get("a"), str) and _SAFE_ID.match(data["a"]):
+            out["a"] = data["a"]
+        return out
+    return None
+
+
+def consume_open(cookie_header: str | None) -> dict | None:
+    """開場用：讀 eva_open，nonce 沒用過才回 {"app", "a"?} 並記為已用（只生效一次）。"""
+    intent = read_open(cookie_header)
+    if not intent or intent["n"] in _OPEN_USED:
+        return None
+    _OPEN_USED[intent.pop("n")] = None
+    while len(_OPEN_USED) > _OPEN_MAX_USED:
+        _OPEN_USED.pop(next(iter(_OPEN_USED)))
+    return intent
+
+
+async def _open_intent(sess: dict, open_id: str | None, a: str | None) -> dict | None:
+    if not open_id:
+        return None
+    project = (sess.get("identity") or {}).get("project")
+    try:
+        from app.projects import registry as project_registry
+        enabled = await project_registry.get_enabled_apps(project)
+    except Exception:  # noqa: BLE001 —— 讀不到啟用矩陣就不自動開（開場照常）
+        logger.warning("SSO open: enabled_apps lookup failed", exc_info=True)
+        return None
+    intent = resolve_open(open_id, a, sess.get("manifest"), enabled, project)
+    if intent is None:
+        logger.info("SSO open ignored: %r (project=%s)", open_id, project)
+    return intent
+
+
 @fastapi_app.get("/sso/handoff")
-async def sso_handoff(token: str, request: Request, refresh_token: str | None = None, go: int = 0):
-    """CMS 轉址進來：?token=<RS256 handoff>。驗過 → 種 cookie → 轉址進 /。"""
+async def sso_handoff(token: str, request: Request, refresh_token: str | None = None, go: int = 0,
+                      open: str | None = None, a: str | None = None):  # noqa: A002 —— 參數名照 CMS 網址
+    """CMS 轉址進來：?token=<RS256 handoff>[&open=<app_id>[&a=<uuid>]]。驗過 → 種 cookie → 轉址進 /。"""
     if not go and "text/html" in request.headers.get("accept", ""):
         from urllib.parse import urlencode
         params = {"token": token, "go": "1"}
         if refresh_token:
             params["refresh_token"] = refresh_token
+        if open:
+            params["open"] = open
+            if a:
+                params["a"] = a
         page = render_handoff_page(
             _token_lang(token, request.headers.get("accept-language", "")),
             "/sso/handoff?" + urlencode(params),
@@ -294,6 +388,16 @@ async def sso_handoff(token: str, request: Request, refresh_token: str | None = 
         )
     else:
         resp.delete_cookie("eva_return")
+    # ai-eva#237：直接開啟某工具。沒帶或不合格 → 刪掉舊的，不讓上一次的 open 再生效。
+    intent = await _open_intent(sess, open, a)
+    if intent:
+        resp.set_cookie(
+            OPEN_COOKIE, encode_open(intent),
+            httponly=True,   # 只有伺服器（開場的 websocket 握手）要讀
+            secure=True, samesite="lax", max_age=OPEN_TTL,
+        )
+    else:
+        resp.delete_cookie(OPEN_COOKIE)
     return resp
 
 

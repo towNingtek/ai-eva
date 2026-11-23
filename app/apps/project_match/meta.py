@@ -5,7 +5,10 @@
 META = {
     "id": "project_match",
     "project": "sechome",
-    "label": "專案媒合",
+    "label": "專案媒合",   # 顯示名稱走 app/i18n/strings.py（#237：舊版媒合（即將下線））
+    # ai-eva#237：排工具列最後、外觀弱化（虛線框灰字）；功能不變，等 townway#63 才刪
+    "order": 1000,
+    "badge": "legacy",
     "icon": "🤝",
     "cl_icon": "Handshake",
     "is_default": False,
