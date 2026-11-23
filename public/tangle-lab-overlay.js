@@ -18,11 +18,24 @@
   +'body.'+KEY+'-on #root{padding-left:var(--tws-w)}body.'+KEY+'-on #root{transition:padding-left .32s ease}'
   +'#'+KEY+'-close{position:absolute;right:14px;top:12px;z-index:2;font:13px system-ui;color:#e3efed;background:#1b2a29;border:1px solid #2f5d59;border-radius:9px;padding:6px 12px;cursor:pointer}';
   document.head.appendChild(s)}
+ // #229 外框文字依使用者語言：任務狀態帶的 lang 優先（matchTask／lawTask），沒有時讀 eva_lang cookie，都沒有用 zh（與改版前相同）。
+ var FRAME_I18N={zh:{close:"收合 ↙",tip:"收合工作區，回到原本的聊天畫面",frame:"雲林專案工作區"},
+  en:{close:"Collapse ↙",tip:"Collapse the workspace and return to the chat",frame:"Project workspace"},
+  ja:{close:"折りたたむ ↙",tip:"ワークスペースを折りたたんで、もとのチャットにもどります",frame:"プロジェクトのワークスペース"},
+  ko:{close:"접기 ↙",tip:"작업 공간을 접고 원래 대화 화면으로 돌아갑니다",frame:"프로젝트 작업 공간"}};
+ var LANG_ALIAS={zh:"zh",en:"en",ja:"ja",jp:"ja",ko:"ko",kr:"ko"};
+ function normLang(v){return LANG_ALIAS[String(v||"").trim().toLowerCase().split(/[-_]/)[0]]||null}
+ function cookieLang(){var m=document.cookie.match(/(?:^|;\s*)eva_lang=([^;]*)/);try{return m?normLang(decodeURIComponent(m[1])):null}catch(_){return null}}
+ function langOf(a){a=a||{};var t=a.matchTask||a.lawTask||{};return normLang(t.lang)||normLang(a.lang)||cookieLang()||"zh"}
+ function localize(p,lang){p=p||document.getElementById(KEY);if(!p)return;var T=FRAME_I18N[lang]||FRAME_I18N.zh,b=document.getElementById(KEY+"-close"),f=p.querySelector("iframe");
+  if(b){if(b.textContent!==T.close)b.textContent=T.close;if(b.getAttribute("title")!==T.tip)b.setAttribute("title",T.tip)}
+  if(f&&f.getAttribute("title")!==T.frame)f.setAttribute("title",T.frame)}
  function width(){return Math.max(520,Math.round(window.innerWidth*0.62))}
  function open(args){css();var p=document.getElementById(KEY);
   if(!p){p=document.createElement("div");p.id=KEY;p.className="hide";
    p.innerHTML='<button id="'+KEY+'-close" title="收合工作區，回到原本的聊天畫面">收合 ↙</button><iframe title="雲林專案工作區"></iframe>';
    document.body.appendChild(p);document.getElementById(KEY+"-close").onclick=close}
+  localize(p,langOf(args));
   state.liveLaw=args.mode==='law'&&!!args.lawTask;state.lawTask=state.liveLaw?args.lawTask:null;
    var src="/public/workspace/embed.html?mode="+encodeURIComponent(args.mode||"law")+"&v="+encodeURIComponent(args.v||"1")+"&b=law-task-1"+(state.liveLaw?'&liveLaw=1':'');
   if(!state.open){state.hadSidebar=sidebarOpen();if(state.hadSidebar)toggleSidebar()}
@@ -43,7 +56,7 @@
  // Eva -> page
  window.addEventListener("chainlit-call-fn",function(e){var d=e.detail||{};
   if(d.name==="tangle_workspace"){var a=d.args||{};
-    if(a.update===true){if(state.liveLaw&&a.mode==='law'&&a.lawTask){state.lawTask=a.lawTask;postLaw(document.querySelector('#'+KEY+' iframe'))}}
+    if(a.update===true){if(state.open&&(a.matchTask||a.lawTask))localize(null,langOf(a));if(state.liveLaw&&a.mode==='law'&&a.lawTask){state.lawTask=a.lawTask;postLaw(document.querySelector('#'+KEY+' iframe'))}}
     else open(a);
     d.callback&&d.callback({ok:true})}
   else if(d.name==="tangle_mark"){var f=document.querySelector("#"+KEY+" iframe");if(f&&f.contentWindow)f.contentWindow.postMessage({type:"tangle-mark",args:d.args},location.origin);d.callback&&d.callback({ok:!!(f&&state.open)})}
