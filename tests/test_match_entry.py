@@ -402,3 +402,105 @@ def test_project_page_url_absent_without_return(monkeypatch):
         monkeypatch.setattr(task, "_session_get", lambda k, i=ident: i if k == "law_task_identity" else None)
         assert task.project_page_url("75850710") is None
         assert "page" not in task.snapshot({"readiness": {"a": "75850710"}})["readiness"]
+
+
+# ── (h) 補問寫回：留撤回資料、寫入／撤回後重判四項 ─────────────────────
+
+class PhilCMS:
+    """假 CMS：記住計畫理念，append／undo 照 CMS 規則（來源標註＋補充，只撤最後那段）。"""
+    NOTE = "【補充｜來源：AI-Eva 媒合補問，u 於 2026-11-24 23:00 確認附加】"
+
+    def __init__(self, phil=""):
+        self.phil, self.calls = phil, []
+
+    def is_allowed(self, name):
+        return True
+
+    async def execute(self, name, args, confirmed=False):
+        self.calls.append(name)
+        if name == "list_my_projects":
+            return {"status": "ok", "result": {"data": {"projects": [{"uuid": "a1", "name": "A"}]}}}
+        if name == "get_project_info":
+            return {"status": "ok", "result": {"data": {"uuid": args["uuid"], "name": "A", "philosophy": self.phil}}}
+        if name == "append_philosophy":
+            block = f"{self.NOTE}\n{args['supplement']}"
+            self.phil = f"{self.phil}\n\n{block}" if self.phil else block
+            return {"status": "ok", "result": {"data": {"uuid": args["uuid"], "philosophy": self.phil,
+                                                        "note": self.NOTE, "supplement": args["supplement"]}}}
+        if name == "undo_philosophy_append":
+            block = f"{args['note']}\n{args['supplement']}"
+            if self.phil.endswith("\n\n" + block):
+                self.phil = self.phil[: -len("\n\n" + block)]
+            elif self.phil == block:
+                self.phil = ""
+            else:
+                return {"status": "error", "reason": "HTTP 409: {\"code\": \"NOT_LAST_APPEND\"}"}
+            return {"status": "ok", "result": {"data": {"philosophy": self.phil}}}
+        return {"status": "ok", "result": {"data": {}}}
+
+
+def _ready_task(tenv, readiness):
+    t = task._new_task()
+    t.update({"status": "select", "projects": [{"uuid": "a1", "name": "A"}], "initiable": ["a1"], "readiness": readiness})
+    task._save(tenv.path, t)
+    return t
+
+
+def test_answer_keeps_undo_and_rechecks(tenv, monkeypatch):
+    monkeypatch.setattr(task.handler, "judge_project", lambda info, llm: {"capabilities": {}})
+    monkeypatch.setattr(task.handler, "_default_llm", lambda: None)
+    cms = PhilCMS("原本的理念")
+    t = _ready_task(tenv, {"a": "a1", "state": "ready", "complete": False,
+                           "items": [{"key": "scale", "state": "missing"}], "questions": []})
+    data = {"a": "a1", "key": "scale", "answer": "一年期計畫", "consent": True, "task_id": t["task_id"]}
+    asyncio.run(task._ready_answer_and_report(tenv.path, t, cms, data))
+    r = task._load(tenv.path)["readiness"]
+    assert r["saved"] == {"scale": "ok"} and r["saved_text"]["scale"] == "規模與時間：一年期計畫"
+    assert r["undo"]["scale"] == {"note": PhilCMS.NOTE, "supplement": "規模與時間：一年期計畫"}
+    assert r.get("rechecked") is True                                   # 寫入後用新理念重判
+    assert {i["key"]: i["state"] for i in r["items"]}["scale"] == "ok"  # 「一年期」→ 規模與時間足夠
+    assert cms.phil.startswith("原本的理念\n\n")
+
+    # 撤回 → CMS 回到原文、清掉寫回紀錄、再重判
+    asyncio.run(task._ready_undo(tenv.path, t, cms, {"a": "a1", "key": "scale", "task_id": t["task_id"]}))
+    r = task._load(tenv.path)["readiness"]
+    assert cms.phil == "原本的理念"
+    assert "scale" not in (r.get("saved") or {}) and "scale" not in (r.get("undo") or {})
+    assert r["undone"] == {"scale": "ok"}
+    assert {i["key"]: i["state"] for i in r["items"]}["scale"] == "missing"
+
+
+def test_undo_refused_when_not_last(tenv, monkeypatch):
+    monkeypatch.setattr(task.handler, "judge_project", lambda info, llm: {"capabilities": {}})
+    monkeypatch.setattr(task.handler, "_default_llm", lambda: None)
+    cms = PhilCMS("原文")
+    t = _ready_task(tenv, {"a": "a1", "state": "ready", "complete": False, "items": [], "questions": []})
+    for key, ans in (("scale", "一年期計畫"), ("collab", "共同辦活動")):
+        asyncio.run(task._ready_answer_and_report(tenv.path, t, cms,
+                                                  {"a": "a1", "key": key, "answer": ans, "consent": True, "task_id": t["task_id"]}))
+    before = cms.phil
+    asyncio.run(task._ready_undo(tenv.path, t, cms, {"a": "a1", "key": "scale", "task_id": t["task_id"]}))
+    r = task._load(tenv.path)["readiness"]
+    assert cms.phil == before                                            # 不是最後一段 → 什麼都不動
+    assert r["undone"] == {"scale": "not_last"} and r["saved"]["scale"] == "ok"
+
+
+def test_ready_undo_is_a_known_action():
+    assert "ready_undo" in task.ACTIONS
+
+
+def test_rechecking_flag_cleared_even_when_judge_fails(tenv, monkeypatch):
+    def boom(info, llm):
+        raise RuntimeError("LLM down")
+    monkeypatch.setattr(task.handler, "judge_project", boom)
+    monkeypatch.setattr(task.handler, "_default_llm", lambda: None)
+    cms = PhilCMS("原文")
+    t = _ready_task(tenv, {"a": "a1", "state": "ready", "complete": False,
+                           "items": [{"key": "scale", "state": "missing"}], "questions": []})
+    asyncio.run(task._ready_answer_and_report(tenv.path, t, cms,
+                                              {"a": "a1", "key": "scale", "answer": "一年期計畫", "consent": True, "task_id": t["task_id"]}))
+    r = task._load(tenv.path)["readiness"]
+    assert r["saved"] == {"scale": "ok"} and r["rechecking"] is False      # 重判失敗也不會卡在「重新檢查中」
+    assert {i["key"]: i["state"] for i in r["items"]}["scale"] == "missing"  # 維持原本的四項
+    pushed = [p["matchTask"]["readiness"].get("rechecking") for p in tenv.pushes if p["matchTask"].get("readiness")]
+    assert True in pushed and pushed[-1] is False

@@ -156,13 +156,34 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     ok((await box.locator('[data-match-ready-saved="saving"]').textContent()).includes('正在補進'), 'shows 正在補進 until the server answers');
     ok((await box.locator('[data-match-ready-next]').textContent()).includes('勾選 2–4 個比較對象'), 'next step points to ticking targets');
     await push({...sel({readiness: {...LOW, saved: {scale: 'ok'}, saved_text: {scale: '規模與時間：小型試辦（3 個月內）'},
-      page: 'https://cms.example/backend/cms_plan_info/low-a'}}), task_id: 'task-r2'});
+      undo: {scale: {note: 'n', supplement: 's'}}, page: 'https://cms.example/backend/cms_plan_info/low-a'}}), task_id: 'task-r2'});
     await box.locator('[data-match-ready-saved="ok"]').waitFor();
-    ok((await box.locator('[data-match-ready-saved-list] li').allTextContents()).join() === '規模與時間：小型試辦（3 個月內）',
+    ok((await box.locator('[data-match-ready-saved-list] li > span').allTextContents()).join() === '規模與時間：小型試辦（3 個月內）',
       'after saving, lists exactly what was appended');
     const pageLink = box.locator('[data-match-ready-page]');
     ok(await pageLink.getAttribute('href') === 'https://cms.example/backend/cms_plan_info/low-a' && await pageLink.getAttribute('target') === '_blank',
       'link to the project page opens in a new tab');
+    // 撤回：只有最新一則有按鈕；按下送 ready_undo、顯示撤回中；伺服器回覆後顯示結果
+    const undoBtn = box.locator('[data-match-ready-undo="scale"]');
+    ok(await undoBtn.count() === 1, 'the saved line has an undo button');
+    await undoBtn.click();
+    await page.waitForFunction(() => events.some(e => e.action === 'ready_undo' && e.key === 'scale'));
+    ok(true, 'undo sends ready_undo for that answer');
+    ok((await box.locator('[data-match-ready-undo="scale"]').textContent()).includes('撤回中'), 'button shows 撤回中 while waiting');
+    await push({...sel({readiness: {...LOW, saved: {}, saved_text: {}, undo: {}, undone: {scale: 'ok'}, rechecking: true,
+      page: 'https://cms.example/backend/cms_plan_info/low-a'}}), task_id: 'task-r2'});
+    await box.locator('[data-match-ready-undone="ok"]').waitFor();
+    ok((await box.locator('[data-match-ready-undone="ok"]').textContent()).includes('已撤回'), 'undone → says it was undone');
+    ok(await box.locator('[data-match-ready-saved-list]').count() === 0, 'undone line disappears from the saved list');
+    ok((await box.locator('[data-match-ready-rechecking]').textContent()).includes('重新檢查'), 'shows re-checking after a change');
+    await push({...sel({readiness: {...LOW, items: [item('offer', 'ok'), item('need', 'vague'), item('scale', 'ok'), item('collab', 'missing')],
+      saved: {scale: 'ok'}, saved_text: {scale: '規模與時間：小型試辦（3 個月內）'}, undo: {scale: {note: 'n', supplement: 's'}},
+      undone: {scale: 'not_last'}, rechecking: false}}), task_id: 'task-r2'});
+    await box.locator('[data-match-ready-undone="not_last"]').waitFor();
+    ok((await box.locator('[data-match-ready-undone="not_last"]').textContent()).includes('撤不回'), 'refused undo says why');
+    ok(!(await box.locator('[data-match-ready-undo="scale"]').textContent()).includes('撤回中'), 'button is usable again after a refused undo');
+    ok(await box.locator('[data-match-ready="scale"][data-state="ok"]').count() === 1, 'items reflect the re-checked state (規模與時間 → 足夠)');
+    ok(await box.locator('[data-match-ready-rechecking]').count() === 0, 're-checking notice gone when done');
     ok((await box.locator('[data-match-ready-saved="ok"]').textContent()).includes('已附加到計畫理念（1 則'), 'server ok → 已附加到計畫理念（1 則）');
     ok(await box.locator('[data-match-ready-saved="saving"]').count() === 0, 'saving line disappears once saved');
     ok(await box.locator('[data-match-ready-next]').count() === 1, 'next step still shown after saving');

@@ -185,6 +185,13 @@ async def offer_writeback(
     }
     await _record(conn, run_id, uuid=uuid, question=question, answer=answer, consented=True, outcome=out)
     out["philosophy"] = new_philosophy
+    # CMS 實際存下的內容與來源標註（撤回要用同一段逐字比對；舊版 CMS 沒回就不給撤回）
+    data = ((res or {}).get("result") or {}).get("data") or {}
+    if isinstance(data, dict):
+        if isinstance(data.get("philosophy"), str):
+            out["philosophy"] = data["philosophy"]
+        if isinstance(data.get("note"), str) and isinstance(data.get("supplement"), str):
+            out["undo"] = {"note": data["note"], "supplement": data["supplement"]}
     if store is not None:
         rerun = chk.ensure_chunks(uuid, new_philosophy, store, analyzer=analyzer)
         out["recomputed"] = rerun["recomputed"]
