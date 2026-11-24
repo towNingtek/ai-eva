@@ -163,7 +163,7 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     const pageLink = box.locator('[data-match-ready-page]');
     ok(await pageLink.getAttribute('href') === 'https://cms.example/backend/cms_plan_info/low-a' && await pageLink.getAttribute('target') === '_blank',
       'link to the project page opens in a new tab');
-    ok((await box.locator('[data-match-ready-saved="ok"]').textContent()).includes('已補進計畫理念（1 則'), 'server ok → 已補進計畫理念（1 則）');
+    ok((await box.locator('[data-match-ready-saved="ok"]').textContent()).includes('已附加到計畫理念（1 則'), 'server ok → 已附加到計畫理念（1 則）');
     ok(await box.locator('[data-match-ready-saved="saving"]').count() === 0, 'saving line disappears once saved');
     ok(await box.locator('[data-match-ready-next]').count() === 1, 'next step still shown after saving');
     await push({...sel({readiness: {...LOW, saved: {scale: 'error'}, page: 'javascript:alert(1)'}}), task_id: 'task-r2'});
