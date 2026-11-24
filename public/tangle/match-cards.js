@@ -270,14 +270,44 @@
     const m = String(t).trim().match(/^[\s\S]*?(?:[。！？!?；;]|\.(?=\s|$))/);
     return (m ? m[0] : String(t)).trim();
   };
-  const cap = t => (Array.from(t).length > MAX_CONCLUSION ? Array.from(t).slice(0, MAX_CONCLUSION - 1).join('') + '…' : t);
+  // #254 截斷時不切開專案名稱：截斷點落在已知名稱（卡片 card.name、任務裡各案的名稱）中間時，
+  //   改在該名稱之前截斷；名稱在句首放不下時，保留完整名稱、在名稱之後截斷（允許超過上限）。
+  const cap = (t, names = []) => {
+    const arr = Array.from(t);
+    if (arr.length <= MAX_CONCLUSION) return t;
+    const known = [...new Set(names.map(n => clean(n).replace(MK_ANY, '')).filter(Boolean))]
+      .map(n => Array.from(n)).sort((x, y) => y.length - x.length);
+    const spans = [];
+    for (const n of known) {
+      for (let s = 0; s + n.length <= arr.length; s++) {
+        if (n.every((ch, i) => arr[s + i] === ch)) spans.push([s, s + n.length]);
+      }
+    }
+    const blank = /^[\s\uE000-\uE003]*$/;
+    let cut = MAX_CONCLUSION - 1;
+    for (let changed = true; changed;) {
+      changed = false;
+      for (const [s, e] of spans) {
+        if (s < cut && cut < e) {
+          cut = blank.test(arr.slice(0, s).join('')) ? e : s;
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (cut >= arr.length) return t;
+    return arr.slice(0, cut).join('').replace(/[\s\uE000-\uE003]+$/, '') + '…';
+  };
+  // 卡片上可能出現的專案名稱：這張卡的對象、任務中各案（含 A）。
+  const knownNames = card => [card?.name, ...((snapshot?.projects || []).map(p => p?.name))]
+    .filter(n => typeof n === 'string' && n.trim());
   function whyLayers(card) {
     const f = card.fields || {};
     const why = clean(f['為何推薦']);
     const plainWhy = !isThin(why) && !RULE_TEXT.test(why) && Array.from(why.replace(MK_ANY, '')).length <= MAX_CONCLUSION;
     if (plainWhy) return {conclusion: why, whyIsConclusion: true, ruleNames: [], ruleText: ''};
     const src = CONCLUSION_FROM.map(k => f[k]).find(v => !isThin(v));
-    const conclusion = cap(clean(src != null ? firstSentence(clean(src)) : T.whyFallback));
+    const conclusion = cap(clean(src != null ? firstSentence(clean(src)) : T.whyFallback), knownNames(card));
     const ruleNames = isThin(why) ? [] : [...new Set([...why.replace(MK_ANY, '').matchAll(RULE_NAME)].map(m => m[1].trim()))];
     return {conclusion, whyIsConclusion: false, ruleNames, ruleText: isThin(why) ? '' : why};
   }
