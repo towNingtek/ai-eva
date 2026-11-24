@@ -418,3 +418,52 @@ for _r in list(fastapi_app.router.routes):
         fastapi_app.router.routes.remove(_r)
         fastapi_app.router.routes.insert(0, _r)
         break
+
+
+# ── ai-eva#246：過場在頁面一出現就同步掛上 ─────────────────────────────
+# custom.js 由 tangle-lab-overlay.js 事後插入（async），慢網路下 html.eva-handoff 晚 ~700 ms 才掛上 → 閃白。
+# 帶 eva_sso_hint cookie 的 SPA 頁面請求，直接在 Chainlit 回應的 <head> 最前面注入一段同步內聯 script，
+# 只負責掛 class；淡出／移除仍由 custom.js（聊天室就緒後）處理。沒有 cookie → 原樣回應，非 SSO 訪客不受影響。
+HANDOFF_INLINE_SCRIPT = (
+    '<script id="eva-handoff-inline">(function(){try{'
+    'if(!/(^|;\\s*)eva_sso_hint=/.test(document.cookie))return;'
+    'var r=document.documentElement;r.classList.add("eva-handoff");'
+    # 保底：custom.js 整支沒載到時不讓過場永遠蓋著（custom.js 自己 8 秒內一定會移除）
+    'setTimeout(function(){r.classList.remove("eva-handoff","eva-handoff-out")},20000);'
+    '}catch(e){}})();</script>'
+)
+
+
+def inject_handoff_inline(html: str) -> str:
+    """在 <head> 開頭（任何 <script>／<link> 之前）插入同步內聯過場 script。"""
+    m = re.search(r"<head[^>]*>", html, re.I)
+    if not m:
+        return HANDOFF_INLINE_SCRIPT + html
+    return html[: m.end()] + HANDOFF_INLINE_SCRIPT + html[m.end():]
+
+
+def _install_spa_handoff_route() -> None:
+    from chainlit import server as cl_server
+
+    # Chainlit 的路由在 cl_server.router（include 進 app）；SPA 萬用路由是其中最後一條。
+    router = cl_server.router
+    routes = router.routes
+    idx = next((i for i, r in enumerate(routes) if getattr(r, "endpoint", None) is cl_server.serve), None)
+    if idx is None:
+        logger.warning("chainlit SPA catch-all route not found; handoff inline script not installed")
+        return
+    path = routes[idx].path
+
+    async def serve_with_handoff(request: Request):
+        resp = await cl_server.serve(request)
+        if not request.cookies.get("eva_sso_hint"):
+            return resp
+        html = resp.body.decode("utf-8")
+        headers = {k: v for k, v in resp.headers.items() if k.lower() != "content-length"}
+        return HTMLResponse(inject_handoff_inline(html), status_code=resp.status_code, headers=headers)
+
+    router.add_api_route(path, serve_with_handoff, methods=["GET"], include_in_schema=False)
+    routes.insert(idx, routes.pop())   # 跟 Chainlit 的 catch-all 同樣配對，搶在它前面；其他路由順序不變
+
+
+_install_spa_handoff_route()

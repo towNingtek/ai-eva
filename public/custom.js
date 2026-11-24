@@ -35,8 +35,9 @@ function evaLangCookie() {
 
 // #43／ai-eva#233：SSO 來源（帶 eva_sso_hint cookie）進站時，聊天室就緒前蓋一層品牌過場
 // （logo＋「正在帶你到 AI 秘書…」，依語言），避免 Chainlit SPA 載入期間全白、或先閃登入表單。
-// 外觀全在 custom.css（html.eva-handoff body::before/::after）：這支 JS 是 <head> 裡的同步 <script>，
-// 這裡就把 class 掛上，<body> 一出現（React 還沒掛載）過場就在，不必等 DOMContentLoaded。
+// 外觀全在 custom.css（html.eva-handoff body::before/::after）。#246：這支 JS 可能由 tangle-lab-overlay.js
+// 事後非同步插入（慢網路晚到），所以 class 主要由後端注入 / 的 <head> 同步內聯 script 先掛上
+// （app/surfaces/sso.py HANDOFF_INLINE_SCRIPT），<body> 一出現過場就在；這裡再掛一次（無害）並負責就緒後淡出。
 // 只在有 hint cookie 時動作 → 沒 session 的 standalone 訪客完全不受影響。
 (function () {
   console.info("[eva] panel launcher loaded");
