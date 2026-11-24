@@ -13,7 +13,7 @@
       search: '搜尋名稱', searchLabel: '依名稱搜尋對象', projectA: '專案 A', targets: (min, max) => `比較對象（${min}–${max} 個）`, start: '開始媒合 →', picked: n => `已選 ${n} 個`,
       compare: (n, name) => `${n} 案比較（A：${name}）`,
       cols: ['對象', '狀態', '互補候選', '共同尋找第三方', '可聯合或交流', '畫面'],
-      inGalaxy: '星圖中', toGalaxy: '放進星圖', askEva: '請 Eva 說明',
+      inGalaxy: '在星圖中定位', toGalaxy: '放進星圖', askEva: '請 Eva 說明',
       galaxyLimit: '星圖最多同時畫 A 與 3 個對象；用「放進星圖」切換。', galaxyTitle: '本次媒合星系', galaxyFit: '重設',
       galaxyNote: 'B1–B8 與需要／能提供是 AI 推論（未經 Owner 確認）；evidence 是計畫理念原文。第一期不推薦、不自動聯絡。',
       again: '開始新媒合', fetched: list => `已讀取：${list.join('、')}`,
@@ -44,7 +44,7 @@
       picked: n => `${n} selected`,
       compare: (n, name) => `Comparing ${n} projects (A: ${name})`,
       cols: ['Project', 'Status', 'Complementary candidates', 'Seek a third party together', 'Can join forces or exchange', 'View'],
-      inGalaxy: 'In the galaxy', toGalaxy: 'Show in galaxy', askEva: 'Ask Eva to explain',
+      inGalaxy: 'Locate in galaxy', toGalaxy: 'Show in galaxy', askEva: 'Ask Eva to explain',
       galaxyLimit: 'The galaxy shows A and at most 3 projects at a time; use "Show in galaxy" to switch.',
       galaxyTitle: 'Matching galaxy for this run', galaxyFit: 'Reset view',
       galaxyNote: 'B1–B8 and needs / offers are AI inferences (not confirmed by the owner); evidence is the original plan text. Phase 1 does not recommend or contact anyone automatically.',
@@ -80,7 +80,7 @@
       picked: n => `${n} 件を選択`,
       compare: (n, name) => `${n} 件の比較（A：${name}）`,
       cols: ['相手', 'ステータス', '補完の候補', '一緒に第三者を探す', '連携・交流できる', '表示'],
-      inGalaxy: '星図に表示中', toGalaxy: '星図に入れる', askEva: 'Eva に説明してもらう',
+      inGalaxy: '星図で位置を確認', toGalaxy: '星図に入れる', askEva: 'Eva に説明してもらう',
       galaxyLimit: '星図には A と最大 3 件までを同時に表示します。「星図に入れる」で切り替えてください。',
       galaxyTitle: '今回のマッチングの星系', galaxyFit: '表示をリセット',
       galaxyNote: 'B1–B8 と「必要／提供できる」は AI の推論です（オーナー未確認）。evidence はプランの理念の原文です。第 1 期は推薦も自動連絡もしません。',
@@ -114,7 +114,7 @@
       search: '이름으로 검색', searchLabel: '이름으로 대상 검색', projectA: '프로젝트 A', targets: (min, max) => `비교 대상(${min}–${max}개)`, start: '매칭 시작 →', picked: n => `${n}개 선택됨`,
       compare: (n, name) => `${n}개 비교(A: ${name})`,
       cols: ['대상', '상태', '보완 후보', '함께 제3자 찾기', '연대·교류 가능', '화면'],
-      inGalaxy: '성도에 표시 중', toGalaxy: '성도에 넣기', askEva: 'Eva에게 설명 요청',
+      inGalaxy: '성도에서 위치 찾기', toGalaxy: '성도에 넣기', askEva: 'Eva에게 설명 요청',
       galaxyLimit: '성도에는 A와 최대 3개 대상까지 동시에 표시됩니다. "성도에 넣기"로 전환하세요.', galaxyTitle: '이번 매칭 성계', galaxyFit: '보기 초기화',
       galaxyNote: 'B1–B8과 필요／제공 가능 항목은 AI 추론입니다(소유자 미확인). evidence는 계획 이념 원문입니다. 1기에는 추천하거나 자동으로 연락하지 않습니다.',
       again: '새 매칭 시작', fetched: list => `읽음: ${list.join(', ')}`,
@@ -473,7 +473,22 @@
       const td = node('td');
       td.append(button(on ? T.inGalaxy : T.toGalaxy, () => focusTarget(p.pb), {'data-match-show': p.pb}));
       td.append(document.createTextNode(' '));
-      td.append(button(T.askEva, () => send('explain', {pa: p.pa, pb: p.pb, kind: 'pair'}), {'data-match-explain': p.pair}));
+      const explanation = node('p', '', {role: 'status', 'data-match-explanation': ''});
+      explanation.hidden = true;
+      td.append(button(T.askEva, () => {
+        const counts = [c.complement ?? 0, c.third ?? 0, c.peer ?? 0];
+        const none = counts.every(n => n === 0);
+        const empty = {
+          zh: '目前沒有足夠依據判定這兩案能互補、共同尋找第三方，或聯合交流。',
+          en: 'This run found no evidence of complementarity, a shared third-party need, or opportunities to collaborate.',
+          ja: '今回の結果では、補完関係、第三者を共同で探す必要性、連携・交流を示す根拠はありません。',
+          ko: '이번 결과에서는 상호 보완, 공동으로 제3자를 찾을 필요성, 협력·교류의 근거가 확인되지 않았습니다.',
+        };
+        explanation.hidden = false;
+        explanation.textContent = `${nameOf(p.pa)} × ${nameOf(p.pb)} — ${st}. ` +
+          (none ? empty[lang] : counts.map((n, i) => `${T.cols[i + 2]}: ${n}`).join(' · '));
+        send('explain', {pa: p.pa, pb: p.pb, kind: 'pair'});
+      }, {'data-match-explain': p.pair}), explanation);
       tr.append(td);
       body.append(tr);
     }
@@ -487,11 +502,23 @@
     const res = snapshot?.result;
     if (!res) return;
     const targets = (res.projects || []).slice(1).map(p => p.pid);
-    if (shown.includes(pid)) return;
-    shown = [pid, ...shown.filter(x => x !== pid)].slice(0, 3);
-    shown = targets.filter(t => shown.includes(t));
-    frameKey = undefined;
-    render();
+    if (!targets.includes(pid)) return;
+    if (!shown.includes(pid)) {
+      shown = [pid, ...shown].slice(0, 3);
+      shown = targets.filter(t => shown.includes(t));
+      frameKey = undefined;
+      render();
+    }
+    const target = galaxy.querySelector('iframe[data-match-next]') || frame;
+    if (!target) return;
+    target.parentElement.scrollIntoView({block: 'start', behavior: 'instant'});
+    const locate = () => {
+      if (frame === target && target.isConnected) {
+        target.contentWindow.postMessage({type: 'mf-locate', pid}, location.origin);
+      }
+    };
+    if (loadedGalaxyFrames.has(target)) locate();
+    else target.addEventListener('load', locate, {once: true});
   }
 
   function postStatus() {
@@ -522,6 +549,7 @@
     return {...pv, projects: pv.projects.map(p => p.judged ? p : {...p, name: `${p.name}（${T.judging}）`})};
   }
 
+  const loadedGalaxyFrames = new WeakSet();
   function renderGalaxy(s) {
     const res = galaxyData(s);
     const live = !!res?.preview;
@@ -543,6 +571,7 @@
     galaxy.querySelector('.mt-note').textContent = live ? '' : (lang === 'zh' ? res.note : res.note && T.galaxyNote) || '';
     for (const old of stage.querySelectorAll('iframe[data-match-next]')) old.remove();
     const next = node('iframe', null, {title: T.galaxyTitle});
+    next.addEventListener('load', () => loadedGalaxyFrames.add(next), {once: true});
     const swap = () => {
       if (!next.isConnected) return;
       for (const old of stage.querySelectorAll('iframe')) if (old !== next) old.remove();
