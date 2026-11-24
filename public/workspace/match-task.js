@@ -25,12 +25,14 @@
         items: {offer: '你能提供什麼', need: '你需要什麼', scale: '規模與時間', collab: '想怎麼合作'},
         hint: '資料不夠也可以直接媒合；補完推薦會更準', complete: '資料完整，可以開始',
         ask: '回答幾個問題（約 2 分鐘）', skip: '先直接媒合', other: '其他（自己寫）', stop: '先停在這',
-        consent: '要不要補進計畫理念（不會改原本寫的）', yes: '要，補進去', no: '不用', send: '送出',
+        consent: '要不要把這段附加到你的計畫理念？（會寫進專案的計畫理念欄位；原本的文字保留不動）', yes: '要，補進去', no: '不用', send: '送出',
         otherLabel: '自己寫答案', step: (n, t) => `問題 ${n}／${t}`, answered: a => `你的回答：${a}`,
         skipped: '好，直接勾選對象開始媒合。', stopped: '先停在這；隨時可以開始媒合。', done: '謝謝！可以開始媒合了。',
         saving: '正在補進計畫理念…', savedOk: n => `已補進計畫理念（${n} 則，原文沒有改動）。`,
         savedErr: n => `有 ${n} 則沒補進去，你的回答仍會用在這次媒合。`,
-        nextStep: '下一步：在下方勾選 2–4 個比較對象，再按「開始媒合」。'},
+        nextStep: '下一步：在下方勾選 2–4 個比較對象，再按「開始媒合」。',
+        previewTitle: '會附加在計畫理念最後面：', previewNote: '網站會在這段前面加一行來源標註（AI-Eva 媒合補問、你的帳號與時間）。',
+        savedList: '這次附加的內容：', openPage: '到專案頁查看計畫理念 ↗'},
       errors: {interrupted: '媒合已中斷，請按「開始新媒合」。', listFailed: '讀取專案清單失敗，請按「開始新媒合」再試。',
         notEnough: '媒合需要 A 加上至少 2 個對象，目前可用的專案不夠。',
         noInitiable: '你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。',
@@ -62,13 +64,15 @@
         hint: 'You can match right away even with missing details; filling them in makes suggestions more accurate',
         complete: 'Details are complete. You can start.',
         ask: 'Answer a few questions (about 2 minutes)', skip: 'Match right away', other: 'Other (write your own)', stop: 'Stop here for now',
-        consent: 'Add this to your project philosophy? (What you already wrote stays unchanged)', yes: 'Yes, add it', no: 'No thanks', send: 'Send',
+        consent: 'Append this to your project philosophy? (It is saved into the project\'s philosophy field; your existing text stays as is)', yes: 'Yes, add it', no: 'No thanks', send: 'Send',
         otherLabel: 'Write your own answer', step: (n, t) => `Question ${n}/${t}`, answered: a => `Your answer: ${a}`,
         skipped: 'OK. Pick the projects and start matching.', stopped: 'Stopped here. You can start matching any time.',
         done: 'Thanks! You can start matching now.',
         saving: 'Adding to your project philosophy…', savedOk: n => `Added to your project philosophy (${n} item${n === 1 ? '' : 's'}; your original text is unchanged).`,
         savedErr: n => `${n} item${n === 1 ? '' : 's'} could not be added; your answers are still used in this match.`,
-        nextStep: 'Next: tick 2–4 projects to compare below, then press "Start matching".'},
+        nextStep: 'Next: tick 2–4 projects to compare below, then press "Start matching".',
+        previewTitle: 'Will be added at the end of your project philosophy:', previewNote: 'The site adds a source line before it (AI-Eva matching follow-up, your account and the time).',
+        savedList: 'Added this time:', openPage: 'View the philosophy on the project page ↗'},
       errors: {interrupted: 'Matching was interrupted. Press "Start a new match".',
         listFailed: 'Could not load the project list. Press "Start a new match" to try again.',
         notEnough: 'Matching needs A plus at least 2 projects, but not enough projects are available.',
@@ -99,13 +103,15 @@
         items: {offer: '提供できること', need: '必要としていること', scale: '規模と時期', collab: 'どう協力したいか'},
         hint: '情報が足りなくてもそのままマッチングできます。補うと提案がより正確になります', complete: '情報はそろっています。開始できます',
         ask: 'いくつかの質問に答える（約 2 分）', skip: 'このままマッチングする', other: 'その他（自分で書く）', stop: 'ここでやめておく',
-        consent: '計画の理念に追記しますか？（元の文章は変えません）', yes: 'はい、追記する', no: 'しない', send: '送信',
+        consent: 'この内容を計画の理念に追記しますか？（プロジェクトの理念欄に保存されます。元の文章はそのまま残ります）', yes: 'はい、追記する', no: 'しない', send: '送信',
         otherLabel: '自分で答えを書く', step: (n, t) => `質問 ${n}／${t}`, answered: a => `あなたの回答：${a}`,
         skipped: '相手を選んでそのままマッチングを始めてください。', stopped: 'ここでやめました。いつでもマッチングを始められます。',
         done: 'ありがとうございます。マッチングを始められます。',
         saving: '計画の理念に追記しています…', savedOk: n => `計画の理念に追記しました（${n} 件、元の文章は変えていません）。`,
         savedErr: n => `${n} 件は追記できませんでした。回答は今回のマッチングに使われます。`,
-        nextStep: '次へ：下で比較する案件を 2〜4 件選び、「マッチング開始」を押してください。'},
+        nextStep: '次へ：下で比較する案件を 2〜4 件選び、「マッチング開始」を押してください。',
+        previewTitle: '計画の理念の末尾に追記される内容：', previewNote: 'サイトがこの前に出典の行（AI-Eva マッチング補足質問、アカウントと日時）を加えます。',
+        savedList: '今回追記した内容：', openPage: 'プロジェクトページで理念を見る ↗'},
       errors: {interrupted: 'マッチングが中断されました。「新しいマッチングを開始」を押してください。',
         listFailed: 'プロジェクト一覧を読み込めませんでした。「新しいマッチングを開始」を押してもう一度お試しください。',
         notEnough: 'マッチングには A と 2 件以上の相手が必要ですが、利用できるプロジェクトが足りません。',
@@ -135,13 +141,15 @@
         items: {offer: '제공할 수 있는 것', need: '필요한 것', scale: '규모와 시기', collab: '원하는 협력 방식'},
         hint: '정보가 부족해도 바로 매칭할 수 있습니다. 보완하면 추천이 더 정확해집니다', complete: '정보가 충분합니다. 시작할 수 있습니다',
         ask: '몇 가지 질문에 답하기(약 2분)', skip: '바로 매칭하기', other: '기타(직접 작성)', stop: '여기서 멈추기',
-        consent: '계획 이념에 추가할까요?(원래 쓴 내용은 바꾸지 않습니다)', yes: '네, 추가하기', no: '아니요', send: '보내기',
+        consent: '이 내용을 계획 이념에 추가할까요?(프로젝트 이념 칸에 저장되며, 원래 내용은 그대로 남습니다)', yes: '네, 추가하기', no: '아니요', send: '보내기',
         otherLabel: '직접 답 쓰기', step: (n, t) => `질문 ${n}／${t}`, answered: a => `내 답변: ${a}`,
         skipped: '대상을 선택하고 바로 매칭을 시작하세요.', stopped: '여기서 멈췄습니다. 언제든 매칭을 시작할 수 있습니다.',
         done: '감사합니다! 이제 매칭을 시작할 수 있습니다.',
         saving: '계획 이념에 추가하는 중…', savedOk: n => `계획 이념에 추가했습니다(${n}건, 원래 내용은 바꾸지 않았습니다).`,
         savedErr: n => `${n}건은 추가하지 못했습니다. 답변은 이번 매칭에 그대로 사용됩니다.`,
-        nextStep: '다음: 아래에서 비교할 프로젝트를 2~4개 고른 뒤 "매칭 시작"을 누르세요.'},
+        nextStep: '다음: 아래에서 비교할 프로젝트를 2~4개 고른 뒤 "매칭 시작"을 누르세요.',
+        previewTitle: '계획 이념 맨 끝에 추가될 내용:', previewNote: '사이트가 그 앞에 출처 줄(AI-Eva 매칭 보충 질문, 계정과 시간)을 덧붙입니다.',
+        savedList: '이번에 추가한 내용:', openPage: '프로젝트 페이지에서 이념 보기 ↗'},
       errors: {interrupted: '매칭이 중단되었습니다. "새 매칭 시작"을 누르세요.',
         listFailed: '프로젝트 목록을 불러오지 못했습니다. "새 매칭 시작"을 눌러 다시 시도하세요.',
         notEnough: '매칭에는 A와 최소 2개 대상이 필요하지만 사용할 수 있는 프로젝트가 부족합니다.',
@@ -217,6 +225,11 @@
     .live-match .mt-ready p{margin:0}
     .live-match .mt-ready-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
     .live-match .mt-ready-q{font-weight:600}
+    .live-match .mt-ready-preview{border-left:3px solid #5fa8ff;background:rgba(95,168,255,.08);padding:6px 10px;border-radius:4px;display:flex;flex-direction:column;gap:4px}
+    .live-match .mt-ready-preview blockquote{margin:0;white-space:pre-wrap;font-weight:600}
+    .live-match .mt-ready ul.mt-ready-saved-list{display:block;list-style:disc;padding-left:20px}
+    .live-match .mt-ready ul.mt-ready-saved-list li{color:inherit}
+    .live-match .mt-ready-page{color:#5fa8ff;text-decoration:underline}
     .live-match .mt-ready input[type=text]{flex:1;min-width:160px;padding:5px 8px;border:1px solid #9aa5b1;border-radius:6px;font:inherit}
     .live-match .mt-note{color:#b4bfcc;font-size:12px}
     .live-match .mt-search{display:block;width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid #9aa5b1;border-radius:8px;font:inherit}
@@ -436,7 +449,22 @@
         const ok = asked.filter(k => saved[k] === 'ok').length;
         const err = asked.filter(k => saved[k] === 'error').length;
         if (asked.length - ok - err) box.append(node('p', R.saving, {class: 'mt-note', 'data-match-ready-saved': 'saving'}));
-        if (ok) box.append(node('p', `✅ ${R.savedOk(ok)}`, {'data-match-ready-saved': 'ok'}));
+        if (ok) {
+          box.append(node('p', `✅ ${R.savedOk(ok)}`, {'data-match-ready-saved': 'ok'}));
+          const lines = asked.map(k => (r.saved_text || {})[k]).filter(Boolean);
+          if (lines.length) {
+            const list = node('ul', null, {class: 'mt-ready-saved-list', 'data-match-ready-saved-list': '', 'aria-label': R.savedList});
+            for (const t of lines) list.append(node('li', t));
+            box.append(node('p', R.savedList, {class: 'mt-note'}), list);
+          }
+          if (typeof r.page === 'string' && /^https:\/\//.test(r.page)) {
+            const link = node('a', R.openPage, {href: r.page, target: '_blank', rel: 'noopener noreferrer',
+              class: 'mt-ready-page', 'data-match-ready-page': ''});
+            const linkRow = node('p', null);
+            linkRow.append(link);
+            box.append(linkRow);
+          }
+        }
         if (err) box.append(node('p', `⚠ ${R.savedErr(err)}`, {'data-match-ready-saved': 'error'}));
       }
       if (ready.mode === 'done' || ready.mode === 'stopped') {
@@ -480,6 +508,12 @@
     // #201：回答後問要不要補進計畫理念；同意才寫回（伺服器走既有寫回流程，只附加不改原文）
     box.append(node('p', R.answered(ready.picked), {'data-match-ready-answer': ''}),
       node('p', tx.consent, {class: 'mt-ready-q', 'data-match-ready-consent': ''}));
+    // 送出前預覽：實際會送去附加的那一段（寫回固定用中文項目名，與伺服器 writeback_text 相同）
+    const preview = node('div', null, {class: 'mt-ready-preview', 'data-match-ready-preview': ''});
+    preview.append(node('p', R.previewTitle, {class: 'mt-note'}),
+      node('blockquote', `${q.write_label || q.key}：${ready.picked}`, {'data-match-ready-preview-text': ''}),
+      node('p', R.previewNote, {class: 'mt-note'}));
+    box.append(preview);
     const row = node('div', null, {class: 'mt-ready-row'});
     row.append(button(R.yes, () => {
       send('ready_answer', {a: aId, key: q.key, answer: ready.picked, consent: true});

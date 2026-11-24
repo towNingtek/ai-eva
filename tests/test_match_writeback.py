@@ -115,8 +115,8 @@ def test_consent_appends_once_with_source_note(reply):
     assert confirmed is True
     assert set(args) == {"uuid", "supplement"}  # CMS manifest 參數；只附加、沒有覆寫欄位
     assert args["uuid"] == MINE
-    assert args["supplement"] == A + NOTE
-    expected = ORIGINAL + "\n\n" + A + NOTE
+    assert args["supplement"] == A          # 來源標註由 CMS 加，AI-Eva 不重複
+    expected = ORIGINAL + "\n\n" + A
     assert out["philosophy"] == expected
     assert out["philosophy"].startswith(ORIGINAL)  # 原文不變
     assert rt.philosophy[MINE] == expected
@@ -125,14 +125,15 @@ def test_consent_appends_once_with_source_note(reply):
 def test_consent_reads_original_when_not_given():
     rt = FakeRuntime()
     out, _ = offer(rt, MINE, "要")
-    assert out["philosophy"] == ORIGINAL + "\n\n" + A + NOTE
+    assert out["philosophy"] == ORIGINAL + "\n\n" + A
     assert rt.count("get_project_info") == 1
 
 
 def test_helpers():
     assert wb.source_note(TODAY) == NOTE
-    assert wb.appended(ORIGINAL, "補充", TODAY) == ORIGINAL + "\n\n補充" + NOTE
-    assert wb.appended("", "補充", TODAY) == "補充" + NOTE
+    assert wb.appended(ORIGINAL, "補充", TODAY) == ORIGINAL + "\n\n補充"
+    assert wb.appended("", "補充", TODAY) == "補充"
+    assert wb.addition_text("  補充  ", TODAY) == "補充"   # 不再自加日期標註（CMS 會加來源）
     assert wb.parse_consent("要") and not wb.parse_consent("不要")
 
 

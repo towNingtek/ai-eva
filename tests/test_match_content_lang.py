@@ -338,11 +338,11 @@ def test_writeback_and_records_stay_chinese(reader, monkeypatch, lang):
     # 詢問句依閱讀者語言
     assert asked == [mi.msg("writeback.ask", lang)]
     assert_reader_text(asked[0], lang, "writeback ask")
-    # 寫回 CMS 的補充內容：回答原樣＋中文來源標註
+    # 寫回 CMS 的補充內容：回答原樣（中文來源標註由 CMS 加，AI-Eva 不重複加）
     appends = [c for c in runtime.calls if c[0] == "append_philosophy"]
     assert len(appends) == 1
     text = appends[0][1]["supplement"]
-    assert "We plan to hold it in October." in text and "補充，經 AI-Eva 媒合補問" in text
+    assert text == "We plan to hold it in October."
     # 紀錄：補問題目換回中文版
     strings = conn.strings()
     zh_q = built[0]["record_fields"][cd.F_CONFIRM]

@@ -45,8 +45,8 @@ const texts = {hint: '資料不夠也可以直接媒合；補完推薦會更準'
 const LOW = {a: 'low-a', state: 'ready', complete: false, texts,
   items: [item('offer', 'ok'), item('need', 'vague'), item('scale', 'missing'), item('collab', 'missing')],
   questions: [
-    {key: 'need', text: '你最需要對方幫忙的是哪一種？', options: ['資金或資源', '專業人才', '行銷與通路', '場地']},
-    {key: 'scale', text: '這個計畫大概的規模與時間？', options: ['小型試辦（3 個月內）', '一年期計畫', '長期經營（一年以上）']},
+    {key: 'need', text: '你最需要對方幫忙的是哪一種？', options: ['資金或資源', '專業人才', '行銷與通路', '場地'], write_label: '你需要什麼'},
+    {key: 'scale', text: '這個計畫大概的規模與時間？', options: ['小型試辦（3 個月內）', '一年期計畫', '長期經營（一年以上）'], write_label: '規模與時間'},
     {key: 'collab', text: '你想怎麼跟對方合作？', options: ['共同辦活動', '資源互換', '長期夥伴關係', '一起爭取計畫']},
   ]};
 const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
@@ -128,7 +128,11 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     const answers = (await evs('ready_answer')).length;
     await box.locator('[data-match-ready-opt="1"]').click();
     await box.locator('[data-match-ready-consent]').waitFor();
-    ok((await box.locator('[data-match-ready-consent]').textContent()).includes('要不要補進計畫理念'), 'clicking an option asks 要不要補進計畫理念');
+    ok((await box.locator('[data-match-ready-consent]').textContent()).includes('附加到你的計畫理念'), 'clicking an option asks to append to the plan philosophy');
+    ok((await box.locator('[data-match-ready-consent]').textContent()).includes('會寫進專案的計畫理念欄位'), 'consent says plainly it writes into the project field');
+    ok((await box.locator('[data-match-ready-preview-text]').textContent()) === `你需要什麼：${LOW.questions[0].options[1]}`,
+      'preview shows the exact text that will be appended, before consenting');
+    ok((await box.locator('[data-match-ready-preview]').textContent()).includes('來源標註'), 'preview mentions the source line the site adds');
     ok((await evs('ready_answer')).length === answers, 'nothing is written before consent');
     // 不同意 → 不寫回，進到第 2 題
     await box.locator('[data-match-ready-no]').click();
@@ -151,13 +155,20 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     await box.locator('[data-match-ready-saved="saving"]').waitFor();
     ok((await box.locator('[data-match-ready-saved="saving"]').textContent()).includes('正在補進'), 'shows 正在補進 until the server answers');
     ok((await box.locator('[data-match-ready-next]').textContent()).includes('勾選 2–4 個比較對象'), 'next step points to ticking targets');
-    await push({...sel({readiness: {...LOW, saved: {scale: 'ok'}}}), task_id: 'task-r2'});
+    await push({...sel({readiness: {...LOW, saved: {scale: 'ok'}, saved_text: {scale: '規模與時間：小型試辦（3 個月內）'},
+      page: 'https://cms.example/backend/cms_plan_info/low-a'}}), task_id: 'task-r2'});
     await box.locator('[data-match-ready-saved="ok"]').waitFor();
+    ok((await box.locator('[data-match-ready-saved-list] li').allTextContents()).join() === '規模與時間：小型試辦（3 個月內）',
+      'after saving, lists exactly what was appended');
+    const pageLink = box.locator('[data-match-ready-page]');
+    ok(await pageLink.getAttribute('href') === 'https://cms.example/backend/cms_plan_info/low-a' && await pageLink.getAttribute('target') === '_blank',
+      'link to the project page opens in a new tab');
     ok((await box.locator('[data-match-ready-saved="ok"]').textContent()).includes('已補進計畫理念（1 則'), 'server ok → 已補進計畫理念（1 則）');
     ok(await box.locator('[data-match-ready-saved="saving"]').count() === 0, 'saving line disappears once saved');
     ok(await box.locator('[data-match-ready-next]').count() === 1, 'next step still shown after saving');
-    await push({...sel({readiness: {...LOW, saved: {scale: 'error'}}}), task_id: 'task-r2'});
+    await push({...sel({readiness: {...LOW, saved: {scale: 'error'}, page: 'javascript:alert(1)'}}), task_id: 'task-r2'});
     await box.locator('[data-match-ready-saved="error"]').waitFor();
+    ok(await box.locator('[data-match-ready-page], [data-match-ready-saved-list]').count() === 0, 'no list or link when nothing was saved; non-https links are ignored');
     ok((await box.locator('[data-match-ready-saved="error"]').textContent()).includes('沒補進去'), 'server error → says it was not added');
 
     // 5. 資料完整的 A：只一行「可以開始」
