@@ -27,7 +27,10 @@
         ask: '回答幾個問題（約 2 分鐘）', skip: '先直接媒合', other: '其他（自己寫）', stop: '先停在這',
         consent: '要不要補進計畫理念（不會改原本寫的）', yes: '要，補進去', no: '不用', send: '送出',
         otherLabel: '自己寫答案', step: (n, t) => `問題 ${n}／${t}`, answered: a => `你的回答：${a}`,
-        skipped: '好，直接勾選對象開始媒合。', stopped: '先停在這；隨時可以開始媒合。', done: '謝謝！可以開始媒合了。'},
+        skipped: '好，直接勾選對象開始媒合。', stopped: '先停在這；隨時可以開始媒合。', done: '謝謝！可以開始媒合了。',
+        saving: '正在補進計畫理念…', savedOk: n => `已補進計畫理念（${n} 則，原文沒有改動）。`,
+        savedErr: n => `有 ${n} 則沒補進去，你的回答仍會用在這次媒合。`,
+        nextStep: '下一步：在下方勾選 2–4 個比較對象，再按「開始媒合」。'},
       errors: {interrupted: '媒合已中斷，請按「開始新媒合」。', listFailed: '讀取專案清單失敗，請按「開始新媒合」再試。',
         notEnough: '媒合需要 A 加上至少 2 個對象，目前可用的專案不夠。',
         noInitiable: '你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。',
@@ -62,7 +65,10 @@
         consent: 'Add this to your project philosophy? (What you already wrote stays unchanged)', yes: 'Yes, add it', no: 'No thanks', send: 'Send',
         otherLabel: 'Write your own answer', step: (n, t) => `Question ${n}/${t}`, answered: a => `Your answer: ${a}`,
         skipped: 'OK. Pick the projects and start matching.', stopped: 'Stopped here. You can start matching any time.',
-        done: 'Thanks! You can start matching now.'},
+        done: 'Thanks! You can start matching now.',
+        saving: 'Adding to your project philosophy…', savedOk: n => `Added to your project philosophy (${n} item${n === 1 ? '' : 's'}; your original text is unchanged).`,
+        savedErr: n => `${n} item${n === 1 ? '' : 's'} could not be added; your answers are still used in this match.`,
+        nextStep: 'Next: tick 2–4 projects to compare below, then press "Start matching".'},
       errors: {interrupted: 'Matching was interrupted. Press "Start a new match".',
         listFailed: 'Could not load the project list. Press "Start a new match" to try again.',
         notEnough: 'Matching needs A plus at least 2 projects, but not enough projects are available.',
@@ -96,7 +102,10 @@
         consent: '計画の理念に追記しますか？（元の文章は変えません）', yes: 'はい、追記する', no: 'しない', send: '送信',
         otherLabel: '自分で答えを書く', step: (n, t) => `質問 ${n}／${t}`, answered: a => `あなたの回答：${a}`,
         skipped: '相手を選んでそのままマッチングを始めてください。', stopped: 'ここでやめました。いつでもマッチングを始められます。',
-        done: 'ありがとうございます。マッチングを始められます。'},
+        done: 'ありがとうございます。マッチングを始められます。',
+        saving: '計画の理念に追記しています…', savedOk: n => `計画の理念に追記しました（${n} 件、元の文章は変えていません）。`,
+        savedErr: n => `${n} 件は追記できませんでした。回答は今回のマッチングに使われます。`,
+        nextStep: '次へ：下で比較する案件を 2〜4 件選び、「マッチング開始」を押してください。'},
       errors: {interrupted: 'マッチングが中断されました。「新しいマッチングを開始」を押してください。',
         listFailed: 'プロジェクト一覧を読み込めませんでした。「新しいマッチングを開始」を押してもう一度お試しください。',
         notEnough: 'マッチングには A と 2 件以上の相手が必要ですが、利用できるプロジェクトが足りません。',
@@ -129,7 +138,10 @@
         consent: '계획 이념에 추가할까요?(원래 쓴 내용은 바꾸지 않습니다)', yes: '네, 추가하기', no: '아니요', send: '보내기',
         otherLabel: '직접 답 쓰기', step: (n, t) => `질문 ${n}／${t}`, answered: a => `내 답변: ${a}`,
         skipped: '대상을 선택하고 바로 매칭을 시작하세요.', stopped: '여기서 멈췄습니다. 언제든 매칭을 시작할 수 있습니다.',
-        done: '감사합니다! 이제 매칭을 시작할 수 있습니다.'},
+        done: '감사합니다! 이제 매칭을 시작할 수 있습니다.',
+        saving: '계획 이념에 추가하는 중…', savedOk: n => `계획 이념에 추가했습니다(${n}건, 원래 내용은 바꾸지 않았습니다).`,
+        savedErr: n => `${n}건은 추가하지 못했습니다. 답변은 이번 매칭에 그대로 사용됩니다.`,
+        nextStep: '다음: 아래에서 비교할 프로젝트를 2~4개 고른 뒤 "매칭 시작"을 누르세요.'},
       errors: {interrupted: '매칭이 중단되었습니다. "새 매칭 시작"을 누르세요.',
         listFailed: '프로젝트 목록을 불러오지 못했습니다. "새 매칭 시작"을 눌러 다시 시도하세요.',
         notEnough: '매칭에는 A와 최소 2개 대상이 필요하지만 사용할 수 있는 프로젝트가 부족합니다.',
@@ -417,6 +429,26 @@
     if (ready.mode !== 'ask') {
       const note = {skip: R.skipped, stopped: R.stopped, done: R.done}[ready.mode];
       if (note) box.append(node('p', note, {class: 'mt-note', 'data-match-ready-note': ready.mode}));
+      // 「要，補進去」的結果：伺服器寫回後在 readiness.saved 標 ok／error（沒回來前顯示「正在補進」）
+      const asked = ready.consented || [];
+      if (asked.length) {
+        const saved = r.saved || {};
+        const ok = asked.filter(k => saved[k] === 'ok').length;
+        const err = asked.filter(k => saved[k] === 'error').length;
+        if (asked.length - ok - err) box.append(node('p', R.saving, {class: 'mt-note', 'data-match-ready-saved': 'saving'}));
+        if (ok) box.append(node('p', `✅ ${R.savedOk(ok)}`, {'data-match-ready-saved': 'ok'}));
+        if (err) box.append(node('p', `⚠ ${R.savedErr(err)}`, {'data-match-ready-saved': 'error'}));
+      }
+      if (ready.mode === 'done' || ready.mode === 'stopped') {
+        box.append(node('p', R.nextStep, {class: 'mt-ready-q', 'data-match-ready-next': ''}));
+        if (!ready.pointed) {
+          ready.pointed = true;
+          setTimeout(() => {
+            targetsEl.scrollIntoView({block: 'start'});
+            targetsEl.querySelector('input:not([disabled])')?.focus({preventScroll: true});
+          }, 0);
+        }
+      }
       return;
     }
     const q = qs[ready.step];
@@ -451,6 +483,7 @@
     const row = node('div', null, {class: 'mt-ready-row'});
     row.append(button(R.yes, () => {
       send('ready_answer', {a: aId, key: q.key, answer: ready.picked, consent: true});
+      ready.consented = [...(ready.consented || []), q.key];
       next();
     }, {'data-match-ready-yes': ''}), button(R.no, next, {'data-match-ready-no': ''}), stop());
     box.append(row);

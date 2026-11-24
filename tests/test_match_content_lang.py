@@ -341,7 +341,7 @@ def test_writeback_and_records_stay_chinese(reader, monkeypatch, lang):
     # 寫回 CMS 的補充內容：回答原樣＋中文來源標註
     appends = [c for c in runtime.calls if c[0] == "append_philosophy"]
     assert len(appends) == 1
-    text = appends[0][1]["text"]
+    text = appends[0][1]["supplement"]
     assert "We plan to hold it in October." in text and "補充，經 AI-Eva 媒合補問" in text
     # 紀錄：補問題目換回中文版
     strings = conn.strings()

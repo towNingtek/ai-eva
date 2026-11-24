@@ -159,7 +159,7 @@ async def offer_writeback(
     original = philosophy if philosophy is not None else await _fetch_philosophy(runtime, uuid)
     text = addition_text(answer, today)
     try:
-        res = await runtime.execute(TOOL, {"uuid": uuid, "text": text}, confirmed=True)
+        res = await runtime.execute(TOOL, {"uuid": uuid, "supplement": text}, confirmed=True)
     except Exception as e:  # noqa: BLE001
         logger.exception("writeback: append_philosophy transport error")
         res = {"status": "error", "reason": f"{type(e).__name__}: {e}"}

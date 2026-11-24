@@ -307,7 +307,7 @@ def test_clarify_answer_asks_writeback_and_appends_only_on_consent(env):
                                         lambda prompt: asked.append(prompt) or "好")
         assert len(asked) == 1 and out["result"] == "ok"
         appends = env.cms.named("append_philosophy")
-        assert len(appends) == 1 and appends[0][1]["uuid"] == "a" and "預計十月在穀倉辦" in appends[0][1]["text"]
+        assert len(appends) == 1 and appends[0][1]["uuid"] == "a" and "預計十月在穀倉辦" in appends[0][1]["supplement"]
         t = task._load(env.path)
         assert t["clarify"] is None and t["card_state"][target]["supplement"] == "ok"
         assert invites(env) == []
