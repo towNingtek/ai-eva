@@ -147,6 +147,18 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     await box.locator('[data-match-ready-stop]').click();
     ok(await box.locator('[data-match-ready-question]').count() === 0, '「先停在這」 ends the questions');
     ok(await panel.locator('[data-match-start]').count() === 1, 'start button still there after stopping');
+    // 補進去之後要看得到結果與下一步（之前按完什麼都沒說，使用者不知道該做什麼）
+    await box.locator('[data-match-ready-saved="saving"]').waitFor();
+    ok((await box.locator('[data-match-ready-saved="saving"]').textContent()).includes('正在補進'), 'shows 正在補進 until the server answers');
+    ok((await box.locator('[data-match-ready-next]').textContent()).includes('勾選 2–4 個比較對象'), 'next step points to ticking targets');
+    await push({...sel({readiness: {...LOW, saved: {scale: 'ok'}}}), task_id: 'task-r2'});
+    await box.locator('[data-match-ready-saved="ok"]').waitFor();
+    ok((await box.locator('[data-match-ready-saved="ok"]').textContent()).includes('已補進計畫理念（1 則'), 'server ok → 已補進計畫理念（1 則）');
+    ok(await box.locator('[data-match-ready-saved="saving"]').count() === 0, 'saving line disappears once saved');
+    ok(await box.locator('[data-match-ready-next]').count() === 1, 'next step still shown after saving');
+    await push({...sel({readiness: {...LOW, saved: {scale: 'error'}}}), task_id: 'task-r2'});
+    await box.locator('[data-match-ready-saved="error"]').waitFor();
+    ok((await box.locator('[data-match-ready-saved="error"]').textContent()).includes('沒補進去'), 'server error → says it was not added');
 
     // 5. 資料完整的 A：只一行「可以開始」
     await push({...sel({readiness: FULL}), task_id: 'task-r3'});

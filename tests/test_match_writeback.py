@@ -49,7 +49,7 @@ class FakeRuntime:
             if self.append_result is not None:
                 return self.append_result
             u = args["uuid"]
-            self.philosophy[u] = self.philosophy[u] + "\n\n" + args["text"]
+            self.philosophy[u] = self.philosophy[u] + "\n\n" + args["supplement"]
             return {"status": "ok", "result": {"data": {"uuid": u}}}
         return {"status": "denied", "reason": f"tool '{name}' not in manifest"}
 
@@ -113,9 +113,9 @@ def test_consent_appends_once_with_source_note(reply):
     assert len(writes) == 1
     args, confirmed = writes[0]
     assert confirmed is True
-    assert set(args) == {"uuid", "text"}  # 只附加：沒有覆寫欄位
+    assert set(args) == {"uuid", "supplement"}  # CMS manifest 參數；只附加、沒有覆寫欄位
     assert args["uuid"] == MINE
-    assert args["text"] == A + NOTE
+    assert args["supplement"] == A + NOTE
     expected = ORIGINAL + "\n\n" + A + NOTE
     assert out["philosophy"] == expected
     assert out["philosophy"].startswith(ORIGINAL)  # 原文不變

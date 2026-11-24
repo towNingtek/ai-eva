@@ -324,7 +324,7 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
             await check_readiness(path, task, runtime, data.get("a"), llm)
         return
     if action == "ready_answer":
-        _keep(asyncio.create_task(ready_answer(task, runtime, data)))
+        _keep(asyncio.create_task(_ready_answer_and_report(path, task, runtime, data)))
         return
     if action == "new" and task["status"] not in ACTIVE_STATES:
         task = _create(path, runtime)
@@ -414,6 +414,25 @@ async def ready_answer(task: dict, runtime, data: Mapping) -> dict:
     except Exception:  # noqa: BLE001
         logger.exception("match task: 準備度寫回失敗 %s", a)
         return {"result": "error"}
+
+
+async def _ready_answer_and_report(path: Path, task: dict, runtime, data: Mapping) -> None:
+    """寫回後把結果記在快照（readiness.saved[key]＝ok／error），面板據此告訴使用者有沒有補進去。"""
+    key = str(data.get("key") or "")
+    out = await ready_answer(task, runtime, data)
+    result = (out or {}).get("result")
+    if data.get("consent") is not True or not key:
+        return
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task.get("task_id"):
+        return
+    r = cur.get("readiness") or {}
+    if r.get("a") != (task.get("readiness") or {}).get("a"):
+        return
+    r.setdefault("saved", {})[key] = "ok" if result == "ok" else "error"
+    cur["readiness"] = r
+    _save(path, cur)
+    await _publish(cur)
 
 
 def _validate(task: dict, a, targets) -> str | None:

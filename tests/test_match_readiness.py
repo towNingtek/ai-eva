@@ -148,7 +148,7 @@ def test_with_consent_calls_existing_append_flow(monkeypatch):
     assert len(seen) == 1 and seen[0]["uuid"] == "a"                   # 走既有 #201 寫回
     (name, args, confirmed), = appends(cms)
     assert args["uuid"] == "a" and confirmed is True
-    assert args["text"].startswith("規模與時間：一年期計畫")              # 只附加，不改原文
+    assert args["supplement"].startswith("規模與時間：一年期計畫")              # 只附加，不改原文
 
 
 def test_consent_on_unmanageable_project_does_not_write(monkeypatch):
@@ -296,7 +296,7 @@ def test_ready_answer_writes_only_with_consent(env):
         await task.handle_event(env.path, env.cms, {**base, "consent": True})
         await settle(env)
         (_, args), = [c for c in env.cms.calls if c[0] == "append_philosophy"]
-        assert args["uuid"] == "a" and "一年期計畫" in args["text"]
+        assert args["uuid"] == "a" and "一年期計畫" in args["supplement"]
     asyncio.run(go())
 
 
