@@ -44,6 +44,46 @@ def _third_party_import_warnings() -> None:
 _third_party_import_warnings()
 
 
+def _testclient_per_request_cookies_as_header() -> None:
+    """把 TestClient 的單次請求 cookies= 改成同義的 Cookie 標頭。
+
+    httpx 0.24+ 已棄用 `client.get(..., cookies={...})`（單次請求 cookies 是否
+    寫回 client 語意不明），會發 DeprecationWarning。不改寫測試、不過濾警告，
+    而是改用 httpx 建議的等價做法：把 client 既有 cookie 與這次的 cookies 合併，
+    依 URL 算出 Cookie 標頭後隨這次請求送出，不寫回 client 的 cookie jar
+    （與原本單次 cookies 的行為相同）。呼叫端自己帶了 Cookie 標頭時不動。
+    """
+    try:
+        from starlette import testclient
+    except ImportError:
+        return
+    # 用 starlette 自己綁定的 httpx 模組（有些環境不是頂層 httpx），型別才一致。
+    httpx = testclient.httpx
+    TestClient = testclient.TestClient
+    if getattr(TestClient.request, "_eva_cookie_header", False):
+        return
+    original = TestClient.request
+
+    def request(self, method, url, *args, cookies=None, headers=None, **kwargs):
+        if cookies:
+            merged_headers = httpx.Headers(headers)
+            if "cookie" not in merged_headers:
+                jar = httpx.Cookies(self.cookies)
+                jar.update(cookies)
+                probe = httpx.Request(method, self._merge_url(url))
+                jar.set_cookie_header(probe)
+                if "cookie" in probe.headers:
+                    merged_headers["cookie"] = probe.headers["cookie"]
+            headers, cookies = merged_headers, None
+        return original(self, method, url, *args, cookies=cookies, headers=headers, **kwargs)
+
+    request._eva_cookie_header = True
+    TestClient.request = request
+
+
+_testclient_per_request_cookies_as_header()
+
+
 def pytest_addoption(parser):
     # pytest.ini 設了 asyncio_default_fixture_loop_scope（給 pytest-asyncio 用）。
     # 環境沒裝 pytest-asyncio 時，這個鍵沒人註冊會出 PytestConfigWarning，
