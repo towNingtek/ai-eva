@@ -219,7 +219,7 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
   </div>
 </div>
 
-<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794816549"></script><script src="./yunlin-frame.js?v=1794812392"></script><script src="./match-orbit-live.js?v=live-match"></script>
+<script src="./data.js?v=1793943178"></script><script src="./semantics.js?v=1793943178"></script><script src="./kv-match-mock.js?v=1794816549"></script><script src="./yunlin-frame.js?v=1794812392"></script><script src="./match-orbit-live.js?v=live-match"></script><script src="./galaxy-i18n.js?v=live-match"></script>
 <script src="./moons.js?v=1793943178">
  // Constrain only the two-project overview; original focus, drag, curve and particles remain.
  const layoutTick=tick;
@@ -228,8 +228,8 @@ input[type=range].s::-webkit-slider-thumb{background:#5f6b7a}
 </script>
 <script>
 const NS="http://www.w3.org/2000/svg";
-const BN0={B1:"空間與場域",B2:"產品與生產",B3:"服務與體驗",B4:"內容與品牌",
-          B5:"人才與專業",B6:"社群與關係",B7:"市場與通路",B8:"治理與平台"};const BN=BN0;   // step 3a: satellites are B1–B8, not the old topic labels
+// #249 B1–B8 名稱依 ?lang 換（galaxy-i18n.js）；BNZ 是原本的中文，給送 parent 的 tag 用。
+const GT=window.GI18N.t,BN=window.GI18N.bn,BNZ=window.GI18N.bnZh;   // step 3a: satellites are B1–B8, not the old topic labels
 const DIMS=[["needOffer","Need–Offer 互補",true],["cap","B1–B8 能力互補",true],
             ["mutual","互惠性（雙向）",true],
             ["topic","議題與目標對象",false],["exec","合作可執行性",false],
@@ -483,8 +483,8 @@ function render(){
     const gid=(P.length===2?'third-':'third-'+p1.id+'-'+p2.id+'-')+tag,gr=el('linearGradient',{id:gid,gradientUnits:'userSpaceOnUse',x1:A.x,y1:A.y,x2:B.x,y2:B.y});
     [[0,.04],[.2,.18],[.5,.22],[.8,.18],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#d9b98a','stop-opacity':o})));d.appendChild(gr);
     const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-third':tag,'pointer-events':'none'});svg.appendChild(line);
-    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':6,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都需要'});
-    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'third',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
+    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':6,tabindex:0,role:'button','aria-label':BN[tag]+GT('：')+GT('兩邊都需要')});
+    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:BNZ[tag],code:tag,subject:p1.id,kind:'third',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
     hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};svg.appendChild(hit)})});
   // Step 3a+: both plans OFFER the same B -> faint still line = 可交流經驗 (SH-METHOD-02: similarity is peer learning, not complementarity).
   MF_PAIRS.forEach(([p1,p2])=>{p1.o.forEach(([tag])=>{if(!p2.o.some(o=>o[0]===tag))return;if(BR.some(b=>b.tag===tag&&((b.from===p1.id&&b.to===p2.id)||(b.from===p2.id&&b.to===p1.id))))return;if(focus&&focus!==p1.id&&focus!==p2.id)return;
@@ -493,8 +493,8 @@ function render(){
     [[0,.04],[.2,.2],[.5,.24],[.8,.2],[1,.04]].forEach(([u,o])=>gr.appendChild(el('stop',{offset:u,'stop-color':'#8fcfc5','stop-opacity':o})));d.appendChild(gr);
     const line=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.5,'stroke-linecap':'round','data-kv-peer':tag});svg.appendChild(line);
     TRACKS.push({A,B,cx,cy,st:.3,q:1,tag,from:p1.id,to:p2.id,peer:true});
-    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[tag]+'：兩邊都能提供'});
-    const go=ev=>{ev.stopPropagation();if(window.mfEnter)mfEnter(tag,'peer',p1,p2);parent.postMessage({type:'tangle-relation',tag:BN[tag],code:tag,subject:p1.id,kind:'peer',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
+    const hit=el('path',{d:line.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[tag]+GT('：')+GT('兩邊都能提供')});
+    const go=ev=>{ev.stopPropagation();if(window.mfEnter)mfEnter(tag,'peer',p1,p2);parent.postMessage({type:'tangle-relation',tag:BNZ[tag],code:tag,subject:p1.id,kind:'peer',mode:'match',pa:p1.pid,pb:p2.pid},location.origin)};
     hit.setAttribute('stroke-width',6);hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();go(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter')go(e)};PEERHIT.push(hit)})});
   BR.forEach((b,bi)=>{
     if(!VIS.has(bi)) return;
@@ -515,8 +515,8 @@ function render(){
     [[0,.08],[.15,.45],[.38,unknown?.18:.65],[.58,unknown?0:.65],[.82,unknown?0:.45],[1,unknown?0:.08]].forEach(([u,o])=>grad.appendChild(el('stop',{offset:u,'stop-color':'#b9e2df','stop-opacity':o})));
     d.appendChild(grad);
     const route=el('path',{d:`M${A.x},${A.y} Q${cx},${cy} ${B.x},${B.y}`,fill:'none',stroke:'url(#'+gid+')','stroke-width':.65,'stroke-linecap':'round'});svg.appendChild(route);
-    const hit=el('path',{d:route.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[b.tag]+'：'+(unknown?'待釐清':'有依據的關係')});
-    function reveal(ev){ev.stopPropagation();if(window.mfEnter)mfEnter(b.tag,'pair',byId(b.to),byId(b.from));parent.postMessage({type:'tangle-relation',tag:BN[b.tag],code:b.tag,subject:b.to,kind:'relation',unknown,mode:'match',pa:byId(b.to).pid,pb:byId(b.from).pid},location.origin);}
+    const hit=el('path',{d:route.getAttribute('d'),fill:'none',stroke:'transparent','stroke-width':10,tabindex:0,role:'button','aria-label':BN[b.tag]+GT('：')+GT(unknown?'待釐清':'有依據的關係')});
+    function reveal(ev){ev.stopPropagation();if(window.mfEnter)mfEnter(b.tag,'pair',byId(b.to),byId(b.from));parent.postMessage({type:'tangle-relation',tag:BNZ[b.tag],code:b.tag,subject:b.to,kind:'relation',unknown,mode:'match',pa:byId(b.to).pid,pb:byId(b.from).pid},location.origin);}
     hit.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();reveal(ev)};hit.onclick=ev=>ev.stopPropagation();hit.onkeydown=e=>{if(e.key==='Enter'){reveal(e)}};svg.appendChild(hit);
 
   });
@@ -553,7 +553,7 @@ function render(){
       g.appendChild(el('circle',{cx:ex,cy:ey,r:isN?8:10,fill:'url(#'+glow.id+')','pointer-events':'none'}));
       if(ddSupplements.has(p.id+':'+it.t[0])){
  const halo=el('circle',{cx:ex,cy:ey,r:9,fill:'none',stroke:'#bae8e4','stroke-width':.6,opacity:.5});g.appendChild(halo);
- const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent='已補充 · 未查證';g.appendChild(mark);
+ const mark=el('text',{x:ex,y:ey-12,'text-anchor':'middle',fill:'#cbf0ed','font-size':(9/VZ).toFixed(2)});mark.textContent=GT('已補充 · 未查證');g.appendChild(mark);
  }
       const sg=el('g',{'data-kv-key':it.t[0],'data-kv-role':isN?'need':'offer','data-kv-owner':p.pid||p.id});g.appendChild(sg);if(it.both){sg.setAttribute('data-kv-role','both');}
       drawMoon(sg,ex,ey,mr,isN?'need':'offer',false);
@@ -567,10 +567,10 @@ function render(){
           sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*(1.8+1.6*(1-pv)),fill:'url(#pulse-grad)',opacity:pv.toFixed(3),'pointer-events':'none','data-need-pulse':''}))}}
       const target=el('circle',{cx:ex,cy:ey,r:10,fill:'transparent',tabindex:0,role:'button','aria-label':BN[it.t[0]],'data-dd-satellite':it.t[0]});
       target.onpointerdown=ev=>{ev.stopPropagation();ev.preventDefault();target.onclick(ev)};
-      target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;if(it.linked&&window.mfEnter){const ptn=window.mfPartner?mfPartner(p,it):null;mfEnter(it.t[0],'pair',p,ptn);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:'pair',mode:'match',pa:p.pid,pb:ptn?ptn.pid:null},location.origin);return}else if(window.mfFlash)mfFlash(p.id,it.t[0]);parent.postMessage({type:'tangle-relation',tag:BN[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
+      target.onclick=ev=>{ev.stopPropagation();if(ev.type==='click')return;if(it.linked&&window.mfEnter){const ptn=window.mfPartner?mfPartner(p,it):null;mfEnter(it.t[0],'pair',p,ptn);parent.postMessage({type:'tangle-relation',tag:BNZ[it.t[0]],code:it.t[0],subject:p.id,kind:'pair',mode:'match',pa:p.pid,pb:ptn?ptn.pid:null},location.origin);return}else if(window.mfFlash)mfFlash(p.id,it.t[0]);parent.postMessage({type:'tangle-relation',tag:BNZ[it.t[0]],code:it.t[0],subject:p.id,kind:it.d,unknown:low||dead,mode:'match'},location.origin)};
       target.onkeydown=ev=>{if(ev.key==='Enter')target.onclick(ev)};g.appendChild(target);
-      LBL.push({g:sg,x:ex,y:ey,ang:it.ang,mr,name:BN[it.t[0]]+(isN?'・需要':'・能提供'),sub:isN&&!lit?'沒有對象':null,fill:isN&&!lit?'#8a9592':'#bacdcc'});
-      if(it.both){const o=LBL[LBL.length-1];o.name=BN[it.t[0]]+'・需要＋能提供';o.sub=null;o.fill='#cfe3dc';o.mr=mr*1.45;
+      LBL.push({g:sg,x:ex,y:ey,ang:it.ang,mr,name:BN[it.t[0]]+GT(isN?'・需要':'・能提供'),sub:isN&&!lit?GT('沒有對象'):null,fill:isN&&!lit?'#8a9592':'#bacdcc'});
+      if(it.both){const o=LBL[LBL.length-1];o.name=BN[it.t[0]]+GT('・需要＋能提供');o.sub=null;o.fill='#cfe3dc';o.mr=mr*1.45;
         sg.appendChild(el('circle',{cx:ex,cy:ey,r:mr*1.35,fill:'none',stroke:'#93f2ea','stroke-width':.7,opacity:.75,'pointer-events':'none','data-kv-both':''}))}
 
     });
@@ -607,7 +607,7 @@ function render(){
   // Step 3a: place satellite labels last, so each one avoids every planet, moon, project name and earlier label.
   if(P.length===2&&window.MF_STATUS_TEXT){const [p1,p2]=P,a1=pos[p1.id],a2=pos[p2.id],st=mfStatus(),T=MF_STATUS_TEXT[st];
    const stacked=Math.abs(a1.y-a2.y)>Math.abs(a1.x-a2.x),x=stacked?(a1.x+a2.x)/2+64/VZ:(a1.x+a2.x)/2,y=stacked?(a1.y+a2.y)/2:Math.min(a1.y,a2.y)-58/VZ,f=10.5/VZ,w=T.length*f+14/VZ,h=f*1.9;
-   const sg2=el('g',{'data-mf-status':st,role:'button',tabindex:0,'aria-label':'媒合狀態：'+T,style:'cursor:pointer'});
+   const sg2=el('g',{'data-mf-status':st,role:'button',tabindex:0,'aria-label':GT('媒合狀態')+GT('：')+T,style:'cursor:pointer'});
    sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,fill:'transparent'}));   // click area only, no visible frame
    const tx=el('text',{x,y,'text-anchor':'middle',fill:st==='EXPLORE'?'#9fe3d9':st==='CLARIFY_FIRST'?'#e6cfa6':'#9aa6a3','font-size':f.toFixed(2),stroke:'#060a10','stroke-width':(3/VZ).toFixed(2),'paint-order':'stroke'});tx.textContent=T;sg2.appendChild(tx);
    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:p1.id,kind:'status',mode:'match'},location.origin)};
@@ -615,7 +615,7 @@ function render(){
    LBL.push({fixed:true,x,y:y+f*.45+h-f*1.2,w:w,h:h})}
   if(P.length>2&&focus&&window.MF_STATUS_TEXT&&window.mfStatusPair){const fp=byId(focus);P.filter(o=>o.id!==focus).forEach(o=>{
    const a1=pos[fp.id],a2=pos[o.id],st=mfStatusPair(fp,o),T=MF_STATUS_TEXT[st],x=a1.x+(a2.x-a1.x)*.5,y=a1.y+(a2.y-a1.y)*.5-14/VZ,f=10.5/VZ,w=T.length*f+14/VZ,h=f*1.9;
-   const sg2=el('g',{'data-mf-status':st,'data-mf-pair':fp.pid+'|'+o.pid,role:'button',tabindex:0,'aria-label':'媒合狀態：'+o.name+'：'+T,style:'cursor:pointer'});
+   const sg2=el('g',{'data-mf-status':st,'data-mf-pair':fp.pid+'|'+o.pid,role:'button',tabindex:0,'aria-label':GT('媒合狀態')+GT('：')+o.name+GT('：')+T,style:'cursor:pointer'});
    sg2.appendChild(el('rect',{x:x-w/2,y:y-h+f*.45,width:w,height:h,fill:'transparent'}));
    const tx=el('text',{x,y,'text-anchor':'middle',fill:st==='EXPLORE'?'#9fe3d9':st==='CLARIFY_FIRST'?'#e6cfa6':'#9aa6a3','font-size':f.toFixed(2),stroke:'#060a10','stroke-width':(3/VZ).toFixed(2),'paint-order':'stroke'});tx.textContent=T;sg2.appendChild(tx);
    const go=ev=>{ev.stopPropagation();parent.postMessage({type:'tangle-relation',tag:'媒合狀態',code:'status',subject:fp.id,kind:'status',mode:'match',pa:fp.pid,pb:o.pid},location.origin)};
@@ -1087,7 +1087,7 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
 (function(){
  const baseRender=render;let mf=null,mfT=0,mfRaf=0;
  const st=document.createElement('style');st.textContent='#mfBack{position:absolute;right:14px;top:12px;z-index:14;display:none;font:12px inherit;font-family:inherit;color:#8fd8cf;background:rgba(16,21,28,.82);border:1px solid #2a3540;border-radius:8px;padding:5px 11px;cursor:pointer}#mfBack.on{display:block}';document.head.appendChild(st);
- const back=document.createElement('button');back.id='mfBack';back.type='button';back.textContent='← 返回兩個星系';back.setAttribute('data-mf-back','');back.onclick=e=>{e.stopPropagation();mfLeave()};
+ const back=document.createElement('button');back.id='mfBack';back.type='button';back.textContent=GT('← 返回兩個星系');back.setAttribute('data-mf-back','');back.onclick=e=>{e.stopPropagation();mfLeave()};
  (document.getElementById('stage')||document.body).appendChild(back);
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mf)mfLeave()});
  const ease=k=>k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
@@ -1148,9 +1148,9 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
   const gO=el('g',{'data-mf-body':'','data-mf-focus':key,'data-mf-role':'offer','data-mf-owner':offer.pid});svg.appendChild(gO);drawMoon(gO,OS.x,OS.y,bigR,'offer',false);
   const lbl=(x,y,t,c,size,attr)=>{const n=el('text',Object.assign({x,y,'text-anchor':'middle',fill:c,'font-size':fs(size),opacity:e.toFixed(3)},attr||{}));n.textContent=t;svg.appendChild(n)};
   const name=BN[key];
-  lbl(NS.x,NS.y-bigR-12/VZ,name+(peer?'・能提供':'・需要'),peer?'#bfe9e3':'#e8d5b5',13);lbl(OS.x,OS.y-bigR-12/VZ,name+'・能提供','#bfe9e3',13);
-  lbl(cx,cy-10/VZ,peer?'兩邊都能提供：可聯合或交流（需另判競合）':'互補候選：能提供 → 需要','#cfe9e5',10.5,{'data-mf-caption':''});
-  lbl(NS.x,NS.y+bigR+18/VZ,nEv.length+' 段原文','#93a4a0',10);lbl(OS.x,OS.y+bigR+18/VZ,oEv.length+' 段原文','#93a4a0',10);
+  lbl(NS.x,NS.y-bigR-12/VZ,name+GT(peer?'・能提供':'・需要'),peer?'#bfe9e3':'#e8d5b5',13);lbl(OS.x,OS.y-bigR-12/VZ,name+GT('・能提供'),'#bfe9e3',13);
+  lbl(cx,cy-10/VZ,GT(peer?'兩邊都能提供：可聯合或交流（需另判競合）':'互補候選：能提供 → 需要'),'#cfe9e5',10.5,{'data-mf-caption':''});
+  lbl(NS.x,NS.y+bigR+18/VZ,GI18N.quotes(nEv.length),'#93a4a0',10);lbl(OS.x,OS.y+bigR+18/VZ,GI18N.quotes(oEv.length),'#93a4a0',10);
  }
 })();
 </script>
@@ -1159,7 +1159,7 @@ computeVis();bigBang();initCanvas();syncMode();render();buildParticles();buildSp
 // ── Step C: match status (SH-COLLAB-03 §5; standard v1.1 status_rules + status_transition). Added block. ──────────────
 // Computed from the same data + rules as the server; the server is the source of truth after a supplement
 // (Eva confirms → 'mf-status' message). RECOMMEND is never shown in phase 1 (Q4).
-window.MF_STATUS_TEXT={EXPLORE:'可探索',CLARIFY_FIRST:'先補資料',ELIGIBLE:'可排序・未建議',EXCLUDED:'不在範圍'};
+window.MF_STATUS_TEXT={EXPLORE:GI18N.t('可探索'),CLARIFY_FIRST:GI18N.t('先補資料'),ELIGIBLE:GI18N.t('可排序・未建議'),EXCLUDED:GI18N.t('不在範圍')};
 window.MF_FILLED=window.MF_FILLED||{};   // "pid:key:field" → true, set by the server after a confirmed answer
 let MF_SERVER_STATUS=null;
 window.mfStatus=function(){
