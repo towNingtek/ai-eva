@@ -453,6 +453,12 @@ async def _send_targets(state: dict) -> None:
 
 async def handle(payload: str, msg) -> None:
     text = (payload or "").strip()
+    # 工具選單（custom.js）會把選到的標籤字當訊息送出，例如「尋找媒合夥伴」。
+    # 那只是「點了這個工具」，不是使用者的回答 —— 和工具按鈕（空字串）走同一條路，
+    # 否則會掉進舊的聊天選案流程，列出全部專案、不開星球。
+    from app.i18n import all_app_labels
+    if text in all_app_labels("match_analysis"):
+        text = ""
     if not text:
         # #203：按租戶開關。sechome 從工具區點進來 → 打開／接回媒合星球任務（同一對話不重跑）；
         # 其他租戶（雲林共用 beta-eva）維持下面原本的聊天流程。

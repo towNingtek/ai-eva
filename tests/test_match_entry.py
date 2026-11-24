@@ -360,3 +360,27 @@ def test_auto_open_runs_once_per_cookie(monkeypatch):
 def test_bad_cookie_values_ignored():
     for bad in ["", "eva_open=", "eva_open=%7Bnot-json", 'eva_open=%5B1%2C2%5D', "eva_open=%7B%22app%22%3A1%7D"]:
         assert sso.consume_open(bad) is None
+
+
+# ── (f) 工具選單送出的標籤字＝點工具（不是回答） ─────────────────────
+
+def test_tool_menu_label_opens_task_like_button(monkeypatch):
+    """custom.js 把選單項目的標籤（各語言）當訊息送出；要和按鈕一樣開星球，不能掉進舊選案流程。"""
+    from app.apps.match_analysis import handler
+    opened, texts = [], []
+
+    async def fake_open():
+        opened.append(True)
+        return True
+
+    async def fake_on_text(text):
+        texts.append(text)
+        return True
+
+    monkeypatch.setattr(task, "open_from_tool", fake_open)
+    monkeypatch.setattr(task, "on_text", fake_on_text)
+    for label in ("尋找媒合夥伴", "Find matching partners", "マッチング相手を探す", "매칭 파트너 찾기", ""):
+        asyncio.run(handler.handle(label, None))
+    assert len(opened) == 5 and texts == []
+    asyncio.run(handler.handle("我們有竹編老師", None))      # 真正的回答照舊交給 on_text
+    assert texts == ["我們有竹編老師"] and len(opened) == 5
