@@ -1,7 +1,6 @@
 // Step 1 check: default (議題) view unchanged; 法領域 view shows 10 keys with mock states.
 // Serves public/ itself; needs Playwright via NODE_PATH. Usage: node law-domain-view.check.js <flag>
 const http=require("http"),fs=require("fs"),path=require("path");
-let chromium;try{({chromium}=require("playwright"))}catch(e){console.error("Playwright not found. Set NODE_PATH to a node_modules that has playwright.");process.exit(2)}
 const ROOT=path.resolve(__dirname,"..","..","public"),BASE=path.join(__dirname,"law-default-baseline.json"),arg=process.argv[2]||"";
 const DOMAINS=["農村再生","區域計畫","國土計畫","都市計畫","非都市土地使用管制","開發審議","環境影響評估","水土保持","農業發展","農地農用認定"];
 const MIME={".html":"text/html; charset=utf-8",".js":"text/javascript; charset=utf-8",".json":"application/json"};
@@ -13,25 +12,23 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
   kv:[...document.querySelectorAll("[data-kv-key]")].map(g=>({key:g.getAttribute("data-kv-key"),state:g.getAttribute("data-kv-state")})),
   planet:document.querySelectorAll("[data-project-planet]").length,dash:document.querySelectorAll('[stroke-dasharray]:not([stroke-dasharray=""])').length,
   vz:typeof VZ==="number"?+VZ.toFixed(2):null,demo:!!document.querySelector("[data-kv-demo-note]")&&getComputedStyle(document.querySelector("[data-kv-demo-note]")).display!=="none"}));
-(async()=>{await new Promise(r=>srv.listen(0,"127.0.0.1",r));const port=srv.address().port,b=await chromium.launch(),P=projects();let n=0;
- const open=async id=>{const p=await b.newPage({viewport:{width:1100,height:740}});p._errs=[];p._ext=[];p.on("pageerror",e=>p._errs.push(e.message));p.on("request",r=>{if(!r.url().startsWith("http://127.0.0.1:"+port)&&!r.url().startsWith("data:"))p._ext.push(r.url())});
-  await p.goto(`http://127.0.0.1:${port}/tangle/tangle-law.html?p=${id}`);await p.waitForTimeout(2600);return p};
- const toDomain=async p=>{};
- if(arg==="--domain"){const M=mock();for(const pr of P){const p=await open(pr.id);const s=await snap(p),m=M.projects[pr.id]; if(await p.locator("[data-kv-view],#kvView").count())fail(pr.short+" obsolete switch remains");
+// 每個旗標一個檢查；用法說明由這張分派表產生（Object.keys），不另外手寫，避免與實際旗標脫節。
+const CHECKS={
+ "--domain":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id);const s=await snap(p),m=M.projects[pr.id]; if(await p.locator("[data-kv-view],#kvView").count())fail(pr.short+" obsolete switch remains");
    const core=s.kv.filter(k=>k.state!=="uncovered"),unc=s.kv.filter(k=>k.state==="uncovered");
    if(core.length!==10||core.map(k=>k.key).sort().join()!==[...DOMAINS].sort().join())fail(pr.short+" domain keys wrong: "+core.map(k=>k.key).join());
    for(const k of core)if(m.law[k.key].state!==k.state)fail(`${pr.short} ${k.key} state ${k.state} != mock ${m.law[k.key].state}`);
    if(unc.length!==m.uncovered.length||unc.map(k=>k.key).sort().join()!==[...m.uncovered].sort().join())fail(pr.short+" uncovered mismatch");
-   if(s.rules.length)fail(pr.short+" topic satellites still visible in domain view");if(!s.demo)fail(pr.short+" demo note missing");if(s.planet!==1)fail(pr.short+" planet count "+s.planet);n++;await p.close()}}
- else if(arg==="--no-overlap"){for(const pr of P){for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(pr.id);await p.setViewportSize(vp);await p.waitForTimeout(400);await toDomain(p);
+   if(s.rules.length)fail(pr.short+" topic satellites still visible in domain view");if(!s.demo)fail(pr.short+" demo note missing");if(s.planet!==1)fail(pr.short+" planet count "+s.planet);n++;await p.close()};return n},
+ "--no-overlap":async({P,open,toDomain})=>{let n=0;for(const pr of P){for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(pr.id);await p.setViewportSize(vp);await p.waitForTimeout(400);await toDomain(p);
    await p.evaluate(()=>{orbitPaused=true});const SPIN=await p.evaluate(()=>typeof KV_SPIN==="number"?KV_SPIN:.012);
    for(let step=0;step<12;step++){await p.evaluate(([st,sp])=>{orbitTime=st*(Math.PI*2/12)/sp;render()},[step,SPIN]);
    const hits=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),X=(a,b)=>a.left<b.right&&b.left<a.right&&a.top<b.bottom&&b.top<a.bottom;const fixed=["#kvDemo","#zc"].map(s=>[s,R(document.querySelector(s))]);
      const U=g=>{const rs=[...g.querySelectorAll("text")].map(R);return{left:Math.min(...rs.map(r=>r.left)),top:Math.min(...rs.map(r=>r.top)),right:Math.max(...rs.map(r=>r.right)),bottom:Math.max(...rs.map(r=>r.bottom))}};const labels=[...document.querySelectorAll("[data-kv-key],[data-project-planet]")].map(g=>[g.getAttribute("data-kv-key")||"專案名稱",U(g)]);const out=[];
      for(const [t,r] of labels){for(const [s,f] of fixed)if(X(r,f))out.push(t+" × "+s);if(r.left<0||r.top<0||r.right>innerWidth||r.bottom>innerHeight)out.push(t+" clipped")}
      for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++)if(X(labels[i][1],labels[j][1]))out.push(labels[i][0]+" × "+labels[j][0]);const NM=(()=>{const t=document.querySelector("[data-project-planet] text");if(!t)return null;const b=R(t);return{left:b.left-4,top:b.top-2,right:b.right+4,bottom:b.bottom+2}})();if(NM)for(const [t,r] of labels)if(t!=="專案名稱"&&X(r,NM))out.push(t+" × 專案名稱");const B=[...document.querySelectorAll("[data-kv-key],[data-project-planet]")].map(g=>{const im=g.querySelector("image,circle[stroke]");if(!im)return null;const r=R(im);return[g.getAttribute("data-kv-key")||"行星",{left:r.left+1,top:r.top+1,right:r.right-1,bottom:r.bottom-1}]}).filter(Boolean);for(const [t,r] of labels)for(const [bn,bb] of B)if(X(r,bb))out.push(t+" label covers "+bn+" body");const bodies=[...document.querySelectorAll("[data-kv-key]")].map(g=>{const b=R(g.querySelector("image,circle[stroke]")||g);return[g.getAttribute("data-kv-key"),b.left+b.width/2,b.top+b.height/2,Math.max(b.width,b.height)/2]});document.querySelectorAll('path[stroke^="url(#kv-route"]').forEach(pth=>{const L=pth.getTotalLength(),m=pth.getScreenCTM();const end=pth.getPointAtLength(L),ex=end.x*m.a+m.e,ey=end.y*m.d+m.f;for(let k=1;k<40;k++){const q=pth.getPointAtLength(L*k/40),x=q.x*m.a+m.e,y=q.y*m.d+m.f;for(const [name,bx,by,br] of bodies){if(Math.hypot(ex-bx,ey-by)<br+30)continue;if(Math.hypot(x-bx,y-by)<br+4){out.push("route crosses "+name);return}}}});return [...new Set(out)]});
-    if(hits.length){fail(`${pr.short} @${vp.width}x${vp.height} angle ${step*30}°: ${hits.slice(0,4).join(" | ")}`);break}}await p.close()}n++}}
- else if(arg==="--motion"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];
+    if(hits.length){fail(`${pr.short} @${vp.width}x${vp.height} angle ${step*30}°: ${hits.slice(0,4).join(" | ")}`);break}}await p.close()}n++};return n},
+ "--motion":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];
    const leave=()=>p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));
    const pos=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key] image")].map(i=>{const r=i.getBoundingClientRect();return[r.x,r.y]}));
    const mv=(a,b)=>Math.max(...a.map((x,i)=>Math.hypot(x[0]-b[i][0],x[1]-b[i][1])));
@@ -40,8 +37,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    if(d<16)fail(`${pr.short} satellites moved ${d.toFixed(1)}px in 3s (< 16)`);if(got!==want)fail(`${pr.short} flow particles ${got} != ${want}`);
    await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerenter")));await p.waitForTimeout(300);a=await pos();await p.waitForTimeout(1500);b=await pos();
    if(mv(a,b)>0.5)fail(`${pr.short} still moving while the pointer is over the graph`);
-   n++;await p.close()}}
- else if(arg==="--focus"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
+   n++;await p.close()};return n},
+ "--focus":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
    const centre=k=>p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`),b=(g.querySelector("image,circle[stroke]")||g).getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}},k);
    const ring=()=>p.evaluate(()=>[...document.querySelectorAll("[data-kv-key] image")].map(i=>{const r=i.getBoundingClientRect();return[Math.round(r.x),Math.round(r.y)]}));
    const view=()=>p.evaluate(()=>({focus:document.querySelector("[data-focus]")?.getAttribute("data-focus")||null,debris:document.querySelectorAll("[data-clause]").length,
@@ -62,8 +59,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    await blank();await blank();
    const na=Object.keys(m.law).find(k=>m.law[k].state==="na");await click(na);V=await view();if(V.focus)fail(`${pr.short} ${na}: na must not walk in`);
    if(m.uncovered.length){await p.waitForTimeout(800);await click(m.uncovered[0]);V=await view();if(V.focus)fail(`${pr.short}: uncovered must not walk in`)}
-   n++;await p.close()}}
- else if(arg==="--focus-layout"){const M=mock();for(const pr of P){const m=M.projects[pr.id],keys=Object.keys(m.law).filter(k=>m.law[k].state==="hit");
+   n++;await p.close()};return n},
+ "--focus-layout":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const m=M.projects[pr.id],keys=Object.keys(m.law).filter(k=>m.law[k].state==="hit");
    for(const vp of [{width:812,height:588},{width:1100,height:740}]){const p=await open(pr.id);await p.setViewportSize(vp);await p.waitForTimeout(400);await p.evaluate(()=>{orbitPaused=true});
     for(const k of keys){await p.evaluate(k=>kvPick(k,"hit"),k);await p.waitForTimeout(800);if(!(await p.evaluate(()=>!!document.querySelector("[data-focus]"))))fail(`${pr.short} ${k}: focus view did not open in layout check`);
      for(let step=0;step<12;step++){await p.evaluate(st=>{orbitTime=kvFocusT0+st*(Math.PI*2/12)/KV_DEB_W;render()},step);if(step===0&&!(await p.evaluate(()=>document.querySelectorAll("[data-clause] text").length)))fail(`${pr.short} ${k}: no debris labels rendered`);
@@ -78,8 +75,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
        document.querySelectorAll("[data-fx-route]").forEach(pth=>{const L=pth.getTotalLength(),mm=pth.getScreenCTM();for(let q=0;q<=54;q++){const pt=pth.getPointAtLength(L*q/60);if(Math.hypot(pt.x*mm.a+mm.e-fx,pt.y*mm.d+mm.f-fy)<fr-2){res.push("route crosses the focused satellite");break}}});
        return [...new Set(res)]});
       if(out.length){fail(`${pr.short} ${k} @${vp.width}x${vp.height} sway ${step*30}°: ${out.slice(0,3).join(" | ")}`);break}}await p.evaluate(()=>kvLeave());await p.waitForTimeout(800)}
-    await p.close()}n++}}
- else if(arg==="--flow"){for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));await p.waitForTimeout(300);
+    await p.close()}n++};return n},
+ "--flow":async({P,open,toDomain})=>{let n=0;for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));await p.waitForTimeout(300);
    // pause the orbit so tracks are stable, keep the flow running
    await p.evaluate(()=>{orbitPaused=true});await p.waitForTimeout(150);
    const info=await p.evaluate(()=>({n:TRACKS.length,pts:PT.map(q=>({ti:q.ti,u:q.u})),col:typeof lawFlowColor==="function"?[lawFlowColor(0),lawFlowColor(1)]:null,
@@ -91,19 +88,19 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    info.pts.forEach((q,i)=>{const r=s2[i];if(!r)return;let du=r.u-q.u;if(du<0)du+=1;if(du/FR<.0020)fail(`${pr.short}: particle ${i} advanced ${(du/FR).toFixed(5)} per frame (want >= .0020; ${FR} frames in 1.5s)`)});
    if(!info.col)fail(`${pr.short}: lawFlowColor(u) missing`);else{const [c0,c1]=info.col;const warm=c=>c[0]>c[2]+20;
     if(warm(c0)||warm(c1))fail(`${pr.short}: law flow must not be warm (warm = risk): ${c0} ${c1}`);if(!(c0[0]+c0[1]+c0[2]>c1[0]+c1[1]+c1[2]))fail(`${pr.short}: flow should start lighter (plan) and end teal (domain)`);if(!(c1[1]>c1[0]))fail(`${pr.short}: flow should end teal ${c1}`)}
-   n++;await p.close()}}
- else if(arg==="--pulse"){for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));
+   n++;await p.close()};return n},
+ "--pulse":async({P,open,toDomain})=>{let n=0;for(const pr of P){const p=await open(pr.id);await p.evaluate(()=>document.getElementById("svg").dispatchEvent(new PointerEvent("pointerleave")));
    let seen=null;for(let k=0;k<40&&!seen;k++){seen=await p.evaluate(()=>{const g=[...document.querySelectorAll("[data-kv-pulse]")].find(x=>+x.getAttribute("opacity")>.15);return g?g.closest("[data-kv-key]").getAttribute("data-kv-state"):null});if(!seen)await p.waitForTimeout(150)}
    if(!seen)fail(`${pr.short}: no satellite pulse seen within 6s`);else if(!["hit","gap","supplemented"].includes(seen))fail(`${pr.short}: pulse on a ${seen} satellite`);
-   n++;await p.close()}}
- else if(arg==="--ring"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
+   n++;await p.close()};return n},
+ "--ring":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];await p.evaluate(()=>{orbitPaused=true});
    for(const k of Object.keys(m.law).filter(k=>m.law[k].state==="hit"||m.law[k].state==="gap")){
     await p.evaluate(k=>{kvSel=k;render()},k);await p.waitForTimeout(80);
     const hit=await p.evaluate(()=>{const R=e=>e.getBoundingClientRect(),ring=document.querySelector("[data-kv-ring]")||document.querySelector("[data-kv-selected] circle[stroke=\"#a9e3dc\"]");if(!ring)return"no ring";const r=R(ring),cx=r.left+r.width/2,cy=r.top+r.height/2,rad=r.width/2;
       for(const t of document.querySelectorAll("svg text")){const b=R(t),nx=Math.max(b.left,Math.min(cx,b.right)),ny=Math.max(b.top,Math.min(cy,b.bottom));if(Math.hypot(nx-cx,ny-cy)<rad+1)return"ring touches '"+t.textContent+"'"}return""});
     if(hit)fail(`${pr.short} ${k}: ${hit}`)}
-   n++;await p.close()}}
- else if(arg==="--select"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];
+   n++;await p.close()};return n},
+ "--select":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id];
    // click a satellite by its real on-screen centre (the graph redraws continuously, so pause motion first)
    await p.evaluate(()=>{orbitPaused=true});await p.waitForTimeout(150);
    const clickKey=async k=>{const c=await p.evaluate(k=>{const g=document.querySelector(`[data-kv-key="${k}"]`),b=(g.querySelector("image,circle[stroke]")||g).getBoundingClientRect();return{x:b.left+b.width/2,y:b.top+b.height/2}},k);await p.mouse.click(c.x,c.y);await p.waitForTimeout(250)};
@@ -116,8 +113,8 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    let S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} blank click did not clear selection`);
    await clickKey(na);S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} clicking na (${na}) must not select or fade`);
    if(m.uncovered.length){await p.waitForTimeout(800);await clickKey(m.uncovered[0]);S=await state();if(S.some(x=>x.sel||x.o<1))fail(`${pr.short} clicking uncovered must not select or fade`)}
-   n++;await p.close()}}
- else if(arg==="--supplement"){const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id],gap=Object.keys(m.law).find(k=>m.law[k].state==="gap");
+   n++;await p.close()};return n},
+ "--supplement":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id),m=M.projects[pr.id],gap=Object.keys(m.law).find(k=>m.law[k].state==="gap");
    const before=await p.evaluate(()=>Object.fromEntries([...document.querySelectorAll("[data-kv-key]")].map(g=>[g.getAttribute("data-kv-key"),g.getAttribute("data-kv-state")])));
    // simulate Eva's confirmation exactly as the parent frame delivers it
    await p.evaluate(k=>window.dispatchEvent(new MessageEvent("message",{data:{type:"dd-confirmed",subject:1,code:k,text:"測試補充"},origin:location.origin,source:window.parent})),gap);await p.waitForTimeout(300);
@@ -126,14 +123,14 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    if(r.state!=="supplemented")fail(`${pr.short} ${gap} state ${r.state}`);if(!r.text.includes("已補充・待重判"))fail(`${pr.short} ${gap} missing 已補充・待重判`);
    if(/風險|提醒/.test(r.text))fail(`${pr.short} ${gap} supplemented must not show risk/note counts`);if(r.glow)fail(`${pr.short} ${gap} supplemented must not get the 對上了 glow`);if(r.fog)fail(`${pr.short} ${gap} fog not cleared`);
    for(const [k,v] of Object.entries(before))if(k!==gap&&r.all[k]!==v)fail(`${pr.short} ${k} changed ${v}->${r.all[k]}`);
-   n++;await p.close()}}
- else if(arg==="--status"){const M=mock();for(const pr of P){const p=await open(pr.id);
+   n++;await p.close()};return n},
+ "--status":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const p=await open(pr.id);
    // a frameless status text = the rule (any 缺資料 domain → 先補資料), click → Eva
    const exp=Object.values(M.projects[pr.id].law).some(v=>v.state==="gap")?"CLARIFY_FIRST":"READY";
    const got=await p.evaluate(()=>{const g=document.querySelector("[data-law-status]");if(!g)return null;const r=g.querySelector("rect");return{st:g.getAttribute("data-law-status"),t:g.textContent,frame:!!r&&((r.getAttribute("fill")||"")!=="transparent"||!!r.getAttribute("stroke"))}});
    if(!got)fail(pr.short+": no law status");else{if(got.st!==exp)fail(`${pr.short}: status ${got.st} != ${exp}`);if(got.frame)fail(pr.short+": status has a visible frame")}
-   n++;await p.close()}}
- else if(arg==="--rejudge"){const M=mock();for(const pr of P){const law=M.projects[pr.id].law,gaps=Object.keys(law).filter(d=>law[d].state==="gap");if(!gaps.length)continue;
+   n++;await p.close()};return n},
+ "--rejudge":async({P,open,toDomain})=>{let n=0;const M=mock();for(const pr of P){const law=M.projects[pr.id].law,gaps=Object.keys(law).filter(d=>law[d].state==="gap");if(!gaps.length)continue;
    const p=await open(pr.id);
    // server says: first gap → hit (by rule), second (if any) → na, the rest unknown. The graph must follow.
    const ans={};gaps.forEach((d,i)=>ans[d]=i===0?"hit":i===1?"na":"unknown");const left=gaps.filter(d=>ans[d]==="unknown").length;
@@ -143,8 +140,15 @@ const snap=p=>p.evaluate(()=>({rules:[...document.querySelectorAll("[data-rule]"
    const s2=await p.evaluate(()=>document.querySelector("[data-law-status]")?.getAttribute("data-law-status"));
    if(s2!==(left?"CLARIFY_FIRST":"READY"))fail(`${pr.short}: status after re-judge ${s2}`);
    if(p._errs.length)fail(pr.short+": page errors "+p._errs.join(";"));
-   n++;await p.close()}}
- else if(arg==="--hygiene"){for(const pr of P){const p=await open(pr.id);let s=await snap(p);if(s.dash)fail(pr.short+" dashes in topic view");await toDomain(p);s=await snap(p);if(s.dash)fail(pr.short+" dashes in domain view");
-   if(p._errs.length)fail(pr.short+" page errors: "+p._errs.join(";"));if(p._ext.length)fail(pr.short+" external requests: "+p._ext.join(","));n++;await p.close()}}
- else{console.error("flags: --record-baseline | --default-unchanged | --domain | --toggle-back | --no-overlap | --hygiene");process.exitCode=2}
+   n++;await p.close()};return n},
+ "--hygiene":async({P,open,toDomain})=>{let n=0;for(const pr of P){const p=await open(pr.id);let s=await snap(p);if(s.dash)fail(pr.short+" dashes in topic view");await toDomain(p);s=await snap(p);if(s.dash)fail(pr.short+" dashes in domain view");
+   if(p._errs.length)fail(pr.short+" page errors: "+p._errs.join(";"));if(p._ext.length)fail(pr.short+" external requests: "+p._ext.join(","));n++;await p.close()};return n},
+};
+if(!Object.hasOwn(CHECKS,arg)){console.error("flags: "+Object.keys(CHECKS).sort().join(" | "));process.exit(2)}
+let chromium;try{({chromium}=require("playwright"))}catch(e){console.error("Playwright not found. Set NODE_PATH to a node_modules that has playwright.");process.exit(2)}
+(async()=>{await new Promise(r=>srv.listen(0,"127.0.0.1",r));const port=srv.address().port,b=await chromium.launch(),P=projects();
+ const open=async id=>{const p=await b.newPage({viewport:{width:1100,height:740}});p._errs=[];p._ext=[];p.on("pageerror",e=>p._errs.push(e.message));p.on("request",r=>{if(!r.url().startsWith("http://127.0.0.1:"+port)&&!r.url().startsWith("data:"))p._ext.push(r.url())});
+  await p.goto(`http://127.0.0.1:${port}/tangle/tangle-law.html?p=${id}`);await p.waitForTimeout(2600);return p};
+ const toDomain=async p=>{};
+ const n=await CHECKS[arg]({P,open,toDomain});
  await b.close();srv.close();if(!process.exitCode)console.log("OK",arg,n?n+" projects":"")})().catch(e=>{console.error("ERROR",e.message);process.exit(1)});
