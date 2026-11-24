@@ -147,13 +147,36 @@ async def _init_tables():
         logger.warning("法規語料 seed 問題：%s", "；".join(seeded["problems"]))
 
 
-try:
-    asyncio.get_event_loop().create_task(_init_tables())
-except RuntimeError:
-    asyncio.run(_init_tables())
+def _startup_loop() -> asyncio.AbstractEventLoop:
+    """取得啟動工作要排上的 event loop，不呼叫已棄用的 asyncio.get_event_loop()。
 
-# 啟 RabbitMQ consumer（如果 .env 有設 RABBITMQ_URL）
-queue_consumer.start_in_background()
+    `chainlit run` 在 load_module（import 本檔）時還沒有 running loop；它先
+    nest_asyncio.apply() 設好 current loop，之後 asyncio.run(start()) 也是跑
+    同一個 loop，所以排在這個 loop 上的工作會在 server 啟動時執行。
+    沒有 current loop 且不在主執行緒時，policy 會丟 RuntimeError。
+    """
+    try:
+        return asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.get_event_loop_policy().get_event_loop()
+
+
+def _schedule_startup() -> None:
+    """啟動時建表 + 啟 RabbitMQ consumer（如果 .env 有設 RABBITMQ_URL）。
+
+    coroutine 要等 loop 真的開始跑才建立（call_soon），import 本檔卻沒人跑
+    loop 時（例如測試）就不會留下 "coroutine was never awaited"。
+    """
+    try:
+        loop = _startup_loop()
+    except RuntimeError:
+        asyncio.run(_init_tables())
+        return
+    loop.call_soon(lambda: loop.create_task(_init_tables()))
+    loop.call_soon(queue_consumer.start_in_background)
+
+
+_schedule_startup()
 
 
 async def _current_user_project(user) -> Optional[str]:
