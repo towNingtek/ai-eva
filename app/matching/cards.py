@@ -174,6 +174,112 @@ def parse_reply(reply: Any) -> dict:
     return data if isinstance(data, dict) else {}
 
 
+# ── 專案名稱逐字保留（#252） ─────────────────────────────────────────
+
+NAME_PREFIX = 6  # 名稱前 6 字以上相同、後面卻不是完整名稱 → 視為 LLM 改寫了名稱
+_NAME_STOP = set(" \t\r\n，。、；：！？,.;:!?「」『』《》〈〉（）()[]【】\"'“”‘’…/／")
+
+
+def _name_end(text: str, start: int, tail: str) -> int:
+    """名稱前綴之後被改寫的那段到哪裡結束。
+
+    原名剩下的字若在附近出現（日文「食農の教育」）→ 吃到那裡；
+    否則（被翻成別的文字，韓文「食農교육은」）→ 吃掉與剩餘字數相同、且不是標點或空白的字，
+    之後的助詞等保留，接在完整名稱後面。
+    """
+    window = start + len(tail) + 3
+    for n in range(len(tail), 0, -1):  # 原名結尾（整段或後幾字，如「…の体験工坊」的「工坊」）
+        k = text.find(tail[-n:], start, window)
+        if k >= 0 and all(c not in _NAME_STOP for c in text[start:k]):
+            return k + n
+    end = start
+    while end < len(text) and end - start < len(tail) and text[end] not in _NAME_STOP:
+        end += 1
+    return end
+
+
+def _full_at(text: str, i: int, names: Sequence[str]) -> str | None:
+    for n in names:
+        if text.startswith(n, i):
+            return n
+    return None
+
+
+def _partial_at(text: str, i: int, name: str) -> int:
+    """text[i:] 與 name 的共同前綴長度（只在 ≥ NAME_PREFIX 且不是完整名稱時有意義）。"""
+    j = 0
+    while j < len(name) and i + j < len(text) and text[i + j] == name[j]:
+        j += 1
+    return j
+
+
+def keep_names(text: str, names: Mapping[str, str]) -> str:
+    """把 LLM 改寫過的專案名稱換回完整原名；換不回來就改用代稱（names：{原名: 代稱}）。"""
+    s = str(text or "")
+    keys = sorted((n for n in names if n and len(n) >= NAME_PREFIX), key=len, reverse=True)
+    if not keys:
+        return s
+    out, i = [], 0
+    while i < len(s):
+        full = _full_at(s, i, keys)
+        if full:
+            out.append(full)
+            i += len(full)
+            continue
+        hit = None
+        for n in keys:
+            j = _partial_at(s, i, n)
+            if j >= NAME_PREFIX:
+                hit = (n, j)
+                break
+        if not hit:
+            out.append(s[i])
+            i += 1
+            continue
+        n, j = hit
+        out.append(n)
+        i = _name_end(s, i + j, n[j:])
+    fixed = "".join(out)
+    if _has_partial(fixed, keys):  # 理論上不會發生；保險：殘缺名稱改用代稱
+        for n in keys:
+            fixed = _alias_partial(fixed, n, names[n], keys)
+    return fixed
+
+
+def _has_partial(text: str, keys: Sequence[str]) -> bool:
+    i = 0
+    while i < len(text):
+        full = _full_at(text, i, keys)
+        if full:
+            i += len(full)
+            continue
+        if any(_partial_at(text, i, n) >= NAME_PREFIX for n in keys):
+            return True
+        i += 1
+    return False
+
+
+def _alias_partial(text: str, name: str, alias: str, keys: Sequence[str]) -> str:
+    out, i = [], 0
+    while i < len(text):
+        full = _full_at(text, i, keys)
+        if full:
+            out.append(full)
+            i += len(full)
+            continue
+        j = _partial_at(text, i, name)
+        if j >= NAME_PREFIX:
+            end = i + j
+            while end < len(text) and text[end] not in _NAME_STOP:
+                end += 1
+            out.append(alias)
+            i = end
+            continue
+        out.append(text[i])
+        i += 1
+    return "".join(out)
+
+
 # ── 各欄位（程式組字，依引擎結果） ──────────────────────────────────
 
 def _side_name(pid: str, a_id: str, a_name: str, t_name: str) -> str:
@@ -380,8 +486,10 @@ def build_cards(
         if used_llm:
             reply = parse_reply(_call(llm, build_messages(
                 _context(res, a, t, fields, why, not_evaluated), prompt=prompt, lang=lang)))
+            proj_names = {n: alias for n, alias in ((t["name"], mi.msg("t_default", lang)),
+                                                    (a.get("name") or "", mi.msg("a_default", lang))) if n}
             for f in LLM_FIELDS:
-                v = str(reply.get(f) or "").strip()
+                v = keep_names(str(reply.get(f) or "").strip(), proj_names)
                 fields[f] = plain(v, shown, lang) if v and not _is_insufficient(v, lang) else ins
         fields = {F_WHY: why_text, **{f: (plain(fields[f], shown, lang).strip() or ins) for f in LLM_FIELDS}}
         card = {
