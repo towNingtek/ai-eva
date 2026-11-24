@@ -463,7 +463,8 @@
       const undone = r.undone || {};
       // 伺服器對這則已有撤回結果 → 不再顯示「撤回中」（要在畫清單之前清）
       ready.undoing = (ready.undoing || []).filter(k => !(k in undone));
-      const asked = ready.consented || [];
+      // 已撤回成功的不再算「這次補進的」（也不顯示「正在補進」）
+      const asked = (ready.consented || []).filter(k => undone[k] !== 'ok');
       if (asked.length) {
         const saved = r.saved || {};
         const ok = asked.filter(k => saved[k] === 'ok').length;

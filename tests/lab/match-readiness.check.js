@@ -175,6 +175,7 @@ const FULL = {a: 'full-a', state: 'ready', complete: true, texts, questions: [],
     await box.locator('[data-match-ready-undone="ok"]').waitFor();
     ok((await box.locator('[data-match-ready-undone="ok"]').textContent()).includes('已撤回'), 'undone → says it was undone');
     ok(await box.locator('[data-match-ready-saved-list]').count() === 0, 'undone line disappears from the saved list');
+    ok(await box.locator('[data-match-ready-saved="saving"]').count() === 0, 'no stale 正在補進 after undoing');
     ok((await box.locator('[data-match-ready-rechecking]').textContent()).includes('重新檢查'), 'shows re-checking after a change');
     await push({...sel({readiness: {...LOW, items: [item('offer', 'ok'), item('need', 'vague'), item('scale', 'ok'), item('collab', 'missing')],
       saved: {scale: 'ok'}, saved_text: {scale: '規模與時間：小型試辦（3 個月內）'}, undo: {scale: {note: 'n', supplement: 's'}},
