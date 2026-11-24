@@ -384,3 +384,21 @@ def test_tool_menu_label_opens_task_like_button(monkeypatch):
     assert len(opened) == 5 and texts == []
     asyncio.run(handler.handle("我們有竹編老師", None))      # 真正的回答照舊交給 on_text
     assert texts == ["我們有竹編老師"] and len(opened) == 5
+
+
+# ── (g) 補問寫回後的專案頁連結：只用通行證驗過的返回網址 ─────────────────────
+
+def test_project_page_url_from_verified_return(monkeypatch):
+    ident = {"return": {"url": "https://dev.sechome.cc/backend/cms_agent", "label": "Second Home"}}
+    monkeypatch.setattr(task, "_session_get", lambda k: ident if k == "law_task_identity" else None)
+    assert task.project_page_url("75850710") == "https://dev.sechome.cc/backend/cms_plan_info/75850710"
+    assert task.project_page_url("a/b?c") == "https://dev.sechome.cc/backend/cms_plan_info/a%2Fb%3Fc"
+    snap = task.snapshot({"readiness": {"a": "75850710", "state": "ready"}})
+    assert snap["readiness"]["page"] == "https://dev.sechome.cc/backend/cms_plan_info/75850710"
+
+
+def test_project_page_url_absent_without_return(monkeypatch):
+    for ident in (None, {}, {"return": None}, {"return": {"url": "http://insecure.example/x"}}):
+        monkeypatch.setattr(task, "_session_get", lambda k, i=ident: i if k == "law_task_identity" else None)
+        assert task.project_page_url("75850710") is None
+        assert "page" not in task.snapshot({"readiness": {"a": "75850710"}})["readiness"]

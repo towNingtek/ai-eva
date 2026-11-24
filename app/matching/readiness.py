@@ -73,7 +73,9 @@ def labels(items, lang: Any = None) -> list[dict]:
 
 def question(key: str, lang: Any = None) -> dict:
     options = [o for o in mi.msg(f"readiness.opt.{key}", lang).split("|") if o]
-    return {"key": key, "text": mi.msg(f"readiness.q.{key}", lang), "options": options}
+    # write_label：寫回計畫理念時固定用中文項目名（writeback_text），面板預覽據此顯示實際會寫入的字。
+    return {"key": key, "text": mi.msg(f"readiness.q.{key}", lang), "options": options,
+            "write_label": mi.msg(f"readiness.item.{key}", "zh")}
 
 
 def questions(items, lang: Any = None) -> list[dict]:

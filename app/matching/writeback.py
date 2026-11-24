@@ -57,12 +57,16 @@ def source_note(today: Optional[_dt.date] = None) -> str:
 
 
 def addition_text(answer: str, today: Optional[_dt.date] = None) -> str:
-    """要附加的一段：補充內容＋來源標註（送給 append_philosophy 的文字）。"""
-    return f"{(answer or '').strip()}{source_note(today)}"
+    """要附加的一段（送給 append_philosophy 的 supplement）。
+
+    來源標註由 CMS 加（「【補充｜來源：AI-Eva 媒合補問，誰 於 何時 確認附加】」，見 tplanet-multi-tenant
+    projects/services/philosophy_append.py）；這裡不再自己加日期，避免同一段出現兩次來源。
+    today 保留參數相容舊呼叫，不再使用。"""
+    return (answer or "").strip()
 
 
 def appended(original: str, answer: str, today: Optional[_dt.date] = None) -> str:
-    """原文＋附加段＋來源標註；原文一字不動（是新內容的前綴）。"""
+    """原文＋附加段（AI-Eva 端的估算；CMS 實際會在附加段前再加一行來源標註）。原文一字不動。"""
     original = original or ""
     sep = SEPARATOR if original.strip() else ""
     return f"{original}{sep}{addition_text(answer, today)}"

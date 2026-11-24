@@ -101,7 +101,34 @@ def _load(path: Path) -> dict | None:
 
 
 def snapshot(task: dict) -> dict:
-    return copy.deepcopy(task)
+    state = copy.deepcopy(task)
+    r = state.get("readiness")
+    if isinstance(r, dict) and r.get("a"):
+        link = project_page_url(r["a"])
+        if link:
+            r["page"] = link
+    return state
+
+
+def project_page_url(uuid: str) -> str | None:
+    """A 在 CMS 的專案編輯頁（計畫理念所在的「基本資料」步驟）。
+
+    網域取自 SSO 通行證已驗過的返回網址（issuers.safe_return：https＋issuer 登記的網域），
+    不信任其他來源；沒有返回網址就不給連結。"""
+    from urllib.parse import quote, urlsplit
+    if not isinstance(uuid, str) or not uuid:
+        return None
+    ret = (_session_get("law_task_identity") or {}).get("return") or {}
+    url = ret.get("url") if isinstance(ret, dict) else None
+    if not isinstance(url, str):
+        return None
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return None
+    if parts.scheme != "https" or not parts.hostname:
+        return None
+    return f"https://{parts.netloc}/backend/cms_plan_info/{quote(uuid, safe='')}"
 
 
 def _lang() -> str:
@@ -430,6 +457,9 @@ async def _ready_answer_and_report(path: Path, task: dict, runtime, data: Mappin
     if r.get("a") != (task.get("readiness") or {}).get("a"):
         return
     r.setdefault("saved", {})[key] = "ok" if result == "ok" else "error"
+    if result == "ok":
+        # 實際送給 CMS 的那一段（CMS 會在前面加一行來源標註），面板列給使用者看
+        r.setdefault("saved_text", {})[key] = ready.writeback_text(key, str(data.get("answer") or ""))
     cur["readiness"] = r
     _save(path, cur)
     await _publish(cur)
