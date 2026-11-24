@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 TASK_DIR = ROOT / "data" / "matching" / "tasks"
 KIND = "match_task"
-ACTIONS = ("get", "select", "new", "explain", "card_action", "invite", "readiness", "ready_answer")
+ACTIONS = ("get", "select", "new", "explain", "card_action", "invite", "readiness", "ready_answer", "ready_undo")
 CARD_TOP_N = 3
 LIVE_VERSION = "live-match"
 DEFAULT_PROJECTS = "sechome"
@@ -351,7 +351,10 @@ async def handle_event(path: Path, runtime, data: Mapping, llm: Any = None,
             await check_readiness(path, task, runtime, data.get("a"), llm)
         return
     if action == "ready_answer":
-        _keep(asyncio.create_task(_ready_answer_and_report(path, task, runtime, data)))
+        _keep(asyncio.create_task(_ready_answer_and_report(path, task, runtime, data, llm)))
+        return
+    if action == "ready_undo":
+        _keep(asyncio.create_task(_ready_undo(path, task, runtime, data, llm)))
         return
     if action == "new" and task["status"] not in ACTIVE_STATES:
         task = _create(path, runtime)
@@ -443,8 +446,55 @@ async def ready_answer(task: dict, runtime, data: Mapping) -> dict:
         return {"result": "error"}
 
 
-async def _ready_answer_and_report(path: Path, task: dict, runtime, data: Mapping) -> None:
-    """寫回後把結果記在快照（readiness.saved[key]＝ok／error），面板據此告訴使用者有沒有補進去。"""
+_KEEP_ACROSS_RECHECK = ("saved", "saved_text", "undo", "undone")
+
+
+async def _recheck_readiness(path: Path, task_id: str, runtime, a: str, llm: Any) -> None:
+    """寫入／撤回後用新的計畫理念重判四項（答過的題目就會變成足夠／不夠具體），保留寫回紀錄。
+    重判期間快照帶 rechecking=True（面板顯示「正在依新內容重新檢查」）；成功或失敗都會清掉。"""
+    _READY_CACHE.pop((task_id, a), None)
+    try:
+        await _recheck_inner(path, task_id, runtime, a, llm)
+    finally:
+        cur = _load(path)
+        r = (cur or {}).get("readiness") or {}
+        if cur and cur.get("task_id") == task_id and r.get("a") == a and r.get("rechecking"):
+            r["rechecking"] = False
+            _save(path, cur)
+            await _publish(cur)
+
+
+async def _recheck_inner(path: Path, task_id: str, runtime, a: str, llm: Any) -> None:
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task_id or (cur.get("readiness") or {}).get("a") != a:
+        return
+    keep = {k: cur["readiness"][k] for k in _KEEP_ACROSS_RECHECK if k in cur["readiness"]}
+    try:
+        info = await handler.fetch_info(runtime, a)
+        if info is None:
+            return
+        judged = await asyncio.to_thread(handler.judge_project, info,
+                                         llm if llm is not None else handler._default_llm())
+        fresh = ready.build(judged, info.get("philosophy_text") or "", a=a, lang=_lang())
+    except Exception:  # noqa: BLE001 —— 重判失敗就維持原本的四項
+        logger.exception("match task: 寫回後重判準備度失敗 %s", a)
+        return
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task_id or (cur.get("readiness") or {}).get("a") != a:
+        return
+    keep = {**keep, **{k: cur["readiness"][k] for k in _KEEP_ACROSS_RECHECK if k in cur["readiness"]}}
+    fresh.update(keep)
+    fresh["rechecked"] = True
+    fresh["rechecking"] = False
+    _READY_CACHE[(task_id, a)] = copy.deepcopy(fresh)
+    cur["readiness"] = fresh
+    _save(path, cur)
+    await _publish(cur)
+
+
+async def _ready_answer_and_report(path: Path, task: dict, runtime, data: Mapping, llm: Any = None) -> None:
+    """寫回後把結果記在快照（readiness.saved[key]＝ok／error），面板據此告訴使用者有沒有補進去；
+    成功的話留下撤回用的那一段，並用新的計畫理念重判四項。"""
     key = str(data.get("key") or "")
     out = await ready_answer(task, runtime, data)
     result = (out or {}).get("result")
@@ -454,15 +504,59 @@ async def _ready_answer_and_report(path: Path, task: dict, runtime, data: Mappin
     if not cur or cur.get("task_id") != task.get("task_id"):
         return
     r = cur.get("readiness") or {}
-    if r.get("a") != (task.get("readiness") or {}).get("a"):
+    a = (task.get("readiness") or {}).get("a")
+    if r.get("a") != a:
         return
     r.setdefault("saved", {})[key] = "ok" if result == "ok" else "error"
     if result == "ok":
         # 實際送給 CMS 的那一段（CMS 會在前面加一行來源標註），面板列給使用者看
         r.setdefault("saved_text", {})[key] = ready.writeback_text(key, str(data.get("answer") or ""))
+        if isinstance((out or {}).get("undo"), dict):
+            r.setdefault("undo", {})[key] = out["undo"]
+            (r.get("undone") or {}).pop(key, None)
+        r["rechecking"] = True
     cur["readiness"] = r
     _save(path, cur)
     await _publish(cur)
+    if result == "ok":
+        await _recheck_readiness(path, cur["task_id"], runtime, a, llm)
+
+
+async def _ready_undo(path: Path, task: dict, runtime, data: Mapping, llm: Any = None) -> None:
+    """撤回一則已附加的補充（CMS undo_philosophy_append：只移除最後那段且逐字相符）。"""
+    key = str(data.get("key") or "")
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task.get("task_id"):
+        return
+    r = cur.get("readiness") or {}
+    a = r.get("a")
+    blob = (r.get("undo") or {}).get(key)
+    if not a or not isinstance(blob, dict) or data.get("a") not in (None, a):
+        return
+    try:
+        res = await runtime.execute("undo_philosophy_append",
+                                    {"uuid": a, "note": blob.get("note", ""), "supplement": blob.get("supplement", "")},
+                                    confirmed=True)
+    except Exception as e:  # noqa: BLE001
+        logger.exception("match task: 撤回失敗 %s", a)
+        res = {"status": "error", "reason": f"{type(e).__name__}: {e}"}
+    ok = (res or {}).get("status") == "ok"
+    cur = _load(path)
+    if not cur or cur.get("task_id") != task.get("task_id") or (cur.get("readiness") or {}).get("a") != a:
+        return
+    r = cur["readiness"]
+    if ok:
+        for k in ("saved", "saved_text", "undo"):
+            (r.get(k) or {}).pop(key, None)
+        r.setdefault("undone", {})[key] = "ok"
+        r["rechecking"] = True
+    else:
+        reason = str((res or {}).get("reason") or "")
+        r.setdefault("undone", {})[key] = "not_last" if "409" in reason or "NOT_LAST" in reason else "error"
+    _save(path, cur)
+    await _publish(cur)
+    if ok:
+        await _recheck_readiness(path, cur["task_id"], runtime, a, llm)
 
 
 def _validate(task: dict, a, targets) -> str | None:

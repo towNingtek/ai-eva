@@ -32,7 +32,11 @@
         savedErr: n => `有 ${n} 則沒補進去，你的回答仍會用在這次媒合。`,
         nextStep: '下一步：在下方勾選 2–4 個比較對象，再按「開始媒合」。',
         previewTitle: '會附加在計畫理念最後面：', previewNote: '網站會在這段前面加一行來源標註（AI-Eva 媒合補問、你的帳號與時間）。',
-        savedList: '這次附加的內容：', openPage: '到專案頁查看計畫理念 ↗'},
+        savedList: '這次附加的內容：', openPage: '到專案頁查看計畫理念 ↗',
+        undo: '撤回這則', undoing: '撤回中…', undoneOk: '已撤回，計畫理念恢復成附加前的樣子。',
+        undoneNotLast: '撤不回：這則後面已經有其他內容（例如之後又附加了一則，或有人改過）。請先撤回最新的一則，或到專案頁修改。',
+        undoneErr: '撤回沒有成功，計畫理念沒有被改動，請稍後再試或到專案頁修改。', undoOnlyLatest: '只能從最新的一則開始撤回。',
+        rechecking: '正在依新的計畫理念重新檢查上面四項…'},
       errors: {interrupted: '媒合已中斷，請按「開始新媒合」。', listFailed: '讀取專案清單失敗，請按「開始新媒合」再試。',
         notEnough: '媒合需要 A 加上至少 2 個對象，目前可用的專案不夠。',
         noInitiable: '你在這個站還沒有可以發起媒合的專案（只有本站可管理的專案能寄出媒合邀請）。',
@@ -72,7 +76,11 @@
         savedErr: n => `${n} item${n === 1 ? '' : 's'} could not be added; your answers are still used in this match.`,
         nextStep: 'Next: tick 2–4 projects to compare below, then press "Start matching".',
         previewTitle: 'Will be added at the end of your project philosophy:', previewNote: 'The site adds a source line before it (AI-Eva matching follow-up, your account and the time).',
-        savedList: 'Added this time:', openPage: 'View the philosophy on the project page ↗'},
+        savedList: 'Added this time:', openPage: 'View the philosophy on the project page ↗',
+        undo: 'Undo this', undoing: 'Undoing…', undoneOk: 'Undone. Your project philosophy is back to how it was before.',
+        undoneNotLast: 'Can\'t undo: something else now comes after this item (another item was added, or someone edited it). Undo the newest item first, or edit it on the project page.',
+        undoneErr: 'Undo failed and nothing was changed. Please try again later or edit it on the project page.', undoOnlyLatest: 'Items can only be undone starting from the newest.',
+        rechecking: 'Re-checking the four items above against your updated philosophy…'},
       errors: {interrupted: 'Matching was interrupted. Press "Start a new match".',
         listFailed: 'Could not load the project list. Press "Start a new match" to try again.',
         notEnough: 'Matching needs A plus at least 2 projects, but not enough projects are available.',
@@ -111,7 +119,11 @@
         savedErr: n => `${n} 件は追記できませんでした。回答は今回のマッチングに使われます。`,
         nextStep: '次へ：下で比較する案件を 2〜4 件選び、「マッチング開始」を押してください。',
         previewTitle: '計画の理念の末尾に追記される内容：', previewNote: 'サイトがこの前に出典の行（AI-Eva マッチング補足質問、アカウントと日時）を加えます。',
-        savedList: '今回追記した内容：', openPage: 'プロジェクトページで理念を見る ↗'},
+        savedList: '今回追記した内容：', openPage: 'プロジェクトページで理念を見る ↗',
+        undo: 'この追記を取り消す', undoing: '取り消し中…', undoneOk: '取り消しました。計画の理念は追記前の状態に戻りました。',
+        undoneNotLast: '取り消せません：この後に別の内容があります（別の追記や編集）。最新の追記から取り消すか、プロジェクトページで修正してください。',
+        undoneErr: '取り消しに失敗しました。理念は変更されていません。後でもう一度試すか、プロジェクトページで修正してください。', undoOnlyLatest: '取り消しは最新の追記から順に行えます。',
+        rechecking: '新しい理念で上の 4 項目を確認し直しています…'},
       errors: {interrupted: 'マッチングが中断されました。「新しいマッチングを開始」を押してください。',
         listFailed: 'プロジェクト一覧を読み込めませんでした。「新しいマッチングを開始」を押してもう一度お試しください。',
         notEnough: 'マッチングには A と 2 件以上の相手が必要ですが、利用できるプロジェクトが足りません。',
@@ -149,7 +161,11 @@
         savedErr: n => `${n}건은 추가하지 못했습니다. 답변은 이번 매칭에 그대로 사용됩니다.`,
         nextStep: '다음: 아래에서 비교할 프로젝트를 2~4개 고른 뒤 "매칭 시작"을 누르세요.',
         previewTitle: '계획 이념 맨 끝에 추가될 내용:', previewNote: '사이트가 그 앞에 출처 줄(AI-Eva 매칭 보충 질문, 계정과 시간)을 덧붙입니다.',
-        savedList: '이번에 추가한 내용:', openPage: '프로젝트 페이지에서 이념 보기 ↗'},
+        savedList: '이번에 추가한 내용:', openPage: '프로젝트 페이지에서 이념 보기 ↗',
+        undo: '이 항목 되돌리기', undoing: '되돌리는 중…', undoneOk: '되돌렸습니다. 계획 이념이 추가 전 상태로 돌아갔습니다.',
+        undoneNotLast: '되돌릴 수 없습니다: 이 항목 뒤에 다른 내용이 있습니다(다른 추가나 수정). 가장 최근 항목부터 되돌리거나 프로젝트 페이지에서 수정하세요.',
+        undoneErr: '되돌리지 못했습니다. 이념은 바뀌지 않았습니다. 잠시 후 다시 시도하거나 프로젝트 페이지에서 수정하세요.', undoOnlyLatest: '가장 최근 항목부터 되돌릴 수 있습니다.',
+        rechecking: '바뀐 이념으로 위 4개 항목을 다시 확인하는 중…'},
       errors: {interrupted: '매칭이 중단되었습니다. "새 매칭 시작"을 누르세요.',
         listFailed: '프로젝트 목록을 불러오지 못했습니다. "새 매칭 시작"을 눌러 다시 시도하세요.',
         notEnough: '매칭에는 A와 최소 2개 대상이 필요하지만 사용할 수 있는 프로젝트가 부족합니다.',
@@ -230,6 +246,7 @@
     .live-match .mt-ready ul.mt-ready-saved-list{display:block;list-style:disc;padding-left:20px}
     .live-match .mt-ready ul.mt-ready-saved-list li{color:inherit}
     .live-match .mt-ready-page{color:#5fa8ff;text-decoration:underline}
+    .live-match .mt-ready-undo{margin-left:6px;font-size:12px;padding:2px 8px}
     .live-match .mt-ready input[type=text]{flex:1;min-width:160px;padding:5px 8px;border:1px solid #9aa5b1;border-radius:6px;font:inherit}
     .live-match .mt-note{color:#b4bfcc;font-size:12px}
     .live-match .mt-search{display:block;width:100%;box-sizing:border-box;margin:2px 0 6px;padding:6px 10px;border:1px solid #9aa5b1;border-radius:8px;font:inherit}
@@ -443,6 +460,9 @@
       const note = {skip: R.skipped, stopped: R.stopped, done: R.done}[ready.mode];
       if (note) box.append(node('p', note, {class: 'mt-note', 'data-match-ready-note': ready.mode}));
       // 「要，補進去」的結果：伺服器寫回後在 readiness.saved 標 ok／error（沒回來前顯示「正在補進」）
+      const undone = r.undone || {};
+      // 伺服器對這則已有撤回結果 → 不再顯示「撤回中」（要在畫清單之前清）
+      ready.undoing = (ready.undoing || []).filter(k => !(k in undone));
       const asked = ready.consented || [];
       if (asked.length) {
         const saved = r.saved || {};
@@ -451,11 +471,29 @@
         if (asked.length - ok - err) box.append(node('p', R.saving, {class: 'mt-note', 'data-match-ready-saved': 'saving'}));
         if (ok) {
           box.append(node('p', `✅ ${R.savedOk(ok)}`, {'data-match-ready-saved': 'ok'}));
-          const lines = asked.map(k => (r.saved_text || {})[k]).filter(Boolean);
-          if (lines.length) {
+          const keys = asked.filter(k => (r.saved_text || {})[k]);
+          if (keys.length) {
             const list = node('ul', null, {class: 'mt-ready-saved-list', 'data-match-ready-saved-list': '', 'aria-label': R.savedList});
-            for (const t of lines) list.append(node('li', t));
+            // CMS 只能撤回「最後面」那段 → 只有最新一則有撤回鈕（撤完上一則自然變最新）
+            const latest = keys[keys.length - 1];
+            for (const k of keys) {
+              const li = node('li', null, {'data-match-ready-saved-item': k});
+              li.append(node('span', r.saved_text[k]));
+              if (k === latest && (r.undo || {})[k]) {
+                const busy = (ready.undoing || []).includes(k);
+                const b = button(busy ? R.undoing : R.undo, () => {
+                  ready.undoing = [...(ready.undoing || []), k];
+                  if (r.undone) delete r.undone[k];   // 上一次的結果作廢，等這次的回覆
+                  send('ready_undo', {a: aId, key: k});
+                  redo();
+                }, {class: 'mt-ready-undo', 'data-match-ready-undo': k});
+                b.disabled = busy;
+                li.append(document.createTextNode(' '), b);
+              }
+              list.append(li);
+            }
             box.append(node('p', R.savedList, {class: 'mt-note'}), list);
+            if (keys.length > 1) box.append(node('p', R.undoOnlyLatest, {class: 'mt-note'}));
           }
           if (typeof r.page === 'string' && /^https:\/\//.test(r.page)) {
             const link = node('a', R.openPage, {href: r.page, target: '_blank', rel: 'noopener noreferrer',
@@ -467,6 +505,11 @@
         }
         if (err) box.append(node('p', `⚠ ${R.savedErr(err)}`, {'data-match-ready-saved': 'error'}));
       }
+      for (const k of Object.keys(undone)) {
+        const msg = {ok: `↩ ${R.undoneOk}`, not_last: `⚠ ${R.undoneNotLast}`, error: `⚠ ${R.undoneErr}`}[undone[k]];
+        if (msg) box.append(node('p', msg, {'data-match-ready-undone': undone[k]}));
+      }
+      if (r.rechecking) box.append(node('p', R.rechecking, {class: 'mt-note', 'data-match-ready-rechecking': ''}));
       if (ready.mode === 'done' || ready.mode === 'stopped') {
         box.append(node('p', R.nextStep, {class: 'mt-ready-q', 'data-match-ready-next': ''}));
         if (!ready.pointed) {
