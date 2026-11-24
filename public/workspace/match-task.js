@@ -505,7 +505,7 @@
     }
   }
 
-  // #229 星圖頁（tangle-match.html）裡唯一的介面字是「重設」按鈕的提示；依語言換掉（zh 保持原字）。
+  // #229 星圖頁「重設」按鈕的提示依語言換掉（zh 保持原字）；#249 起星圖頁其餘字由 ?lang＋galaxy-i18n.js 自己換。
   function localizeGalaxy() {
     try {
       const fit = frame && frame.contentDocument && frame.contentDocument.getElementById('zFit');
@@ -560,7 +560,7 @@
       next.addEventListener('load', () => { if (frame === next) { postStatus(); localizeGalaxy(); } });
     }
     next.src = '/public/tangle/tangle-match.html?liveMatch=1&v=live-match&t=' + encodeURIComponent(s.task_id)
-      + '&ps=' + ps.map(encodeURIComponent).join(',');
+      + '&lang=' + encodeURIComponent(lang) + '&ps=' + ps.map(encodeURIComponent).join(',');
     stage.append(next);
   }
 

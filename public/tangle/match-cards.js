@@ -6,10 +6,45 @@
   const q = new URLSearchParams(location.search);
   if (q.get('mode') !== 'match' || q.get('v') !== 'live-match') return;
   const B_CODE = /\bB[1-8]\b/g;
-  const clean = t => String(t ?? '').replace(B_CODE, '').replace(/\s{2,}/g, ' ').trim();
+  // #250 原文段落標記（app/i18n/quote.py 的 HTML 註解 quote:original／quote:translation）不得當字露出：
+  // 先換成單一私用字元（firstSentence／cap 切到中間也不會留下半截標記），畫的時候再轉成原文／翻譯元素。
+  const MK = {o: '\uE000', oc: '\uE001', t: '\uE002', tc: '\uE003'};
+  const MARK_RE = /<!--\s*(\/?)\s*quote:(original|translation)\s*-->/g;
+  const MK_ANY = /[\uE000-\uE003]/g;
+  const tokenize = t => String(t ?? '').replace(MARK_RE, (_, close, kind) =>
+    kind === 'original' ? (close ? MK.oc : MK.o) : (close ? MK.tc : MK.t));
+  const plain = t => tokenize(t).replace(MK_ANY, '');
+  const clean = t => tokenize(t).replace(B_CODE, '').replace(/\s{2,}/g, ' ').trim()
+    .replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+  // 把（已 tokenize 的）文字填進 el：原文段 → 引號＋data-quote="original"；翻譯段 → data-quote="translation"。
+  const fill = (el, text) => {
+    el.replaceChildren();
+    let cur = el;
+    const flush = s => { if (s) cur.append(document.createTextNode(s)); };
+    let buf = '';
+    for (const ch of String(text)) {
+      if (ch === MK.o || ch === MK.t) {
+        flush(buf); buf = '';
+        if (cur !== el) cur = el;
+        const orig = ch === MK.o;
+        const span = document.createElement(orig ? 'q' : 'span');
+        span.className = orig ? 'mc-orig' : 'mc-trans';
+        span.setAttribute('data-quote', orig ? 'original' : 'translation');
+        el.append(span);
+        cur = span;
+      } else if (ch === MK.oc || ch === MK.tc) {
+        flush(buf); buf = ''; cur = el;
+      } else buf += ch;
+    }
+    flush(buf);
+    // 原文已自帶「」時，<q> 不再加引號
+    for (const q of el.querySelectorAll('q.mc-orig')) {
+      if (/^\s*[「『"“]/.test(q.textContent)) q.setAttribute('data-bracketed', '');
+    }
+  };
   const node = (tag, text, attrs) => {
     const el = document.createElement(tag);
-    if (text != null) el.textContent = clean(text);
+    if (text != null) fill(el, clean(text));
     for (const [k, v] of Object.entries(attrs || {})) el.setAttribute(k, v);
     return el;
   };
@@ -94,7 +129,7 @@
   };
   let lang = 'zh', T = MATCH_I18N.zh;
   // 欄位值：伺服器固定的「不足」換成該語言；其餘是 LLM 依使用者語言寫的內容，照原樣。
-  const valueText = v => (lang !== 'zh' && String(v).trim() === '不足' ? T.insufficient : v);
+  const valueText = v => (lang !== 'zh' && plain(v).trim() === '不足' ? T.insufficient : v);
 
   let snapshot = null, wrap = null, dialog = null, key = null;
   const opened = new Set();  // 已展開「看依據」的卡（task_id|target），重畫時保留
@@ -124,6 +159,9 @@
     .live-match .mc-quote{color:#3d4a5a;font-size:12px;border-left:3px solid #c9d3df;padding-left:6px;margin:4px 0}
     .live-match .mc-rule-text{margin-top:6px;font-size:11px;color:#52606d}
     .live-match .mc-rule-text p{margin:2px 0}
+    .live-match .mc-card q.mc-orig{quotes:'「' '」'}
+    .live-match .mc-card q.mc-orig[data-bracketed]{quotes:none}
+    .live-match .mc-card .mc-trans{color:#3d4a5a}
     .live-match .mc-card dl{order:4;margin:0;display:grid;grid-template-columns:6em 1fr;gap:3px 8px}
     .live-match .mc-card dt{color:#52606d}
     .live-match .mc-card dd{margin:0;color:#1f2933}
@@ -221,7 +259,7 @@
   // 伺服器各語言的「不足」（app/matching/i18n.py insufficient）＋本表各語言的顯示字。
   const INSUFFICIENT = new Set(['不足', 'Insufficient', '根拠が足りません', '근거 부족',
     ...Object.values(MATCH_I18N).map(t => t.insufficient)]);
-  const isThin = v => v == null || INSUFFICIENT.has(String(v).trim()) || !String(v).trim();
+  const isThin = v => v == null || INSUFFICIENT.has(plain(v).trim()) || !plain(v).trim();
   const THIN_FIELDS = ['為何推薦', '互補性', '互惠價值', '建議合作'];
   const CONCLUSION_FROM = ['互補性', '互惠價值', '建議合作'];
   const MAX_CONCLUSION = 60;
@@ -236,11 +274,11 @@
   function whyLayers(card) {
     const f = card.fields || {};
     const why = clean(f['為何推薦']);
-    const plainWhy = !isThin(why) && !RULE_TEXT.test(why) && Array.from(why).length <= MAX_CONCLUSION;
+    const plainWhy = !isThin(why) && !RULE_TEXT.test(why) && Array.from(why.replace(MK_ANY, '')).length <= MAX_CONCLUSION;
     if (plainWhy) return {conclusion: why, whyIsConclusion: true, ruleNames: [], ruleText: ''};
     const src = CONCLUSION_FROM.map(k => f[k]).find(v => !isThin(v));
-    const conclusion = cap(clean(src != null ? firstSentence(src) : T.whyFallback));
-    const ruleNames = isThin(why) ? [] : [...new Set([...why.matchAll(RULE_NAME)].map(m => m[1].trim()))];
+    const conclusion = cap(clean(src != null ? firstSentence(clean(src)) : T.whyFallback));
+    const ruleNames = isThin(why) ? [] : [...new Set([...why.replace(MK_ANY, '').matchAll(RULE_NAME)].map(m => m[1].trim()))];
     return {conclusion, whyIsConclusion: false, ruleNames, ruleText: isThin(why) ? '' : why};
   }
 
