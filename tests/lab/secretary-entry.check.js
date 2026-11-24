@@ -4,6 +4,8 @@
 // (a) 手機 390×844、四語：開場訊息載入後，工具按鈕列至少一顆完整在第一屏，且沒被輸入框遮住
 // (b) 從「CMS 頁」點 AI 秘書 → /sso/handoff → / → 聊天室就緒，每 0.3 秒截圖，沒有任何一張全白（白像素 > 98%）。
 //     模擬實站延遲：驗章 1 秒、Chainlit 前端 bundle 晚 1.5 秒到。
+// (c) #246 同 (b)，另把 custom.js 延遲 1500 ms（慢網路）：custom.js 照實站由 tangle-lab-overlay.js 事後插入，
+//     過場必須不靠它、在頁面一出現就掛上（/ 的 <head> 同步內聯 script），否則截到全白。
 // Python：$EVA_PYTHON → ~/.venvs/swarm-aieva/bin/python → python3（要裝 chainlit）。
 // Playwright 由 NODE_PATH 提供（找不到時退回常用位置）。最後一行 PASS；任何失敗 exit 1。
 const fs = require('node:fs');
@@ -44,6 +46,9 @@ from app.surfaces import sso   # 註冊真的 /sso/handoff
 from app.i18n import t, app_label, normalize_lang
 from app.apps._registry import menu_apps
 from app.matching import invites as match_invites
+from chainlit.config import config as _cl_config
+from app.assets_version import custom_js_url
+_cl_config.ui.custom_js = custom_js_url()   # 照實站（法規／媒合工作區）：overlay 事後插入 custom.js
 
 def _claims(token):
     p = token.split(".")[1]
@@ -188,12 +193,16 @@ const fail = m => { fails++; console.log('FAIL', m); };
       return w / (d.length / 4);
     }, buf.toString('base64'));
 
-    for (const [lang] of Object.entries(LANGS)) {
+    const cases = [...Object.keys(LANGS).map(l => [l, 0]), ...Object.keys(LANGS).map(l => [l, 1500])];
+    for (const [lang, customDelay] of cases) {
+      const tag = customDelay ? `(c) ${lang}+custom.js ${customDelay}ms` : `(b) ${lang}`;
       const before = fails;
       const ctx = await browser.newContext({viewport: {width: W, height: H}, isMobile: true, hasTouch: true});
       await offline(ctx);
       // 模擬實站：Chainlit 前端 bundle 晚 1.5 秒到
       await ctx.route(/\/assets\/.*\.js$/, async r => { await new Promise(x => setTimeout(x, 1500)); r.continue(); });
+      // (c) 慢網路：custom.js 晚 customDelay 毫秒才到
+      if (customDelay) await ctx.route(/\/public\/custom\.js(\?|$)/, async r => { await new Promise(x => setTimeout(x, customDelay)); r.continue(); });
       const page = await ctx.newPage();
       // CMS 頁（非白底）上的 AI 秘書連結
       await page.setContent(`<body style="margin:0;background:#2b3a4a;color:#fff;font:20px sans-serif">
@@ -219,21 +228,21 @@ const fail = m => { fails++; console.log('FAIL', m); };
         await page.waitForFunction(() => !document.documentElement.classList.contains('eva-handoff')
           && [...document.querySelectorAll('button')].some(b => /📊|🔍|📚/.test(b.textContent)), null, {timeout: 20000, polling: 100});
         await page.waitForTimeout(600);
-      } catch (e) { fail(`(b) ${lang}: chat never became ready: ${e.message}`); }
+      } catch (e) { fail(`${tag}: chat never became ready: ${e.message}`); }
       stop = true; await loop;
-      if (shots.length < 5) fail(`(b) ${lang}: only ${shots.length} screenshots`);
+      if (shots.length < 5) fail(`${tag}: only ${shots.length} screenshots`);
       let worst = 0;
       for (const [i, s] of shots.entries()) {
         const r = await whiteRatio(s.buf);
         worst = Math.max(worst, r);
         if (r > WHITE_LIMIT) {
-          const f = path.join(tmp, `b-${lang}-${i}.png`); fs.writeFileSync(f, s.buf);
-          fail(`(b) ${lang}: screenshot #${i} at ${s.t}ms is ${(r * 100).toFixed(1)}% white (${f})`);
+          const f = path.join(tmp, `b-${lang}-${customDelay}-${i}.png`); fs.writeFileSync(f, s.buf);
+          fail(`${tag}: screenshot #${i} at ${s.t}ms is ${(r * 100).toFixed(1)}% white (${f})`);
         }
         if (r < 0.5) sawBrand = true;
       }
-      if (!sawBrand) fail(`(b) ${lang}: never saw the brand transition`);
-      if (fails === before) console.log(`ok (b) ${lang}: ${shots.length} screenshots over ${shots.at(-1)?.t}ms, whitest ${(worst * 100).toFixed(1)}%`);
+      if (!sawBrand) fail(`${tag}: never saw the brand transition`);
+      if (fails === before) console.log(`ok ${tag}: ${shots.length} screenshots over ${shots.at(-1)?.t}ms, whitest ${(worst * 100).toFixed(1)}%`);
       await ctx.close();
     }
   } catch (e) {
