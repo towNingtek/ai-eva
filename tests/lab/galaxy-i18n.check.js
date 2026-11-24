@@ -142,7 +142,16 @@ async function walk(browser, port, {snapshotLang, cookie, targets}) {
     await collect('overview', 0);
     const n = targets.length + 1;
     for (let id = 1; id <= n; id++) {
-      await g.evaluate(id => { focus = id; if (typeof sel !== 'undefined') sel = null; syncMode(); draw(); }, id);
+      if (id === 1) {
+        await g.evaluate(() => { focus = 1; sel = null; syncMode(); draw(); });
+      } else {
+        const locate = panel.locator(`[data-match-show="${targets[id - 2]}"]`);
+        await locate.click();
+        await g.waitForFunction(id => focus === id, id);
+        await locate.click();
+        await g.waitForFunction(id => focus === id, id);
+        assert.equal(await page.evaluate(() => events.filter(e => e.action === 'explain').length), 0);
+      }
       await collect(`focus${id}`);
     }
     await g.evaluate(() => { focus = null; syncMode(); draw(); });

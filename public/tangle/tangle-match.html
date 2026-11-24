@@ -815,6 +815,13 @@ function onUp(){
     if(focus===d.id)parent.postMessage(Object.assign({type:'tangle-relation',tag:byId(d.id).name,code:'planet',subject:d.id,kind:'planet',mode:'match'},P.length>2?{who:byId(d.id).pid,others:P.filter(x=>x.id!==d.id).map(x=>x.pid)}:{}),location.origin);
   } else { justDragged=true; render(); buildParticles(); }   // 移動過 → 保持釘選
 }
+window.addEventListener('message', e => {
+  if (new URLSearchParams(location.search).get('liveMatch') !== '1' || e.origin !== location.origin || e.source !== parent || e.data?.type !== 'mf-locate') return;
+  const planet = P.find(p => p.pid === e.data.pid);
+  if (!planet) return;
+  pos[planet.id].pin = false;
+  focus = planet.id; sel = null; syncMode(); draw();
+});
 window.addEventListener("pointermove",onMove);
 window.addEventListener("pointerup",onUp);
 window.addEventListener("pointercancel",onUp);
