@@ -52,9 +52,27 @@ def _element() -> cl.CustomElement:
     return element
 
 
+CMS_CHART_TOOL = "dashboard_sdg_data"
+ALL_SDGS = [f"sdg{i}" for i in range(1, 18)]
+
+
+def _fmt_cms(inner: dict) -> str:
+    """CMS dashboard_sdg_data 的回應：{year, district, budgetValues:[{id,value,count}], totalBudget, totalProjects}。"""
+    rows = [r for r in inner.get("budgetValues") or [] if (r.get("count") or 0) > 0]
+    where = f"{inner.get('year', '')} {inner.get('district') or '全縣'}".strip()
+    if not rows:
+        return f"⚠️ {where} 沒有符合條件的專案資料。"
+    lines = [f"- {str(r.get('id', '')).upper()}：{r.get('count')} 件，NT$ {int(r.get('value') or 0):,}" for r in rows]
+    return "📊 {} SDG 投入（共 {} 件，NT$ {:,}）\n{}".format(
+        where, inner.get("totalProjects", 0), int(inner.get("totalBudget") or 0), "\n".join(lines))
+
+
 def _fmt(data) -> str:
     """把 module 回傳的 chart data 渲染成文字（無瀏覽器 ChartAnalysis.jsx 時的 fallback）。"""
     inner = data.get("data") or {}
+    cms = inner.get("data") if isinstance(inner.get("data"), dict) else inner  # module 包一層 {provider, data}
+    if "budgetValues" in cms:
+        return _fmt_cms(cms)
     series = inner.get("series") or []
     if not series:
         return "⚠️ 沒有符合條件的圖表資料。"
@@ -112,6 +130,11 @@ async def handle(payload: str, msg: cl.Message) -> None:
         req: dict = {"year": int(year) if year.strip().isdigit() else None}
         if rest.strip():
             req["district"] = rest.strip()
+        if project:
+            # 雲林 2026-11-26：打字查詢原本呼叫 CMS 沒有的 dashboard_chart_query → 一律「查詢失敗」。
+            # 改用與面板按鈕相同的 dashboard_sdg_data（CMS 必填 year、sdgs → 預設全部 17 個）。
+            req = {"tool": CMS_CHART_TOOL, "year": str(req["year"] or date.today().year),
+                   "district": req.get("district", ""), "sdgs": ALL_SDGS}
         res = await invoke("sechome.chart", ctx, req)
         if res.get("ok"):
             await cl.Message(content=_fmt(res), parent_id=msg.id).send()
